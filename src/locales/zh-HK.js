@@ -19,7 +19,7 @@ export default {
     wmartCardWhTitle: "倉庫手冊",
     wmartCardWhDesc: "揀貨 · 包裝 · 平面圖 · 標籤",
     wmartCardEcTitle: "ECOUNT 手冊",
-    wmartCardEcDesc: "銷貨輸入 · 發票 · 裝箱清單",
+    wmartCardEcDesc: "銷貨輸入 · 發票 · 執貨單",
     openCta: "開啟 →",
     homeBtn: "W MART 首頁",
     prevBtn: "上一頁",
@@ -34,7 +34,7 @@ export default {
     warehouseManualSub: "揀貨·包裝守則與總部倉庫平面圖",
     sidebarWhFoot: "以總部倉庫為準 · 不含 F(冷凍) 區\n與 ECOUNT 手冊分開",
     ecountManualTitle: "ECOUNT 手冊",
-    ecountManualSub: "銷貨輸入 · 發票 · 裝箱清單",
+    ecountManualSub: "銷貨輸入 · 發票 · 執貨單",
     sidebarEcFoot: "與倉庫手冊分開\n依截圖順序逐步操作",
     slidesUrl: "https://docs.google.com/presentation/d/1mSytr6-bSl01gl0j8bExCryC9Bd-9cIj/edit?usp=sharing&ouid=106832286164196570873&rtpof=true&sd=true"
   },
@@ -48,8 +48,8 @@ export default {
       { id: "map", title: "倉庫平面圖", desc: "整體平面圖 · 貨架照片" }
     ],
     pages: [
-      { id: "rules-0", chapter: "rules", rulePage: 0, title: "倉庫作業守則", sub: "01. 裝箱單分類與揀貨順序" },
-      { id: "rules-1", chapter: "rules", rulePage: 1, title: "倉庫作業守則", sub: "02. 依裝箱單揀貨與包裝" },
+      { id: "rules-0", chapter: "rules", rulePage: 0, title: "倉庫作業守則", sub: "01. 執貨單分類與揀貨順序" },
+      { id: "rules-1", chapter: "rules", rulePage: 1, title: "倉庫作業守則", sub: "02. 依執貨單揀貨與包裝" },
       { id: "rules-2", chapter: "rules", rulePage: 2, title: "倉庫作業守則", sub: "03. 藍色手推車裝載與卸載" },
       { id: "rules-3", chapter: "rules", rulePage: 3, title: "倉庫作業守則", sub: "04. 裝箱打包守則" },
       { id: "rules-4", chapter: "rules", rulePage: 4, title: "倉庫作業守則", sub: "05. 按重量挑選紙箱" },
@@ -67,7 +67,7 @@ export default {
       tier1: "**1/3** 上層 — 小箱子 · 輕型貨物",
       tier2: "**1/2** 中層 — 中型尺寸 · 開放式揀貨",
       tier3: "**1/1** 底層 — 地面棧板 · 大型/重型貨物",
-      tip: "根據裝箱單上的位置代碼（如：A 5/6），依平面圖的區域、貨架及層數找尋即可。"
+      tip: "根據執貨單上的位置代碼（如：A 5/6），依平面圖的區域、貨架及層數找尋即可。"
     }
   },
   ecount: [
@@ -162,11 +162,11 @@ export default {
     },
     {
       id: "print-invoice-packing",
-      title: "發票與裝箱清單列印",
+      title: "發票與執貨單列印",
       sub: "銷貨查詢 · 全選 · 底部列印 · packing_new",
       intro: [
         "於銷貨輸入建立的單據可在 **庫存 I → 銷貨 → 銷貨查詢** 中確認。",
-        "請依照下方步驟列印 **發票(Invoice)** 與 **裝箱清單(Packing List)**。"
+        "請依照下方步驟列印 **發票(Invoice)** 與 **執貨單(Packing List)**。"
       ],
       steps: [
         {
@@ -188,7 +188,7 @@ export default {
             "請勿點擊表格內的橘色列印按鈕，而是點擊螢幕 **最下方的「列印」按鈕**。"
           ],
           warn: "若有 2 頁以上，必須逐頁選取。在第 1 頁全選不會選取到第 2 頁的單據。",
-          tip: "早晨列印裝箱單時：選取第 1 頁 → 列印 → 切換至第 2 頁 → 再次選取 → 列印",
+          tip: "早晨列印執貨單時：選取第 1 頁 → 列印 → 切換至第 2 頁 → 再次選取 → 列印",
           img: "/ecount/08-inquiry-selected.png?v=3",
           imgCap: "日期-No. 左側核取 = 僅全選當前頁面"
         },
@@ -204,21 +204,21 @@ export default {
         },
         {
           no: "04",
-          title: "裝箱清單格式為 packing_new",
+          title: "執貨單格式為 packing_new",
           body: [
             "在同一個交易明細表視窗左下方的格式清單中，將 **Wmart基本** 切換為 **Packing_new**。",
-            "畫面即會顯示 **WMART Packing List (裝箱清單)**。",
+            "畫面即會顯示 **WMART Packing List (執貨單)**。",
             "隨後點擊該視窗內的 **列印** 即可輸出。"
           ],
-          tip: "發票與裝箱單只需切換格式即可，無需重新開啟視窗。",
+          tip: "發票與執貨單只需切換格式即可，無需重新開啟視窗。",
           img: "/ecount/10-template-packing.png?v=3",
           imgCap: "格式選擇 — Packing_new"
         },
         {
           no: "05",
-          title: "確認裝箱清單",
+          title: "確認執貨單",
           body: [
-            "選擇 Packing_new 後，會切換為顯示貨架位置及商品圖片的 **裝箱單** 畫面。",
+            "選擇 Packing_new 後，會切換為顯示貨架位置及商品圖片的 **執貨單** 畫面。",
             "備註(倉庫)亦會一併顯示於此。"
           ],
           img: "/ecount/11-packing-list.png?v=3",
@@ -228,7 +228,7 @@ export default {
       summary: [
         "在銷貨查詢中確認今日單據",
         "勾選日期-No.(逐頁選取) → 點擊底部列印",
-        "發票(Wmart基本) / 裝箱單(Packing_new)"
+        "發票(Wmart基本) / 執貨單(Packing_new)"
       ]
     }
   ]

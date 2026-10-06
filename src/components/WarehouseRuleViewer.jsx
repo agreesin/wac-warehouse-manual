@@ -95,7 +95,7 @@ function Rule01({ lang, t }) {
       keyDesc: <strong>K Tsim Sha Tsui → K → N → H → Packing</strong>
     },
     'zh-HK': {
-      calloutHead: "裝箱單列印後，實習生工作步驟",
+      calloutHead: "執貨單列印後，實習生工作步驟",
       calloutNext: <>確認客戶代碼首字母(<strong>K / N / H</strong>)及客戶名稱，並按以下順序分類。</>,
       knhTitle: "什麼是 K · N · H？",
       knhSub: <>客戶代碼的首字母代表 <strong>送貨區域</strong>。</>,
