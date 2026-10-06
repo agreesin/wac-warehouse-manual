@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { CartLegend } from './VisualLegends';
 
 function renderBold(text) {
   if (!text) return null;
@@ -12,29 +13,29 @@ function renderBold(text) {
   );
 }
 
-export function WarehouseRuleViewer({ pageIndex }) {
+export function WarehouseRuleViewer({ pageIndex, onOpenImage }) {
   const { lang, t } = useLanguage();
 
   switch (pageIndex) {
     case 0:
-      return <Rule01 lang={lang} t={t} />;
+      return <Rule01 lang={lang} t={t} onOpenImage={onOpenImage} />;
     case 1:
-      return <Rule02 lang={lang} t={t} />;
+      return <Rule02 lang={lang} t={t} onOpenImage={onOpenImage} />;
     case 2:
-      return <Rule03 lang={lang} t={t} />;
+      return <Rule03 lang={lang} t={t} onOpenImage={onOpenImage} />;
     case 3:
-      return <Rule04 lang={lang} t={t} />;
+      return <Rule04 lang={lang} t={t} onOpenImage={onOpenImage} />;
     case 4:
-      return <Rule05 lang={lang} t={t} />;
+      return <Rule05 lang={lang} t={t} onOpenImage={onOpenImage} />;
     case 5:
-      return <Rule06 lang={lang} t={t} />;
+      return <Rule06 lang={lang} t={t} onOpenImage={onOpenImage} />;
     default:
-      return <Rule01 lang={lang} t={t} />;
+      return <Rule01 lang={lang} t={t} onOpenImage={onOpenImage} />;
   }
 }
 
 // ==================== Rule 01: Sorting & Picking Order ====================
-function Rule01({ lang, t }) {
+function Rule01({ lang, t, onOpenImage }) {
   const texts = {
     ko: {
       calloutHead: "패킹리스트 출력 후, 인턴이 할 일",
@@ -176,7 +177,7 @@ function Rule01({ lang, t }) {
         <ul className="ecount-step-list">
           <li>{c.ex1Desc}</li>
         </ul>
-        <div className="label-frame example-hero">
+        <div className="label-frame example-hero clickable-img-frame" onClick={() => onOpenImage?.("/labels/example-K-chimsa.png", "K 침사추이 예시", c.ex1Cap)} title="클릭하여 확대">
           <img src="/labels/example-K-chimsa.png" alt="K TST Packing List Example" />
           <p className="label-cap">{c.ex1Cap}</p>
         </div>
@@ -187,7 +188,7 @@ function Rule01({ lang, t }) {
         <ul className="ecount-step-list">
           <li>{c.ex2Desc}</li>
         </ul>
-        <div className="label-frame example-side">
+        <div className="label-frame example-side clickable-img-frame" onClick={() => onOpenImage?.("/labels/example-N.png", "N 예시", c.ex2Cap)} title="클릭하여 확대">
           <img src="/labels/example-N.png" alt="N Packing List Example" />
           <p className="label-cap">{c.ex2Cap}</p>
         </div>
@@ -239,7 +240,7 @@ function Rule01({ lang, t }) {
 }
 
 // ==================== Rule 02: Picking & Packing with Packing List ====================
-function Rule02({ lang, t }) {
+function Rule02({ lang, t, onOpenImage }) {
   const texts = {
     ko: {
       callout: "분류한 리스트를 들고 창고로 가서, 빨간 번호 순서대로 하면 됩니다.",
@@ -311,7 +312,7 @@ function Rule02({ lang, t }) {
         <p>{c.callout}</p>
       </div>
       <div className="plist-layout">
-        <div className="label-frame plist-frame">
+        <div className="label-frame plist-frame clickable-img-frame" onClick={() => onOpenImage?.("/labels/packing-list-annotated.png", "패킹리스트 예시", c.cap)} title="클릭하여 확대">
           <img src="/labels/packing-list-annotated.png" alt="Packing list annotated" />
           <p className="label-cap">{c.cap}</p>
         </div>
@@ -366,7 +367,7 @@ function Rule02({ lang, t }) {
 }
 
 // ==================== Rule 03: Blue Trolley Stacking & Unloading ====================
-function Rule03({ lang, t }) {
+function Rule03({ lang, t, onOpenImage }) {
   const texts = {
     ko: {
       callout: <>손잡이 기준으로 <strong>앞/뒤가 반대</strong>입니다.</>,
@@ -414,10 +415,11 @@ function Rule03({ lang, t }) {
           {c.step2Desc}
         </li>
       </ul>
-      <div className="label-frame cart-frame">
+      <div className="label-frame cart-frame clickable-img-frame" onClick={() => onOpenImage?.("/labels/cart-annotated.png", "파란 손수레 예시", c.cap)} title="클릭하여 확대">
         <img src="/labels/cart-annotated.png" alt="Blue cart annotated" />
         <p className="label-cap">{c.cap}</p>
       </div>
+      <CartLegend />
       <div className="callout callout-warn">
         <span className="callout-icon">!</span>
         <div className="callout-body">
@@ -430,7 +432,7 @@ function Rule03({ lang, t }) {
 }
 
 // ==================== Rule 04: Box Packing Rules ====================
-function Rule04({ lang, t }) {
+function Rule04({ lang, t, onOpenImage }) {
   const texts = {
     ko: {
       callout1: <>피킹이 끝나면 <strong>패킹하는 곳</strong>에서 박스에 담습니다.</>,
@@ -511,7 +513,7 @@ function Rule04({ lang, t }) {
         <ul className="ecount-step-list">
           <li>{c.sec1Sub}</li>
         </ul>
-        <div className="label-frame example-side">
+        <div className="label-frame example-side clickable-img-frame" onClick={() => onOpenImage?.("/labels/packing-list-doublecheck.png", "Checked by 더블체크 예시", c.sec1Cap)} title="클릭하여 확대">
           <img src="/labels/packing-list-doublecheck.png" alt="Double check sample" />
           <p className="label-cap">{c.sec1Cap}</p>
         </div>
@@ -575,7 +577,7 @@ function Rule04({ lang, t }) {
 }
 
 // ==================== Rule 05: Choosing Box by Weight ====================
-function Rule05({ lang, t }) {
+function Rule05({ lang, t, onOpenImage }) {
   const texts = {
     ko: {
       callout1: <>패킹할 때 박스가 <strong>무거워질 것 같으면</strong> 단면이 <strong>물결 두 줄(두면)</strong>인 박스를 씁니다.</>,
@@ -657,7 +659,7 @@ function Rule05({ lang, t }) {
               {c.c1Ex.map((ex, i) => <li key={i}>{ex}</li>)}
             </ul>
           </div>
-          <div className="label-frame">
+          <div className="label-frame clickable-img-frame" onClick={() => onOpenImage?.("/labels/box-double-wall.png", "두면 박스 예시", c.c1Cap)} title="클릭하여 확대">
             <img src="/labels/box-double-wall.png" alt="Double wall box" />
             <p className="label-cap">{c.c1Cap}</p>
           </div>
@@ -672,7 +674,7 @@ function Rule05({ lang, t }) {
               {c.c2Ex.map((ex, i) => <li key={i}>{ex}</li>)}
             </ul>
           </div>
-          <div className="label-frame">
+          <div className="label-frame clickable-img-frame" onClick={() => onOpenImage?.("/labels/box-single-wall.png", "한면 박스 예시", c.c2Cap)} title="클릭하여 확대">
             <img src="/labels/box-single-wall.png" alt="Single wall box" />
             <p className="label-cap">{c.c2Cap}</p>
           </div>
@@ -691,7 +693,7 @@ function Rule05({ lang, t }) {
 }
 
 // ==================== Rule 06: Labels — Fragile & HEAVY ====================
-function Rule06({ lang, t }) {
+function Rule06({ lang, t, onOpenImage }) {
   const texts = {
     ko: {
       callout: "박스에 담은 뒤, 필요한 라벨을 붙입니다.",
@@ -737,7 +739,7 @@ function Rule06({ lang, t }) {
         <div className="label-duo-card">
           <h4>{c.c1Title}</h4>
           <p>{c.c1Desc}</p>
-          <div className="label-frame">
+          <div className="label-frame clickable-img-frame" onClick={() => onOpenImage?.("/labels/caution.png", "주의 FRAGILE 라벨", c.c1Title)} title="클릭하여 확대">
             <img src="/labels/caution.png" alt="Caution FRAGILE label" />
           </div>
         </div>
@@ -745,7 +747,7 @@ function Rule06({ lang, t }) {
         <div className="label-duo-card">
           <h4>{c.c2Title}</h4>
           <p>{c.c2Desc}</p>
-          <div className="label-frame">
+          <div className="label-frame clickable-img-frame" onClick={() => onOpenImage?.("/labels/heavy.png", "HEAVY 라벨", c.c2Title)} title="클릭하여 확대">
             <img src="/labels/heavy.png" alt="HEAVY label" />
           </div>
         </div>

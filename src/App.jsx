@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from './context/LanguageContext';
 import { HubHome } from './components/HubHome';
 import { HubWMart } from './components/HubWMart';
@@ -8,6 +8,8 @@ import { WarehouseRuleViewer } from './components/WarehouseRuleViewer';
 import { WarehouseMap } from './components/WarehouseMap';
 import { EcountViewer } from './components/EcountViewer';
 import { LanguageSelector } from './components/LanguageSelector';
+import { ImageModal } from './components/ImageModal';
+import { QuickSearchModal } from './components/QuickSearchModal';
 import { Bars3Icon, XMarkIcon, ArrowLeftIcon, ArrowRightIcon } from './components/Icons';
 
 function parseHash() {
@@ -38,9 +40,14 @@ function navigate(manual, page = 0) {
 }
 
 export function App() {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [route, setRoute] = useState(parseHash);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Touch swipe tracking ref
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -51,6 +58,21 @@ export function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  // Global hotkey for search: '/' or 'Ctrl+K'
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      } else if (e.key === '/' && !searchOpen && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchOpen]);
 
   const warehousePages = t.warehouse.pages;
   const ecountPages = t.ecount;
@@ -71,19 +93,79 @@ export function App() {
     goToWarehouse(pageIdx >= 0 ? pageIdx : 0);
   };
 
+  const handleOpenImage = (src, alt, caption) => {
+    setModalImage({ src, alt, caption });
+  };
+
+  // Swipe gesture handlers
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now()
+      };
+    }
+  };
+
+  const handleTouchEnd = (e, currentManual, currentIdx, maxIdx) => {
+    if (e.changedTouches.length === 1) {
+      const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+      const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+      const deltaTime = Date.now() - touchStartRef.current.time;
+
+      // Only treat as swipe if horizontal movement is strong and vertical movement is minor
+      if (deltaTime < 500 && Math.abs(deltaX) > 65 && Math.abs(deltaY) < 55) {
+        if (deltaX < 0 && currentIdx < maxIdx) {
+          // Swiped left -> Next page
+          if (currentManual === 'warehouse') goToWarehouse(currentIdx + 1);
+          else if (currentManual === 'ecount') goToEcount(currentIdx + 1);
+        } else if (deltaX > 0 && currentIdx > 0) {
+          // Swiped right -> Previous page
+          if (currentManual === 'warehouse') goToWarehouse(currentIdx - 1);
+          else if (currentManual === 'ecount') goToEcount(currentIdx - 1);
+        }
+      }
+    }
+  };
+
+  const searchBtnLabel = lang === 'en' ? 'Search (Ctrl+K)' : lang === 'zh-HK' ? '搜尋 (Ctrl+K)' : '빠른 검색 (Ctrl+K)';
+
   // 1. Hub
   if (route.manual === 'hub') {
-    return <HubHome onOpenWmart={goToWMart} />;
+    return (
+      <>
+        <HubHome onOpenWmart={goToWMart} />
+        <QuickSearchModal
+          isOpen={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={(manual, page) => {
+            if (manual === 'warehouse') goToWarehouse(page);
+            else if (manual === 'ecount') goToEcount(page);
+          }}
+        />
+      </>
+    );
   }
 
   // 2. W MART Sub-hub
   if (route.manual === 'wmart') {
     return (
-      <HubWMart
-        onBack={goToHub}
-        onOpenWarehouse={() => goToWarehouse(0)}
-        onOpenEcount={() => goToEcount(0)}
-      />
+      <>
+        <HubWMart
+          onBack={goToHub}
+          onOpenWarehouse={() => goToWarehouse(0)}
+          onOpenEcount={() => goToEcount(0)}
+        />
+        <QuickSearchModal
+          isOpen={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={(manual, page) => {
+            if (manual === 'warehouse') goToWarehouse(page);
+            else if (manual === 'ecount') goToEcount(page);
+          }}
+        />
+      </>
     );
   }
 
@@ -111,7 +193,18 @@ export function App() {
               {t.common.tocTitle}
             </button>
             <strong>{t.common.ecountManualTitle}</strong>
-            <LanguageSelector className="mobile-lang-selector" />
+            <div className="mobile-actions">
+              <button
+                type="button"
+                className="header-search-btn"
+                onClick={() => setSearchOpen(true)}
+                aria-label="Search"
+                title={searchBtnLabel}
+              >
+                🔍
+              </button>
+              <LanguageSelector className="mobile-lang-selector" />
+            </div>
           </div>
 
           {mobileMenuOpen && (
@@ -123,7 +216,11 @@ export function App() {
             />
           )}
 
-          <article className="page">
+          <article
+            className="page"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={(e) => handleTouchEnd(e, 'ecount', safeIdx, ecountPages.length - 1)}
+          >
             <div className="page-inner">
               <header className="page-head">
                 <div className="page-head-top">
@@ -131,14 +228,25 @@ export function App() {
                     <h2>{currentPage.title}</h2>
                     <p>{currentPage.sub}</p>
                   </div>
-                  <LanguageSelector className="desktop-lang-selector" />
+                  <div className="desktop-actions">
+                    <button
+                      type="button"
+                      className="header-search-btn"
+                      onClick={() => setSearchOpen(true)}
+                      title={searchBtnLabel}
+                    >
+                      🔍 <span className="search-btn-text">{lang === 'en' ? 'Search' : lang === 'zh-HK' ? '搜尋' : '검색'}</span>
+                      <kbd className="search-kbd">Ctrl+K</kbd>
+                    </button>
+                    <LanguageSelector className="desktop-lang-selector" />
+                  </div>
                 </div>
                 <div className="page-meta mono">
                   {String(safeIdx + 1).padStart(2, '0')} / {String(ecountPages.length).padStart(2, '0')}
                 </div>
               </header>
 
-              <EcountViewer pageIndex={safeIdx} />
+              <EcountViewer pageIndex={safeIdx} onOpenImage={handleOpenImage} />
 
               <nav className="pager" aria-label="페이지 이동">
                 <button
@@ -164,6 +272,22 @@ export function App() {
             </div>
           </article>
         </main>
+
+        <ImageModal
+          src={modalImage?.src}
+          alt={modalImage?.alt}
+          caption={modalImage?.caption}
+          onClose={() => setModalImage(null)}
+        />
+
+        <QuickSearchModal
+          isOpen={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={(manual, page) => {
+            if (manual === 'warehouse') goToWarehouse(page);
+            else if (manual === 'ecount') goToEcount(page);
+          }}
+        />
       </div>
     );
   }
@@ -192,7 +316,18 @@ export function App() {
             {t.common.tocTitle}
           </button>
           <strong>{t.common.warehouseManualTitle}</strong>
-          <LanguageSelector className="mobile-lang-selector" />
+          <div className="mobile-actions">
+            <button
+              type="button"
+              className="header-search-btn"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+              title={searchBtnLabel}
+            >
+              🔍
+            </button>
+            <LanguageSelector className="mobile-lang-selector" />
+          </div>
         </div>
 
         {mobileMenuOpen && (
@@ -204,7 +339,11 @@ export function App() {
           />
         )}
 
-        <article className="page">
+        <article
+          className="page"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={(e) => handleTouchEnd(e, 'warehouse', safeIdx, warehousePages.length - 1)}
+        >
           <div className="page-inner">
             <header className="page-head">
               <div className="page-head-top">
@@ -212,7 +351,18 @@ export function App() {
                   <h2>{t.warehouse.chapters[chapter]}</h2>
                   <p>{currentPage.sub}</p>
                 </div>
-                <LanguageSelector className="desktop-lang-selector" />
+                <div className="desktop-actions">
+                  <button
+                    type="button"
+                    className="header-search-btn"
+                    onClick={() => setSearchOpen(true)}
+                    title={searchBtnLabel}
+                  >
+                    🔍 <span className="search-btn-text">{lang === 'en' ? 'Search' : lang === 'zh-HK' ? '搜尋' : '검색'}</span>
+                    <kbd className="search-kbd">Ctrl+K</kbd>
+                  </button>
+                  <LanguageSelector className="desktop-lang-selector" />
+                </div>
               </div>
               <div className="page-meta mono">
                 {String(safeIdx + 1).padStart(2, '0')} / {String(warehousePages.length).padStart(2, '0')}
@@ -220,9 +370,12 @@ export function App() {
             </header>
 
             {chapter === 'map' ? (
-              <WarehouseMap />
+              <WarehouseMap onOpenImage={handleOpenImage} />
             ) : (
-              <WarehouseRuleViewer pageIndex={currentPage.rulePage ?? 0} />
+              <WarehouseRuleViewer
+                pageIndex={currentPage.rulePage ?? 0}
+                onOpenImage={handleOpenImage}
+              />
             )}
 
             <nav className="pager" aria-label="페이지 이동">
@@ -249,6 +402,22 @@ export function App() {
           </div>
         </article>
       </main>
+
+      <ImageModal
+        src={modalImage?.src}
+        alt={modalImage?.alt}
+        caption={modalImage?.caption}
+        onClose={() => setModalImage(null)}
+      />
+
+      <QuickSearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={(manual, page) => {
+          if (manual === 'warehouse') goToWarehouse(page);
+          else if (manual === 'ecount') goToEcount(page);
+        }}
+      />
     </div>
   );
 }

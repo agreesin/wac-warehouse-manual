@@ -12,11 +12,13 @@ function renderBold(text) {
   );
 }
 
-export function EcountViewer({ pageIndex }) {
-  const { t } = useLanguage();
+export function EcountViewer({ pageIndex, onOpenImage }) {
+  const { lang, t } = useLanguage();
   const section = t.ecount[pageIndex];
 
   if (!section) return null;
+
+  const zoomText = lang === 'en' ? 'Click to enlarge' : lang === 'zh-HK' ? '點擊放大圖片' : '클릭하여 확대';
 
   return (
     <div className="ecount-page">
@@ -73,9 +75,14 @@ export function EcountViewer({ pageIndex }) {
           )}
 
           {step.img && (
-            <div className="label-frame ecount-frame">
+            <div
+              className="label-frame ecount-frame clickable-img-frame"
+              onClick={() => onOpenImage?.(step.img, step.imgCap || step.title, `${step.no}. ${step.title}`)}
+              title={zoomText}
+            >
               <img src={step.img} alt={step.imgCap || step.title} />
               {step.imgCap && <p className="label-cap">{step.imgCap}</p>}
+              <span className="img-zoom-hint">🔍 {zoomText}</span>
             </div>
           )}
         </article>
