@@ -115,7 +115,7 @@ function Rule01({ lang, t }) {
       ex2Title: "範例 ② — N",
       ex2Desc: <>首字母為 N → <strong>分類為 N</strong> (H 則分類為 H)</>,
       ex2Cap: "N 範例 · 僅需確認客戶代碼首字母",
-      orderTitle: "揀貨開始順序",
+      orderTitle: "執貨開始順序",
       order1Sub: "見上方範例 ①",
       order2Sub: "為 K 但非尖沙咀",
       order3Sub: "見上方範例 ②",
@@ -289,7 +289,7 @@ function Rule02({ lang, t }) {
       s2Title: "② 貨架位置",
       s2Desc: <>於貨架尋找 (例: <em>A 5/6</em>)</>,
       s3Title: "③ 數量",
-      s3Desc: <>按標註數量揀貨 (例: <em>10PK</em>)</>,
+      s3Desc: <>按標註數量執貨 (例: <em>10PK</em>)</>,
       sMidTitle: "包裝區",
       sMidDesc: "用推車運至包裝區放置於地面後進行包裝",
       s4Title: "④ 箱數",
@@ -298,7 +298,7 @@ function Rule02({ lang, t }) {
       s5Desc: <>數字標籤註記 — 例: <em>222-02×3</em></>,
       tip: <>縮寫請使用英文姓名首字母縮寫。例: 옥현서 → <strong>OK</strong></>,
       keyHead: "核心重點",
-      keyItem1: "縮寫 → 位置 → 數量揀貨",
+      keyItem1: "縮寫 → 位置 → 數量執貨",
       keyItem2: "於包裝區標示箱數與客戶代碼標籤"
     }
   };
@@ -388,10 +388,10 @@ function Rule03({ lang, t }) {
     },
     'zh-HK': {
       callout: <>以把手為基準，<strong>前後方向相反</strong>。</>,
-      step1Head: "揀貨 (裝載堆疊)",
-      step1Desc: <> — 從遠離把手的 <strong>前方</strong> 開始堆疊</>,
-      step2Head: "包裝前 (卸貨)",
-      step2Desc: <> — 從靠近把手的 <strong>後方</strong> 開始卸下</>,
+      step1Head: "執貨 (裝貨上車)",
+      step1Desc: <> — 從遠離把手的 <strong>前方</strong> 開始裝貨</>,
+      step2Head: "卸貨 (車仔落貨)",
+      step2Desc: <> — 從靠近把手的 <strong>後方</strong> 開始卸貨</>,
       cap: "① 後方 (把手) / ② 前方",
       warn: "堆放與卸貨的方向不同。請由前向後堆放，由後向前卸下。"
     }
@@ -475,7 +475,7 @@ function Rule04({ lang, t }) {
       k3: "Powders solo · Never mix perilla/peppers with chilled/frozen"
     },
     'zh-HK': {
-      callout1: <>揀貨完成後，於 <strong>包裝區</strong> 進行裝箱打包。</>,
+      callout1: <>執貨完成後，於 <strong>包裝區</strong> 進行裝箱打包。</>,
       callout2: <>注意：僅能包裝 <strong>Checked by</strong> 欄位填有英文縮寫的清單（代表已完成雙重核對）。</>,
       sec1Title: "雙重核對確認 (包裝前必做)",
       sec1Sub: <><strong>Picked by</strong> 旁的 <strong>Checked by</strong> 若有縮寫 → 經複核清單 → 方可包裝</>,
@@ -716,7 +716,7 @@ function Rule06({ lang, t }) {
     'zh-HK': {
       callout: "裝箱打包後，請張貼相應的標籤。",
       c1Title: "注意 (FRAGILE / 易碎)",
-      c1Desc: <>醃黃蘿蔔、美乃滋、去殼鵪鶉蛋、番茄醬等易破裂產品，請先以塑膠袋包覆後張貼 <strong>注意 (FRAGILE)</strong> 標籤。</>,
+      c1Desc: <>醃黃蘿蔔、蛋黃醬、去殼鵪鶉蛋、番茄醬等易破裂產品，請先以塑膠袋包覆後張貼 <strong>注意 (FRAGILE)</strong> 標籤。</>,
       c2Title: "HEAVY (重物)",
       c2Desc: <>裝箱後紙箱若偏重，請張貼 <strong>HEAVY</strong> 標籤（約 <strong>超過 10kg</strong>）。</>,
       keyHead: "核心重點",

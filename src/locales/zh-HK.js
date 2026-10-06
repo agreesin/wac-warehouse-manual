@@ -6,7 +6,7 @@ export default {
     hubLead: "請選擇 W MART 或 W Express 的實務指南以立即開始工作。",
     unit1Tag: "Warehouse",
     unit1Title: "W MART 手冊",
-    unit1Desc: "倉庫揀貨·包裝 · ECOUNT",
+    unit1Desc: "倉庫執貨·包裝 · ECOUNT",
     unit1Cta: "開啟手冊",
     unit2Tag: "Fulfillment",
     unit2Title: "W Express 手冊",
@@ -15,9 +15,9 @@ export default {
     wmartBack: "← WAC 實習生手冊",
     wmartKicker: "W MART",
     wmartTitle: "實習生 W MART 手冊",
-    wmartLead: "倉庫揀貨·包裝與 ECOUNT 輸入已分開整理。請選擇所需的手冊查看。",
+    wmartLead: "倉庫執貨·包裝與 ECOUNT 輸入已分開整理。請選擇所需的手冊查看。",
     wmartCardWhTitle: "倉庫手冊",
-    wmartCardWhDesc: "揀貨 · 包裝 · 平面圖 · 標籤",
+    wmartCardWhDesc: "執貨 · 包裝 · 平面圖 · 標籤",
     wmartCardEcTitle: "ECOUNT 手冊",
     wmartCardEcDesc: "銷貨輸入 · 發票 · 執貨單",
     openCta: "開啟 →",
@@ -31,7 +31,7 @@ export default {
     warn: "注意",
     key: "核心重點",
     warehouseManualTitle: "倉庫手冊",
-    warehouseManualSub: "揀貨·包裝守則與總部倉庫平面圖",
+    warehouseManualSub: "執貨·包裝守則與總部倉庫平面圖",
     sidebarWhFoot: "以總部倉庫為準 · 不含 F(冷凍) 區\n與 ECOUNT 手冊分開",
     ecountManualTitle: "ECOUNT 手冊",
     ecountManualSub: "銷貨輸入 · 發票 · 執貨單",
@@ -44,12 +44,12 @@ export default {
       map: "倉庫平面圖"
     },
     navItems: [
-      { id: "rules", title: "倉庫作業守則", desc: "分類 · 揀貨 · 包裝 · 標籤" },
+      { id: "rules", title: "倉庫作業守則", desc: "分類 · 執貨 · 包裝 · 標籤" },
       { id: "map", title: "倉庫平面圖", desc: "整體平面圖 · 貨架照片" }
     ],
     pages: [
-      { id: "rules-0", chapter: "rules", rulePage: 0, title: "倉庫作業守則", sub: "01. 執貨單分類與揀貨順序" },
-      { id: "rules-1", chapter: "rules", rulePage: 1, title: "倉庫作業守則", sub: "02. 依執貨單揀貨與包裝" },
+      { id: "rules-0", chapter: "rules", rulePage: 0, title: "倉庫作業守則", sub: "01. 執貨單分類與執貨順序" },
+      { id: "rules-1", chapter: "rules", rulePage: 1, title: "倉庫作業守則", sub: "02. 依執貨單執貨與包裝" },
       { id: "rules-2", chapter: "rules", rulePage: 2, title: "倉庫作業守則", sub: "03. 藍色手推車裝載與卸載" },
       { id: "rules-3", chapter: "rules", rulePage: 3, title: "倉庫作業守則", sub: "04. 裝箱打包守則" },
       { id: "rules-4", chapter: "rules", rulePage: 4, title: "倉庫作業守則", sub: "05. 按重量挑選紙箱" },
@@ -65,7 +65,7 @@ export default {
       sec2Sub: "由上至下 · **1/3**(上層) → **1/2**(中層) → **1/1**(底層·棧板)",
       rackAlt: "貨架實體照片 - 上層 1/3, 中層 1/2, 底層 1/1",
       tier1: "**1/3** 上層 — 小箱子 · 輕型貨物",
-      tier2: "**1/2** 中層 — 中型尺寸 · 開放式揀貨",
+      tier2: "**1/2** 中層 — 中型尺寸 · 開放式執貨",
       tier3: "**1/1** 底層 — 地面棧板 · 大型/重型貨物",
       tip: "根據執貨單上的位置代碼（如：A 5/6），依平面圖的區域、貨架及層數找尋即可。"
     }
@@ -97,7 +97,7 @@ export default {
           body: [
             "在客戶欄位中僅需搜尋店名的 **部分關鍵字**。",
             "例如：旺角 Outdark → 僅需輸入「**Outdark**」。",
-            "若出現旺角、尖沙咀等多家分店，請選擇符合 **下單分店** 的資料行。"
+            "若出現旺角、尖沙咀等多家分店，請選擇符合 **下單分店** 的資料行。",
           ],
           tip: "無需輸入完整全稱，輸入核心關鍵字即可。",
           img: "/ecount/02-customer-search.png?v=2",
@@ -119,11 +119,11 @@ export default {
           title: "出庫倉庫 — 總部倉庫",
           body: [
             "出庫倉庫請設為 **總部倉庫(본사창고)**。",
-            "我們進行揀貨的地方即為總部倉庫。",
+            "我們進行執貨的地方即為總部倉庫。",
             "倉庫手冊中的平面圖(A/B/R)亦是指 **此總部倉庫**。"
           ],
-          warn: "「快閃(팝업)」為辦公室桌面庫存，請勿用於揀貨。",
-          tip: "於 Club / 總部倉庫 / 快閃 中 → 揀貨一律選總部倉庫",
+          warn: "「快閃(팝업)」為辦公室桌面庫存，請勿用於執貨。",
+          tip: "於 Club / 總部倉庫 / 快閃 中 → 執貨一律選總部倉庫",
           img: "/ecount/04-warehouse-search.png?v=2",
           imgCap: "倉庫搜尋 — 選擇總部倉庫"
         },
@@ -136,7 +136,7 @@ export default {
           ],
           example: [
             { label: "備註(配送)", text: "司機及其他人可見 · 例：請於下午兩點前送達" },
-            { label: "備註(倉庫)", text: "僅倉庫揀貨人員可見 · 例：確認醃黃蘿蔔狀態後再揀貨" }
+            { label: "備註(倉庫)", text: "僅倉庫執貨人員可見 · 例：確認醃黃蘿蔔狀態後再執貨" }
           ],
           img: "/ecount/05-item-search.png?v=2",
           imgCap: "備註（配送·倉庫）輸入範例"
