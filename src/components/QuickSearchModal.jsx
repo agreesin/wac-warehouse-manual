@@ -15,6 +15,9 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       setQuery('');
       document.body.style.overflow = '';
     }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -127,8 +130,18 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
   }, [query, searchIndex]);
 
   const handleSelect = (item) => {
-    onNavigate(item.manual, item.page);
+    document.body.style.overflow = '';
     onClose();
+    onNavigate(item.manual, item.page);
+  };
+
+  const displayItems = query.trim() ? filtered : searchIndex;
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Enter' && displayItems.length > 0) {
+      e.preventDefault();
+      handleSelect(displayItems[0]);
+    }
   };
 
   const sampleKeywords = [
@@ -161,6 +174,7 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleInputKeyDown}
           />
           {query && (
             <button
@@ -203,6 +217,20 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
           </div>
         )}
 
+        {/* Section title when browsing all chapters */}
+        {!query && (
+          <div className="search-section-header">
+            <span>
+              {lang === 'en'
+                ? 'All Manual Chapters'
+                : lang === 'zh-HK'
+                ? '全部手冊章節'
+                : '전체 수칙 및 매뉴얼 목록'}
+            </span>
+            <span className="search-count-badge">{searchIndex.length}</span>
+          </div>
+        )}
+
         {/* Results List */}
         <div className="search-results">
           {query && filtered.length === 0 && (
@@ -217,7 +245,7 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
             </div>
           )}
 
-          {filtered.map((item) => (
+          {displayItems.map((item) => (
             <button
               key={item.id}
               type="button"

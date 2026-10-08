@@ -53,7 +53,9 @@ export function App() {
     const handleHashChange = () => {
       setRoute(parseHash());
       setMobileMenuOpen(false);
+      document.body.style.overflow = '';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'smooth' });
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -131,50 +133,40 @@ export function App() {
 
   const searchBtnLabel = lang === 'en' ? 'Search (Ctrl+K)' : lang === 'zh-HK' ? '搜尋 (Ctrl+K)' : '빠른 검색 (Ctrl+K)';
 
-  // 1. Hub
+  const handleNavigateFromSearch = (manual, page) => {
+    document.body.style.overflow = '';
+    setSearchOpen(false);
+
+    if (manual === 'warehouse') goToWarehouse(page);
+    else if (manual === 'ecount') goToEcount(page);
+
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'instant' });
+
+    setTimeout(() => {
+      document.body.style.overflow = '';
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'instant' });
+    }, 50);
+  };
+
+  let mainContent = null;
+
   if (route.manual === 'hub') {
-    return (
-      <>
-        <HubHome onOpenWmart={goToWMart} />
-        <QuickSearchModal
-          isOpen={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onNavigate={(manual, page) => {
-            if (manual === 'warehouse') goToWarehouse(page);
-            else if (manual === 'ecount') goToEcount(page);
-          }}
-        />
-      </>
+    mainContent = <HubHome onOpenWmart={goToWMart} />;
+  } else if (route.manual === 'wmart') {
+    mainContent = (
+      <HubWMart
+        onBack={goToHub}
+        onOpenWarehouse={() => goToWarehouse(0)}
+        onOpenEcount={() => goToEcount(0)}
+      />
     );
-  }
-
-  // 2. W MART Sub-hub
-  if (route.manual === 'wmart') {
-    return (
-      <>
-        <HubWMart
-          onBack={goToHub}
-          onOpenWarehouse={() => goToWarehouse(0)}
-          onOpenEcount={() => goToEcount(0)}
-        />
-        <QuickSearchModal
-          isOpen={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onNavigate={(manual, page) => {
-            if (manual === 'warehouse') goToWarehouse(page);
-            else if (manual === 'ecount') goToEcount(page);
-          }}
-        />
-      </>
-    );
-  }
-
-  // 3. ECOUNT Manual
-  if (route.manual === 'ecount') {
+  } else if (route.manual === 'ecount') {
     const safeIdx = Math.min(route.page, ecountPages.length - 1);
     const currentPage = ecountPages[safeIdx] ?? ecountPages[0];
 
-    return (
+    mainContent = (
       <div className="app-shell">
         <EcountSidebar
           pageIndex={safeIdx}
@@ -272,152 +264,137 @@ export function App() {
             </div>
           </article>
         </main>
+      </div>
+    );
+  } else {
+    // 4. Warehouse Manual (Default)
+    const safeIdx = Math.min(route.page, warehousePages.length - 1);
+    const currentPage = warehousePages[safeIdx] ?? warehousePages[0];
+    const chapter = currentPage.chapter;
 
-        <ImageModal
-          src={modalImage?.src}
-          alt={modalImage?.alt}
-          caption={modalImage?.caption}
-          onClose={() => setModalImage(null)}
+    mainContent = (
+      <div className="app-shell">
+        <WarehouseSidebar
+          chapter={chapter}
+          onSelect={selectWarehouseChapter}
+          onHome={goToWMart}
+          open={mobileMenuOpen}
         />
+        <main className="main">
+          <div className="mobile-bar">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label={t.common.tocTitle}
+            >
+              {mobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
+              {t.common.tocTitle}
+            </button>
+            <strong>{t.common.warehouseManualTitle}</strong>
+            <div className="mobile-actions">
+              <button
+                type="button"
+                className="header-search-btn"
+                onClick={() => setSearchOpen(true)}
+                aria-label="Search"
+                title={searchBtnLabel}
+              >
+                🔍
+              </button>
+              <LanguageSelector className="mobile-lang-selector" />
+            </div>
+          </div>
 
-        <QuickSearchModal
-          isOpen={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          onNavigate={(manual, page) => {
-            if (manual === 'warehouse') goToWarehouse(page);
-            else if (manual === 'ecount') goToEcount(page);
-          }}
-        />
+          {mobileMenuOpen && (
+            <button
+              type="button"
+              className="nav-backdrop"
+              aria-label={t.common.tocClose}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          )}
+
+          <article
+            className="page"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={(e) => handleTouchEnd(e, 'warehouse', safeIdx, warehousePages.length - 1)}
+          >
+            <div className="page-inner">
+              <header className="page-head">
+                <div className="page-head-top">
+                  <div>
+                    <h2>{t.warehouse.chapters[chapter]}</h2>
+                    <p>{currentPage.sub}</p>
+                  </div>
+                  <div className="desktop-actions">
+                    <button
+                      type="button"
+                      className="header-search-btn"
+                      onClick={() => setSearchOpen(true)}
+                      title={searchBtnLabel}
+                    >
+                      🔍 <span className="search-btn-text">{lang === 'en' ? 'Search' : lang === 'zh-HK' ? '搜尋' : '검색'}</span>
+                      <kbd className="search-kbd">Ctrl+K</kbd>
+                    </button>
+                    <LanguageSelector className="desktop-lang-selector" />
+                  </div>
+                </div>
+                <div className="page-meta mono">
+                  {String(safeIdx + 1).padStart(2, '0')} / {String(warehousePages.length).padStart(2, '0')}
+                </div>
+              </header>
+
+              {chapter === 'map' ? (
+                <WarehouseMap onOpenImage={handleOpenImage} />
+              ) : (
+                <WarehouseRuleViewer
+                  pageIndex={currentPage.rulePage ?? 0}
+                  onOpenImage={handleOpenImage}
+                />
+              )}
+
+              <nav className="pager" aria-label="페이지 이동">
+                <button
+                  type="button"
+                  disabled={safeIdx <= 0}
+                  onClick={() => goToWarehouse(safeIdx - 1)}
+                >
+                  <ArrowLeftIcon className="w-4 h-4" />
+                  {t.common.prevBtn}
+                </button>
+                <button type="button" onClick={goToWMart}>
+                  {t.common.homeBtn}
+                </button>
+                <button
+                  type="button"
+                  disabled={safeIdx >= warehousePages.length - 1}
+                  onClick={() => goToWarehouse(safeIdx + 1)}
+                >
+                  {t.common.nextBtn}
+                  <ArrowRightIcon className="w-4 h-4" />
+                </button>
+              </nav>
+            </div>
+          </article>
+        </main>
       </div>
     );
   }
 
-  // 4. Warehouse Manual (Default)
-  const safeIdx = Math.min(route.page, warehousePages.length - 1);
-  const currentPage = warehousePages[safeIdx] ?? warehousePages[0];
-  const chapter = currentPage.chapter;
-
   return (
-    <div className="app-shell">
-      <WarehouseSidebar
-        chapter={chapter}
-        onSelect={selectWarehouseChapter}
-        onHome={goToWMart}
-        open={mobileMenuOpen}
-      />
-      <main className="main">
-        <div className="mobile-bar">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((v) => !v)}
-            aria-label={t.common.tocTitle}
-          >
-            {mobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
-            {t.common.tocTitle}
-          </button>
-          <strong>{t.common.warehouseManualTitle}</strong>
-          <div className="mobile-actions">
-            <button
-              type="button"
-              className="header-search-btn"
-              onClick={() => setSearchOpen(true)}
-              aria-label="Search"
-              title={searchBtnLabel}
-            >
-              🔍
-            </button>
-            <LanguageSelector className="mobile-lang-selector" />
-          </div>
-        </div>
-
-        {mobileMenuOpen && (
-          <button
-            type="button"
-            className="nav-backdrop"
-            aria-label={t.common.tocClose}
-            onClick={() => setMobileMenuOpen(false)}
-          />
-        )}
-
-        <article
-          className="page"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={(e) => handleTouchEnd(e, 'warehouse', safeIdx, warehousePages.length - 1)}
-        >
-          <div className="page-inner">
-            <header className="page-head">
-              <div className="page-head-top">
-                <div>
-                  <h2>{t.warehouse.chapters[chapter]}</h2>
-                  <p>{currentPage.sub}</p>
-                </div>
-                <div className="desktop-actions">
-                  <button
-                    type="button"
-                    className="header-search-btn"
-                    onClick={() => setSearchOpen(true)}
-                    title={searchBtnLabel}
-                  >
-                    🔍 <span className="search-btn-text">{lang === 'en' ? 'Search' : lang === 'zh-HK' ? '搜尋' : '검색'}</span>
-                    <kbd className="search-kbd">Ctrl+K</kbd>
-                  </button>
-                  <LanguageSelector className="desktop-lang-selector" />
-                </div>
-              </div>
-              <div className="page-meta mono">
-                {String(safeIdx + 1).padStart(2, '0')} / {String(warehousePages.length).padStart(2, '0')}
-              </div>
-            </header>
-
-            {chapter === 'map' ? (
-              <WarehouseMap onOpenImage={handleOpenImage} />
-            ) : (
-              <WarehouseRuleViewer
-                pageIndex={currentPage.rulePage ?? 0}
-                onOpenImage={handleOpenImage}
-              />
-            )}
-
-            <nav className="pager" aria-label="페이지 이동">
-              <button
-                type="button"
-                disabled={safeIdx <= 0}
-                onClick={() => goToWarehouse(safeIdx - 1)}
-              >
-                <ArrowLeftIcon className="w-4 h-4" />
-                {t.common.prevBtn}
-              </button>
-              <button type="button" onClick={goToWMart}>
-                {t.common.homeBtn}
-              </button>
-              <button
-                type="button"
-                disabled={safeIdx >= warehousePages.length - 1}
-                onClick={() => goToWarehouse(safeIdx + 1)}
-              >
-                {t.common.nextBtn}
-                <ArrowRightIcon className="w-4 h-4" />
-              </button>
-            </nav>
-          </div>
-        </article>
-      </main>
-
+    <>
+      {mainContent}
       <ImageModal
         src={modalImage?.src}
         alt={modalImage?.alt}
         caption={modalImage?.caption}
         onClose={() => setModalImage(null)}
       />
-
       <QuickSearchModal
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
-        onNavigate={(manual, page) => {
-          if (manual === 'warehouse') goToWarehouse(page);
-          else if (manual === 'ecount') goToEcount(page);
-        }}
+        onNavigate={handleNavigateFromSearch}
       />
-    </div>
+    </>
   );
 }

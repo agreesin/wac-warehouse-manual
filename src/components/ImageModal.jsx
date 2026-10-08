@@ -3,6 +3,7 @@ import { XMarkIcon } from './Icons';
 
 export function ImageModal({ src, alt, caption, onClose }) {
   useEffect(() => {
+    if (!src) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
     };
@@ -12,7 +13,7 @@ export function ImageModal({ src, alt, caption, onClose }) {
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [onClose]);
+  }, [src, onClose]);
 
   if (!src) return null;
 
