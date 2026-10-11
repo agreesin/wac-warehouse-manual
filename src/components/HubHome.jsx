@@ -16,7 +16,7 @@ const heroVariants = {
   })
 };
 
-export function HubHome({ onOpenWmart }) {
+export function HubHome({ onOpenWmart, onOpenExpress }) {
   const { t } = useLanguage();
 
   return (
@@ -71,12 +71,7 @@ export function HubHome({ onOpenWmart }) {
             </button>
 
             {/* Unit 2: W Express */}
-            <a
-              className="hub-unit"
-              href={t.common.slidesUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <button type="button" className="hub-unit" onClick={onOpenExpress}>
               <span className="hub-unit-meta">
                 <span className="hub-unit-no">02</span>
                 <span className="hub-unit-tag">{t.common.unit2Tag}</span>
@@ -92,9 +87,9 @@ export function HubHome({ onOpenWmart }) {
               <em className="hub-unit-desc">{t.common.unit2Desc}</em>
               <span className="hub-unit-cta">
                 {t.common.unit2Cta}
-                <span aria-hidden="true">↗</span>
+                <span aria-hidden="true">→</span>
               </span>
-            </a>
+            </button>
           </motion.div>
         </section>
       </div>

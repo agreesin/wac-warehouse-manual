@@ -4,9 +4,11 @@ import { HubHome } from './components/HubHome';
 import { HubWMart } from './components/HubWMart';
 import { WarehouseSidebar } from './components/WarehouseSidebar';
 import { EcountSidebar } from './components/EcountSidebar';
+import { ExpressSidebar } from './components/ExpressSidebar';
 import { WarehouseRuleViewer } from './components/WarehouseRuleViewer';
 import { WarehouseMap } from './components/WarehouseMap';
 import { EcountViewer } from './components/EcountViewer';
+import { ExpressViewer } from './components/ExpressViewer';
 import { LanguageSelector } from './components/LanguageSelector';
 import { ImageModal } from './components/ImageModal';
 import { QuickSearchModal } from './components/QuickSearchModal';
@@ -23,6 +25,10 @@ function parseHash() {
   if (hash.startsWith('ecount')) {
     const page = Number(hash.split('/')[1] ?? 0);
     return { manual: 'ecount', page: Number.isFinite(page) ? Math.max(0, page) : 0 };
+  }
+  if (hash.startsWith('express')) {
+    const page = Number(hash.split('/')[1] ?? 0);
+    return { manual: 'express', page: Number.isFinite(page) ? Math.max(0, page) : 0 };
   }
   return { manual: 'hub', page: 0 };
 }
@@ -78,6 +84,7 @@ export function App() {
 
   const warehousePages = t.warehouse.pages;
   const ecountPages = t.ecount;
+  const expressPages = t.express?.pages || [];
 
   const goToHub = () => navigate('hub');
   const goToWMart = () => navigate('wmart');
@@ -88,6 +95,10 @@ export function App() {
   const goToEcount = (p = 0) => {
     const safeP = Math.max(0, Math.min(ecountPages.length - 1, p));
     navigate('ecount', safeP);
+  };
+  const goToExpress = (p = 0) => {
+    const safeP = Math.max(0, Math.min(expressPages.length - 1, p));
+    navigate('express', safeP);
   };
 
   const selectWarehouseChapter = (chapterId) => {
@@ -122,10 +133,12 @@ export function App() {
           // Swiped left -> Next page
           if (currentManual === 'warehouse') goToWarehouse(currentIdx + 1);
           else if (currentManual === 'ecount') goToEcount(currentIdx + 1);
+          else if (currentManual === 'express') goToExpress(currentIdx + 1);
         } else if (deltaX > 0 && currentIdx > 0) {
           // Swiped right -> Previous page
           if (currentManual === 'warehouse') goToWarehouse(currentIdx - 1);
           else if (currentManual === 'ecount') goToEcount(currentIdx - 1);
+          else if (currentManual === 'express') goToExpress(currentIdx - 1);
         }
       }
     }
@@ -139,6 +152,7 @@ export function App() {
 
     if (manual === 'warehouse') goToWarehouse(page);
     else if (manual === 'ecount') goToEcount(page);
+    else if (manual === 'express') goToExpress(page);
 
     window.scrollTo({ top: 0, behavior: 'instant' });
     document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'instant' });
@@ -153,7 +167,7 @@ export function App() {
   let mainContent = null;
 
   if (route.manual === 'hub') {
-    mainContent = <HubHome onOpenWmart={goToWMart} />;
+    mainContent = <HubHome onOpenWmart={goToWMart} onOpenExpress={() => goToExpress(0)} />;
   } else if (route.manual === 'wmart') {
     mainContent = (
       <HubWMart
@@ -256,6 +270,110 @@ export function App() {
                   type="button"
                   disabled={safeIdx >= ecountPages.length - 1}
                   onClick={() => goToEcount(safeIdx + 1)}
+                >
+                  {t.common.nextBtn}
+                  <ArrowRightIcon className="w-4 h-4" />
+                </button>
+              </nav>
+            </div>
+          </article>
+        </main>
+      </div>
+    );
+  } else if (route.manual === 'express') {
+    const safeIdx = Math.min(route.page, expressPages.length - 1);
+    const currentPage = expressPages[safeIdx] ?? expressPages[0];
+
+    mainContent = (
+      <div className="app-shell">
+        <ExpressSidebar
+          pageIndex={safeIdx}
+          onSelectPage={goToExpress}
+          onHome={goToHub}
+          open={mobileMenuOpen}
+        />
+        <main className="main">
+          <div className="mobile-bar">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label={t.common.tocTitle}
+            >
+              {mobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
+              {t.common.tocTitle}
+            </button>
+            <strong>{t.common.expressManualTitle || 'W Express 메뉴얼'}</strong>
+            <div className="mobile-actions">
+              <button
+                type="button"
+                className="header-search-btn"
+                onClick={() => setSearchOpen(true)}
+                aria-label="Search"
+                title={searchBtnLabel}
+              >
+                🔍
+              </button>
+              <LanguageSelector className="mobile-lang-selector" />
+            </div>
+          </div>
+
+          {mobileMenuOpen && (
+            <button
+              type="button"
+              className="nav-backdrop"
+              aria-label={t.common.tocClose}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          )}
+
+          <article
+            className="page"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={(e) => handleTouchEnd(e, 'express', safeIdx, expressPages.length - 1)}
+          >
+            <div className="page-inner">
+              <header className="page-head">
+                <div className="page-head-top">
+                  <div>
+                    <h2>{currentPage?.title}</h2>
+                    <p>{currentPage?.sub}</p>
+                  </div>
+                  <div className="desktop-actions">
+                    <button
+                      type="button"
+                      className="header-search-btn"
+                      onClick={() => setSearchOpen(true)}
+                      title={searchBtnLabel}
+                    >
+                      🔍 <span className="search-btn-text">{lang === 'en' ? 'Search' : lang === 'zh-HK' ? '搜尋' : '검색'}</span>
+                      <kbd className="search-kbd">Ctrl+K</kbd>
+                    </button>
+                    <LanguageSelector className="desktop-lang-selector" />
+                  </div>
+                </div>
+                <div className="page-meta mono">
+                  {String(safeIdx + 1).padStart(2, '0')} / {String(expressPages.length).padStart(2, '0')}
+                </div>
+              </header>
+
+              <ExpressViewer pageIndex={safeIdx} onOpenImage={handleOpenImage} />
+
+              <nav className="pager" aria-label="페이지 이동">
+                <button
+                  type="button"
+                  disabled={safeIdx <= 0}
+                  onClick={() => goToExpress(safeIdx - 1)}
+                >
+                  <ArrowLeftIcon className="w-4 h-4" />
+                  {t.common.prevBtn}
+                </button>
+                <button type="button" onClick={goToHub}>
+                  {t.common.homeBtn}
+                </button>
+                <button
+                  type="button"
+                  disabled={safeIdx >= expressPages.length - 1}
+                  onClick={() => goToExpress(safeIdx + 1)}
                 >
                   {t.common.nextBtn}
                   <ArrowRightIcon className="w-4 h-4" />

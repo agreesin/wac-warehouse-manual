@@ -115,6 +115,42 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       title: lang === 'en' ? 'Print Invoice & Packing List' : lang === 'zh-HK' ? '發票與執貨單列印' : '인보이스 · 패킹리스트 출력',
       desc: lang === 'en' ? 'Sales Inquiry → Check Date-No. box (page by page) → Bottom Print → Transaction Statement (Invoice) → Template switch to Packing_new.' : lang === 'zh-HK' ? '銷貨查詢 → 勾選日期-No. (逐頁全選) → 底部列印 → 交易明細表 (發票) → 格式切換為 Packing_new (執貨單)。' : '재고 I → 판매조회. 일자-No 옆 체크박스로 현재페이지 전체선택 → 하단 인쇄 → 거래명세서(인보이스) → 양식 packing_new 선택(패킹리스트).',
       keywords: '판매조회 sales inquiry 銷貨查詢 인쇄 print 列印 전체선택 select all 인보이스 invoice 發票 거래명세서 transaction statement 패킹리스트 執貨單 packing list packing_new 양식 template 格式'
+    },
+    {
+      id: 'express-0',
+      manual: 'express',
+      page: 0,
+      badge: lang === 'en' ? 'Express 01' : lang === 'zh-HK' ? '特快 01' : '익스프레스 01',
+      title: lang === 'en' ? '01. Pallet Inbound & Number Sorting (0–9)' : lang === 'zh-HK' ? '01. 卡板到貨及依編號初次分類 (0~9)' : '01. 파레트 입고 · 번호별 분류 (0~9)',
+      desc: lang === 'en' ? 'Dawn pallet inbound (~3 pallets). 07:00 shift start. Sort into zones by tracking first digit (0 to 9).' : lang === 'zh-HK' ? '清晨卡板到貨 (約 3 塊)。07:00 上班即刻整理，按編號首位數字 (0 至 9) 分區排列。' : '새벽 파레트(약 3개) 입고. 07:00 출근 즉시 하차 및 번호 앞자리수(0~9) 구역별 1차 분류.',
+      keywords: '익스프레스 express 特快 파레트 pallet 卡板 새벽 dawn 07:00 출근 항공배송 air freight 번호 앞자리 0 1 2 3 4 5 6 7 8 9 분류 sorting 자키'
+    },
+    {
+      id: 'express-1',
+      manual: 'express',
+      page: 1,
+      badge: lang === 'en' ? 'Express 02' : lang === 'zh-HK' ? '特快 02' : '익스프레스 02',
+      title: lang === 'en' ? '02. Labeling & Cross-Check Verification' : lang === 'zh-HK' ? '02. 貼標籤作業及雙重核對' : '02. 라벨링 작업 · 화물 ID 이중 대조',
+      desc: lang === 'en' ? 'Double-check 4-digit number match & Cargo Tracking ID match before affixing labels.' : lang === 'zh-HK' ? '嚴格核對四位數編號及貨物 ID (Cargo ID)，兩者相符後方可貼上標籤。' : '번호 4자리수 일치 & 화물 ID(Cargo Tracking ID) 일치 2가지 동시 대조 후 라벨 부착.',
+      keywords: '라벨링 labeling 貼標籤 네자리수 4자리 4-digit 화물 id cargo id 검수 대조 cross check double check 오부착 방지'
+    },
+    {
+      id: 'express-2',
+      manual: 'express',
+      page: 2,
+      badge: lang === 'en' ? 'Express 03' : lang === 'zh-HK' ? '特快 03' : '익스프레스 03',
+      title: lang === 'en' ? '03. Same-Day Consolidation Packaging' : lang === 'zh-HK' ? '03. 當日送貨合箱打包作業' : '03. 당일 배송 건 합포장',
+      desc: lang === 'en' ? 'Filter same-day delivery shipments. Safely bundle and tape multiple boxes for identical recipients.' : lang === 'zh-HK' ? '篩選當日派送貨件。同一收件地址多個紙箱進行安全合箱綑紮與加固打包。' : '당일 출고 건 선별. 동일 수령지/고객 2개 이상 상자 안전 합배송(번들링/테이핑) 실시.',
+      keywords: '합포장 합배송 bundling consolidation 合箱 当日 배송 출고 선별 테이핑 묶음 포장 당일배송'
+    },
+    {
+      id: 'express-3',
+      manual: 'express',
+      page: 3,
+      badge: lang === 'en' ? 'Express 04' : lang === 'zh-HK' ? '特快 04' : '익스프레스 04',
+      title: lang === 'en' ? '04. Remaining Boxes Rack Storage & Sorting' : lang === 'zh-HK' ? '04. 剩餘紙箱貨架整理與存放' : '04. 잔여 상자 창고 랙(Rack) 정리',
+      desc: lang === 'en' ? 'Store remaining non-dispatched boxes onto designated warehouse racks by number ranges.' : lang === 'zh-HK' ? '當日送貨出庫後，剩餘未出庫紙箱按指定貨架編號區域整齊碼放存放。' : '배송 후 남은 상자들 창고 랙(선반) 번호대별 안전 적재 및 보관 정리.',
+      keywords: '랙 rack 貨架 잔여 상자 남은 상자 재고 보관 선반 적재 정리 정돈 번호대'
     }
   ], [lang]);
 
@@ -147,11 +183,12 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
   const sampleKeywords = [
     { label: '깻잎 (Perilla)', term: '깻잎' },
     { label: '10kg (HEAVY)', term: '10kg' },
+    { label: lang === 'zh-HK' ? '卡板 (파레트)' : '파레트 (Pallet)', term: lang === 'zh-HK' ? '卡板' : '파레트' },
+    { label: lang === 'zh-HK' ? '合箱 (합포장)' : '합포장', term: lang === 'zh-HK' ? '合箱' : '합포장' },
     { label: lang === 'zh-HK' ? '蛋黃醬' : '마요네즈', term: lang === 'zh-HK' ? '蛋黃醬' : '마요네즈' },
     { label: lang === 'zh-HK' ? '執貨單' : 'packing_new', term: lang === 'zh-HK' ? '執貨單' : 'packing_new' },
     { label: 'Kowloon (구룡)', term: 'Kowloon' },
-    { label: lang === 'zh-HK' ? '車仔 (카트)' : '손수레', term: lang === 'zh-HK' ? '車仔' : '손수레' },
-    { label: lang === 'zh-HK' ? '總部倉庫' : '본사창고', term: lang === 'zh-HK' ? '總部倉庫' : '본사창고' }
+    { label: lang === 'zh-HK' ? '車仔 (카트)' : '손수레', term: lang === 'zh-HK' ? '車仔' : '손수레' }
   ];
 
   if (!isOpen) return null;

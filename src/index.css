@@ -475,3 +475,187 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* 6. W Express Manual Styles */
+.sidebar-express {
+  background: #171b26;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.sidebar-express .brand-kicker {
+  color: #60a5fa;
+}
+.sidebar-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toc-slides-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  background: rgba(96, 165, 250, 0.08);
+  color: #93c5fd;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.toc-slides-btn:hover {
+  background: rgba(96, 165, 250, 0.18);
+  color: #ffffff;
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+/* Express Meta & Badges */
+.express-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.express-time-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+.express-step-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-family: monospace;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* Express Step Flow Grid */
+.express-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+  margin-bottom: 24px;
+}
+.express-flow-card {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.express-flow-card:hover {
+  transform: translateY(-2px);
+  border-color: #93c5fd;
+}
+.express-flow-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.express-flow-step {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.express-flow-head {
+  font-size: 0.98rem;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.express-flow-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+/* 7. Draft Placeholder Frame (for future photos & diagrams) */
+.placeholder-frame {
+  width: 100%;
+  border: 2px dashed #cbd5e1;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  margin: 14px 0 20px;
+  transition: all 0.2s ease;
+}
+.placeholder-frame:hover {
+  border-color: #3b82f6;
+  background: #f0f7ff;
+}
+.placeholder-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.placeholder-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: #64748b;
+}
+.placeholder-frame:hover .placeholder-icon-wrap {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.placeholder-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  background: #e2e8f0;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+  letter-spacing: 0.03em;
+}
+.placeholder-title {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.02em;
+}
+.placeholder-desc {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+.placeholder-hint {
+  font-size: 0.78rem;
+  color: #2563eb;
+  font-weight: 600;
+  background: rgba(37, 99, 235, 0.08);
+  padding: 4px 10px;
+  border-radius: 6px;
+}

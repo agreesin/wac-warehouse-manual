@@ -10,8 +10,8 @@ export default {
     unit1Cta: "Open Manual",
     unit2Tag: "Fulfillment",
     unit2Title: "W Express Manual",
-    unit2Desc: "Inspection · Storage · Outbound · Returns · Inventory",
-    unit2Cta: "Open Google Slides",
+    unit2Desc: "Dawn Pallet Inbound · Labeling · Bundling · Rack Storage",
+    unit2Cta: "Open Manual",
     wmartBack: "← WAC Intern Manual",
     wmartKicker: "W MART",
     wmartTitle: "Intern W MART Manual",
@@ -21,7 +21,7 @@ export default {
     wmartCardEcTitle: "ECOUNT Manual",
     wmartCardEcDesc: "Sales Entry · Invoice · Packing List",
     openCta: "Open →",
-    homeBtn: "W MART Home",
+    homeBtn: "WAC Home",
     prevBtn: "Previous",
     nextBtn: "Next",
     tocTitle: "Table of Contents",
@@ -36,6 +36,9 @@ export default {
     ecountManualTitle: "ECOUNT Manual",
     ecountManualSub: "Sales Entry · Invoice · Packing List",
     ecountSidebarFoot: "Separate from Warehouse Manual\nScreenshot-based · Follow step by step",
+    expressManualTitle: "W Express Manual",
+    expressManualSub: "Air Express Inbound/Outbound, Inspection & Packing Rules",
+    visualGuideTitle: "Visual Guide & On-site Photos",
     slidesUrl: "https://docs.google.com/presentation/d/1mSytr6-bSl01gl0j8bExCryC9Bd-9cIj/edit?usp=sharing&ouid=106832286164196570873&rtpof=true&sd=true"
   },
   warehouse: {
@@ -231,5 +234,168 @@ export default {
         "Invoice (Wmart Default) / Packing List (Packing_new)"
       ]
     }
-  ]
+  ],
+  express: {
+    title: "W Express Manual",
+    sub: "Air Express Inbound/Outbound, Inspection & Packing Rules",
+    sidebarFoot: "Dawn Air Express Standard · 07:00 Shift\nInbound → Labeling → Bundling → Rack Storage",
+    pages: [
+      {
+        id: "express-0",
+        stepNo: "01",
+        timeBadge: "07:00 Shift Start",
+        title: "Pallet Inbound & Number Sorting (0–9)",
+        sub: "Dawn pallet unloading & sorting into floor zones by tracking prefix (0–9)",
+        calloutHead: "Core Inbound & Sorting Rules",
+        calloutLead: "Shipments arrive via air freight the previous night, and usually around 3 pallets arrive outside the warehouse by dawn. Upon arriving at 07:00, unload the pallets immediately and sort boxes into floor zones based on the first digit (0 to 9) of their numbers.",
+        flowTitle: "Step-by-step Workflow",
+        flow: [
+          {
+            step: "Step 1",
+            head: "Dawn Pallet Arrival Check (~3 Pallets)",
+            desc: "Inspect the quantity of air express pallets (typically 3) outside the warehouse and check plastic wrap integrity."
+          },
+          {
+            step: "Step 2",
+            head: "07:00 Shift Start: Unload & Move Indoors",
+            desc: "Use a manual pallet jack to safely move pallets into the designated indoor sorting work area."
+          },
+          {
+            step: "Step 3",
+            head: "Sort by First Digit (0–9)",
+            desc: "Check the first digit (0 through 9) on the box labels/tracking numbers and arrange boxes into designated floor zones."
+          }
+        ],
+        checklistTitle: "Inbound Sorting Checklist",
+        checklists: [
+          "Carefully cut and remove plastic wrap from the top down to prevent falling boxes",
+          "Immediately segregate any visibly damaged, burst, or wet parcels and report to supervisor",
+          "Maintain aisle clearance between zones 0–9 to allow smooth traffic for the next labeling step"
+        ],
+        placeholder: {
+          badge: "Photo & Floor Plan In Progress",
+          title: "Pallet Inbound Status & Zone (0–9) Layout Example",
+          desc: "Actual photos of warehouse pallet arrival and 0–9 floor zone allocations will be updated here.",
+          hint: "Planned: Entrance pallet arrival shot & floor zone sorted boxes shot"
+        }
+      },
+      {
+        id: "express-1",
+        stepNo: "02",
+        timeBadge: "Inspection & Verification",
+        title: "Labeling & Cross-Check Verification",
+        sub: "Verify 4-digit number match & Cargo ID match simultaneously before affixing labels",
+        calloutHead: "Double-Check Verification Mandate",
+        calloutLead: "You MUST verify BOTH: ① 4-digit number match and ② Cargo Tracking ID match before affixing labels. Any discrepancy leads to mislabeling and misdelivery accidents.",
+        flowTitle: "Labeling Procedure",
+        flow: [
+          {
+            step: "Check 1",
+            head: "4-Digit Number Verification",
+            desc: "Confirm that the 4-digit number on the printed label sheet matches the 4-digit number printed on the box waybill."
+          },
+          {
+            step: "Check 2",
+            head: "Cargo ID Cross-Validation",
+            desc: "Verify that the Cargo Tracking ID in the system matches the physical box barcode/identifier to confirm identical cargo."
+          },
+          {
+            step: "Affix",
+            head: "Affix Label to Designated Spot",
+            desc: "Once both items match, apply the label flatly onto the designated top/side area without covering existing barcodes."
+          }
+        ],
+        checklistTitle: "Labeling Precautions",
+        checklists: [
+          "Carefully check all 4 digits including the last digit, as similar number sequences can easily cause confusion",
+          "If the Cargo ID does not match, immediately stop labeling and place in the holding area",
+          "Smooth the label down with your palm so it adheres firmly without wrinkles or peeling edges"
+        ],
+        placeholder: {
+          badge: "Photo & Label Example In Progress",
+          title: "4-Digit Number & Cargo ID Cross-Check Screen and Label Position",
+          desc: "Actual comparison photos of waybill labels and Cargo IDs, plus placement guides, will be updated here.",
+          hint: "Planned: Close-up of 4-digit waybill number & Cargo ID barcode cross-check shot"
+        }
+      },
+      {
+        id: "express-2",
+        stepNo: "03",
+        timeBadge: "Outbound Packing",
+        title: "Same-Day Outbound Consolidation Packaging",
+        sub: "Filter same-day delivery shipments & safely bundle multi-box orders",
+        calloutHead: "Same-Day Delivery Bundling Rules",
+        calloutLead: "Filter parcels scheduled for delivery today from the dispatch list, and perform consolidation (bundling and reinforced taping) for multiple boxes addressed to the same recipient.",
+        flowTitle: "Consolidation Packaging Workflow",
+        flow: [
+          {
+            step: "Filter",
+            head: "Select Same-Day Delivery Parcels",
+            desc: "From labeled cargo, isolate boxes scheduled for immediate outbound delivery today against the manifest."
+          },
+          {
+            step: "Match",
+            head: "Match Multi-Box Consolidations",
+            desc: "Gather multiple boxes bound for the same recipient/destination into a single consolidated set."
+          },
+          {
+            step: "Bundle",
+            head: "Banding, Taping & Consolidated Labeling",
+            desc: "Firmly strap and tape boxes together so they cannot separate during transit, and mark consolidation labels."
+          }
+        ],
+        checklistTitle: "Consolidation Checklist",
+        checklists: [
+          "Double-check outbound box counts (e.g. 1/2, 2/2) to ensure no companion box is left behind",
+          "Always place heavier boxes at the bottom and lighter boxes on top when bundling",
+          "Line up finished bundles in the outbound staging area (dock/line) ready for driver pickup"
+        ],
+        placeholder: {
+          badge: "Packaging Guide Photo In Progress",
+          title: "Consolidation Taping Standards & Bundling Completion Example",
+          desc: "Actual photos of multi-box bundling taping techniques and staging alignment will be updated here.",
+          hint: "Planned: 2+ boxes strapped/taped bundling shot & consolidation label mark shot"
+        }
+      },
+      {
+        id: "express-3",
+        stepNo: "04",
+        timeBadge: "Warehouse Storage",
+        title: "Remaining Boxes Rack Storage & Sorting",
+        sub: "Store non-dispatched boxes onto designated warehouse racks by number ranges",
+        calloutHead: "Remaining Cargo Rack Storage Rules",
+        calloutLead: "After all same-day deliveries are dispatched, neatly stack remaining boxes onto designated warehouse rack tiers according to their number ranges for safe storage.",
+        flowTitle: "Rack Storage Workflow",
+        flow: [
+          {
+            step: "Tally",
+            head: "Tally Remaining Boxes by Number Range",
+            desc: "Group non-dispatched boxes by number range (e.g. 0000s, 1000s, etc.) for organized rack placement."
+          },
+          {
+            step: "Store",
+            head: "Safe Stacking on Designated Racks",
+            desc: "Neatly stack boxes onto their allocated rack tiers with labels facing outwards toward the aisle for easy visibility."
+          },
+          {
+            step: "Clear",
+            head: "Clear Aisles & Final Inspection",
+            desc: "Clear work aisles of any debris and organize all items sequentially so they can be retrieved immediately tomorrow."
+          }
+        ],
+        checklistTitle: "Rack Storage Safety Rules",
+        checklists: [
+          "Follow ladder safety guidelines and keep heavy cargo on bottom tiers for stable center of gravity",
+          "Keep box labels (number and Cargo ID) aligned facing the aisle for immediate identification",
+          "Store strictly in sequential order to enable fast retrieval during tomorrow's dispatch"
+        ],
+        placeholder: {
+          badge: "Rack Map & Storage Photo In Progress",
+          title: "Warehouse Rack Zone Diagram & Box Stacking Example",
+          desc: "Actual layout diagrams of W Express racks and completed safe storage photos will be updated here.",
+          hint: "Planned: Front shot of numbered rack tiers & full panoramic view of stacked boxes"
+        }
+      }
+    ]
+  }
 };
