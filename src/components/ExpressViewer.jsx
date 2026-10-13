@@ -43,12 +43,64 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
         </div>
       </section>
 
-      {/* 4. Visual Evidence / Photo Slot (Placeholder) */}
+      {/* 4. Inbound Cargo Types Breakdown (마대, 콘솔 박스, 일반 박스) */}
+      {currentPage.cargoTypes && currentPage.cargoTypes.length > 0 && (
+        <section className="wh-section">
+          <h3 className="wh-section-title">{currentPage.cargoTypesTitle || '입고 화물 종류 구분'}</h3>
+          <div className="cargo-types-grid">
+            {currentPage.cargoTypes.map((c, idx) => (
+              <div key={idx} className="cargo-type-card">
+                <div className="cargo-type-header">
+                  <span className="cargo-type-tag">{c.tag}</span>
+                  <span className="cargo-type-badge">{c.badge}</span>
+                </div>
+                <strong className="cargo-type-head">{c.head}</strong>
+                <p className="cargo-type-desc">{c.desc}</p>
+                {c.tip && (
+                  <div className="cargo-type-tip">
+                    <span className="tip-icon">💡</span>
+                    <span>{c.tip}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 5. Visual Evidence & Real Operational Photos */}
       <section className="wh-section">
         <h3 className="wh-section-title">
           {t.common.visualGuideTitle || '시각 가이드 및 현장 사진'}
         </h3>
-        {currentPage.img ? (
+        {currentPage.photos && currentPage.photos.length > 0 ? (
+          <div className="express-photos-grid">
+            {currentPage.photos.map((photo, pIdx) => (
+              <div
+                key={pIdx}
+                className="express-photo-card"
+                onClick={() => onOpenImage?.(photo.src, photo.title, photo.desc)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpenImage?.(photo.src, photo.title, photo.desc);
+                  }
+                }}
+              >
+                <div className="express-photo-img-wrap">
+                  <img src={photo.src} alt={photo.title} loading="lazy" />
+                  <span className="express-photo-zoom-badge">🔍 크게 보기</span>
+                </div>
+                <div className="express-photo-info">
+                  <strong className="express-photo-title">{photo.title}</strong>
+                  <p className="express-photo-desc">{photo.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : currentPage.img ? (
           <div
             className="clickable-img-frame"
             onClick={() => onOpenImage?.(currentPage.img, currentPage.placeholder?.title, currentPage.imgCap)}
