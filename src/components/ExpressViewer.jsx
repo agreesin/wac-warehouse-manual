@@ -282,7 +282,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
               {/* Classification / Type Cards Grid (e.g. Label Marking Types) */}
               {step.cargoTypes && step.cargoTypes.length > 0 && (
-                <div className="cargo-types-grid">
+                <div className={`cargo-types-grid ${step.cargoTypes.length === 2 ? 'cols-2' : step.cargoTypes.length === 4 ? 'cols-4' : ''}`.trim()}>
                   {step.cargoTypes.map((c, idx) => (
                     <div key={idx} className="cargo-type-card">
                       <div className="cargo-type-header">
@@ -306,6 +306,17 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                         </div>
                       )}
                     </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Outro Paragraphs (Displayed after cargo cards) */}
+              {step.outroParagraphs && step.outroParagraphs.length > 0 && (
+                <div className="express-step-narrative" style={{ marginTop: '12px' }}>
+                  {step.outroParagraphs.map((para, pIdx) => (
+                    <p key={pIdx} className="express-step-p highlight-lead">
+                      {para}
+                    </p>
                   ))}
                 </div>
               )}
