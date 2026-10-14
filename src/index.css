@@ -1173,3 +1173,342 @@
   font-weight: 700;
   color: #991b1b;
 }
+
+/* ==========================================================================
+   Express Integrated Step Blocks (Chapter 1 with inline photos)
+   ========================================================================== */
+.express-steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.express-step-block {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.express-step-block:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.express-step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.express-step-num-badge {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+  flex-shrink: 0;
+}
+
+.express-step-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.express-step-desc {
+  font-size: 0.95rem;
+  color: #334155;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.express-step-bullets {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.92rem;
+  color: #475569;
+  line-height: 1.65;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Mini DO / DONT Grid */
+.express-dodont-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.express-dodont-card {
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.express-dodont-card.do {
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+}
+
+.express-dodont-card.dont {
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+}
+
+.dodont-pill {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.dodont-pill.do-pill {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.dodont-pill.dont-pill {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.dodont-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.express-dodont-card.do .dodont-text {
+  color: #166534;
+}
+
+.express-dodont-card.dont .dodont-text {
+  color: #991b1b;
+}
+
+/* Address Info Mini Card */
+.express-address-mini-card {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+.mini-tag {
+  background: #475569;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mini-address-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-address-row {
+  font-size: 0.88rem;
+  color: #334155;
+  padding: 2px 0;
+}
+
+.mini-address-row.highlight {
+  color: #0369a1;
+  font-weight: 700;
+  background: #e0f2fe;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #0284c7;
+}
+
+/* Rule Formula Mini Card */
+.express-rule-mini-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formula-line {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: #1d4ed8;
+}
+
+.example-line {
+  font-size: 0.88rem;
+  color: #1e40af;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* Neutral Exception Box (래핑테이프 상자 앞쪽) */
+.express-exception-neutral-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #64748b;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exception-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exception-badge {
+  background: #64748b;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.exception-title {
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-weight: 800;
+}
+
+.exception-desc {
+  font-size: 0.88rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.exception-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.exception-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+/* Inline Step Photos Strip */
+.step-photos-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.step-photo-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.step-photo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border-color: #2563eb;
+}
+
+.step-photo-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+.step-photo-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.step-photo-card:hover .step-photo-img-wrap img {
+  transform: scale(1.02);
+}
+
+.step-photo-zoom-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.step-photo-info {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-photo-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.35;
+}
+
+.step-photo-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.45;
+  margin: 0;
+}
+
