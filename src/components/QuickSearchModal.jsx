@@ -139,9 +139,9 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       manual: 'express',
       page: 2,
       badge: lang === 'en' ? 'Express 03' : lang === 'zh-HK' ? '特快 03' : '익스프레스 03',
-      title: lang === 'en' ? '03. Same-Day Dispatch Packing & Consolidation (Collective Delivery)' : lang === 'zh-HK' ? '03. 當日送貨出庫包裝與合箱 (集合派送)' : '03. 당일 배송 건 출고 패킹 및 합포장 (집합배송 파트)',
-      desc: lang === 'en' ? 'Packing today deliveries: single packages go as-is; only 2+ packages for the same recipient are consolidated with TK List & W CLUB taping.' : lang === 'zh-HK' ? '針對當日派送件出庫：單件包裹直接出庫，同一收件人2件以上方進行合箱打包(W CLUB膠帶綑紮與TK List核對)。' : '오늘 배송 나갈 건들에 대해 패킹 및 합포장 진행. 단품(1개 건)은 그대로 출고하며, 동일 수령인 2개 이상 건만 W CLUB 테이핑 묶음 합포장을 수행.',
-      keywords: '출고패킹 합포장 단품 단일화물 집합배송 당일배송 TK리스트 TK List 번들링 W CLUB 테이핑 묶음 포장 출고 선별 bundling consolidation 合箱'
+      title: lang === 'en' ? '03. Same-Day Dispatch Consolidation' : lang === 'zh-HK' ? '03. 當日送貨合箱與標記' : '03. 당일 배송건 합포장',
+      desc: lang === 'en' ? 'Verify cargo number against delivery list, 2-person consolidation & top box marking.' : lang === 'zh-HK' ? '核對送貨清單貨物編號，雙人協同合箱打包與箱頂標記。' : '배송 리스트 화물번호 일치여부 확인, 합포장 및 마킹. 현장 화물 취합(통로+랙) ➔ 2인 1조 대조 및 토스 ➔ 합포장 결속 ➔ 리스트 기록 및 박스 마킹.',
+      keywords: '합포장 당일배송 배송리스트 화물번호 CTN 대조 토스 2인1조 번들링 W CLUB 테이핑 덩어리 마킹 TK GB CWB 출고 대기 단품'
     },
     {
       id: 'express-3',
