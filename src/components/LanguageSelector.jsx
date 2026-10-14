@@ -5,13 +5,13 @@ export function LanguageSelector({ className = '' }) {
   const { lang, setLang } = useLanguage();
 
   const options = [
-    { code: 'ko', label: '한국어' },
-    { code: 'en', label: 'English' },
-    { code: 'zh-HK', label: '繁體中文' }
+    { code: 'ko', label: '한국어', short: 'KO' },
+    { code: 'en', label: 'English', short: 'EN' },
+    { code: 'zh-HK', label: '繁體中文', short: '中文' }
   ];
 
   return (
-    <div className={`lang-selector-group ${className}`}>
+    <div className={`lang-selector-group ${className}`.trim()}>
       {options.map((opt) => (
         <button
           key={opt.code}
@@ -20,7 +20,8 @@ export function LanguageSelector({ className = '' }) {
           onClick={() => setLang(opt.code)}
           aria-label={`Switch to ${opt.label}`}
         >
-          {opt.label}
+          <span className="lang-label-full">{opt.label}</span>
+          <span className="lang-label-short">{opt.short}</span>
         </button>
       ))}
     </div>

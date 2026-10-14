@@ -233,17 +233,18 @@ export function App() {
           <div className="mobile-bar">
             <button
               type="button"
+              className="mobile-toc-btn"
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label={t.common.tocTitle}
             >
               {mobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
-              {t.common.tocTitle}
+              <span>{t.common.tocTitle}</span>
             </button>
-            <strong>{t.common.ecountManualTitle}</strong>
+            <strong className="mobile-bar-title">{t.common.ecountManualTitle}</strong>
             <div className="mobile-actions">
               <button
                 type="button"
-                className="header-search-btn"
+                className="mobile-search-btn"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Search"
                 title={searchBtnLabel}
@@ -343,17 +344,18 @@ export function App() {
           <div className="mobile-bar">
             <button
               type="button"
+              className="mobile-toc-btn"
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label={t.common.tocTitle}
             >
               {mobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
-              {t.common.tocTitle}
+              <span>{t.common.tocTitle}</span>
             </button>
-            <strong>{t.common.expressManualTitle || 'W Express 메뉴얼'}</strong>
+            <strong className="mobile-bar-title">{t.common.expressManualTitle || 'W Express 메뉴얼'}</strong>
             <div className="mobile-actions">
               <button
                 type="button"
-                className="header-search-btn"
+                className="mobile-search-btn"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Search"
                 title={searchBtnLabel}
@@ -455,17 +457,18 @@ export function App() {
           <div className="mobile-bar">
             <button
               type="button"
+              className="mobile-toc-btn"
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label={t.common.tocTitle}
             >
               {mobileMenuOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
-              {t.common.tocTitle}
+              <span>{t.common.tocTitle}</span>
             </button>
-            <strong>{t.common.warehouseManualTitle}</strong>
+            <strong className="mobile-bar-title">{t.common.warehouseManualTitle}</strong>
             <div className="mobile-actions">
               <button
                 type="button"
-                className="header-search-btn"
+                className="mobile-search-btn"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Search"
                 title={searchBtnLabel}
