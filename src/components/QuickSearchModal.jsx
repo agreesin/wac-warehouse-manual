@@ -121,9 +121,9 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       manual: 'express',
       page: 0,
       badge: lang === 'en' ? 'Express 01' : lang === 'zh-HK' ? '特快 01' : '익스프레스 01',
-      title: lang === 'en' ? '01. Pallet Inbound & Number Sorting (0–9)' : lang === 'zh-HK' ? '01. 卡板到貨及依編號初次分類 (0~9)' : '01. 파레트 입고 · 번호별 분류 (0~9)',
-      desc: lang === 'en' ? 'Pallet inbound via pallet jack. 07:00 shift start. Sort midae/consol boxes to racks 0-9 by first digit.' : lang === 'zh-HK' ? '液壓車移入卡板。07:00 上班即刻整理，區分麻袋及集運箱，按首位數字移至 0~9 號貨架前。' : '07:00 출근 즉시 파레트 자키 반입 및 마대·콘솔 박스 구분, 번호 앞자리(0~9) 랙 앞 1차 분류.',
-      keywords: '익스프레스 express 特快 파레트 pallet 卡板 파레트자키 자키 jack 마대 포대 sack 콘솔박스 콘솔 consol 07:00 출근 항공배송 air freight 번호 앞자리 0 1 2 3 4 5 6 7 8 9 랙앞 랙 분류 sorting'
+      title: lang === 'en' ? '01. Pallet Inbound & Customer ID Rack Sorting (0–9)' : lang === 'zh-HK' ? '01. 卡板到貨及依客戶 ID 貨架分類 (0~9)' : '01. 파레트 입고 · 고객 ID 기준 0~9번 랙 분류',
+      desc: lang === 'en' ? 'Identify W01*-**** customer ID on packages. Sort to racks 0-9 by first digit of trailing 4 numbers. Move WB/HG/missing IDs to Chen.' : lang === 'zh-HK' ? '確認運單上的 W01*-**** 客戶 ID。按後四位數之首位移至 0~9 號貨架。WB/HG/未標註者移至 Chen (陳) 區域。' : '송장 W01*-**** 고객 ID 확인 후 뒤 4자리 첫 번째 숫자로 0~9번 랙 분류. WB/HG/미표기 예외 화물은 첸(Chen) 구역 집하.',
+      keywords: '익스프레스 express 고객ID W01 W010 0161 3949 5851 8276 첸 Chen 하늘길 210 4번게이트 쿠팡 우체국 올리브영 WB HG 0 1 2 3 4 5 6 7 8 9 랙분류 랙앞 파레트 파레트자키 마대 콘솔박스'
     },
     {
       id: 'express-1',

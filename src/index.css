@@ -816,3 +816,246 @@
   color: var(--muted);
   line-height: 1.5;
 }
+
+/* 10. Express Customer ID (W01*-****) & Rack Matching Section */
+.wh-section-lead {
+  margin: -4px 0 14px;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.express-id-rule-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.express-address-card {
+  border: 1px solid #bfdbfe;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.express-address-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.express-address-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1e40af;
+  background: #dbeafe;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: -0.01em;
+}
+.express-address-title {
+  font-size: 1.02rem;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.express-address-body {
+  display: grid;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.express-address-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.92rem;
+}
+.express-address-row.highlight-row {
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+}
+.express-address-lbl {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  min-width: 65px;
+}
+.express-address-val {
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.highlight-row .express-address-val {
+  color: #dc2626;
+  font-weight: 700;
+}
+.express-address-desc {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #334155;
+  line-height: 1.5;
+}
+.express-rack-card {
+  border: 1px solid #fed7aa;
+  background: #fffbf5;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.express-rack-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  color: #9a3412;
+}
+.express-rack-tag {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #c2410c;
+  background: #ffedd5;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.express-formula-banner {
+  background: #fff;
+  border: 2px solid #ea580c;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #c2410c;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.08);
+}
+.express-examples-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.express-ex-item {
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.express-ex-item:hover {
+  transform: translateY(-2px);
+  border-color: #f97316;
+}
+.express-ex-item.featured {
+  border: 2px solid #2563eb;
+  background: #f0f7ff;
+}
+.express-ex-code {
+  font-size: 1rem;
+  color: #334155;
+}
+.express-ex-code .prefix {
+  color: #64748b;
+}
+.express-ex-code .first-digit {
+  color: #dc2626;
+  font-size: 1.15rem;
+  font-weight: 800;
+  padding: 0 2px;
+}
+.express-ex-code .rest {
+  color: #334155;
+}
+.express-ex-arrow {
+  color: #f97316;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.express-ex-item.featured .express-ex-arrow {
+  color: #2563eb;
+}
+.express-ex-target {
+  font-size: 0.98rem;
+  color: #0f172a;
+}
+.express-ex-item.featured .express-ex-target {
+  color: #1e40af;
+}
+.express-ex-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+.express-exception-box {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.express-exception-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #991b1b;
+  font-size: 1rem;
+}
+.express-exception-badge {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #dc2626;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.express-exception-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7f1d1d;
+  line-height: 1.5;
+}
+.express-exception-cases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.express-case-chip {
+  background: #ffffff;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+}
+.express-case-chip .chip-badge {
+  font-weight: 800;
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.express-case-chip .chip-label {
+  color: #374151;
+}
+.express-exception-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #991b1b;
+}

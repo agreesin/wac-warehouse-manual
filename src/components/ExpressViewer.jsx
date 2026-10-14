@@ -27,6 +27,106 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
         <p className="rule-callout-next">{currentPage.calloutLead}</p>
       </section>
 
+      {/* 2-1. [CORE] Customer ID (W01*-****) & Rack Matching Section */}
+      {currentPage.idRuleSection && (
+        <section className="wh-section express-id-rule-section">
+          <h3 className="wh-section-title">{currentPage.idRuleSection.title}</h3>
+
+          {/* Address Guide Box */}
+          {currentPage.idRuleSection.addressGuide && (
+            <div className="express-address-card">
+              <div className="express-address-header">
+                <span className="express-address-badge">
+                  {currentPage.idRuleSection.addressGuide.badge || '주소 안내 규격'}
+                </span>
+                <strong className="express-address-title">
+                  {currentPage.idRuleSection.addressGuide.title}
+                </strong>
+              </div>
+              <div className="express-address-body">
+                <div className="express-address-row">
+                  <span className="express-address-lbl">
+                    {currentPage.idRuleSection.addressGuide.recipientLabel}
+                  </span>
+                  <span className="express-address-val mono">
+                    {currentPage.idRuleSection.addressGuide.recipientVal}
+                  </span>
+                </div>
+                <div className="express-address-row highlight-row">
+                  <span className="express-address-lbl">
+                    {currentPage.idRuleSection.addressGuide.addressLabel}
+                  </span>
+                  <span className="express-address-val mono">
+                    {currentPage.idRuleSection.addressGuide.addressVal}
+                  </span>
+                </div>
+              </div>
+              <p className="express-address-desc">
+                💡 {currentPage.idRuleSection.addressGuide.desc}
+              </p>
+            </div>
+          )}
+
+          {/* Rack Formula & Examples Grid */}
+          {currentPage.idRuleSection.rackRule && (
+            <div className="express-rack-card">
+              <div className="express-rack-header">
+                <span className="express-rack-tag">분류 공식</span>
+                <strong>{currentPage.idRuleSection.rackRule.title}</strong>
+              </div>
+              <div className="express-formula-banner mono">
+                {currentPage.idRuleSection.rackRule.formula}
+              </div>
+              <div className="express-examples-grid">
+                {currentPage.idRuleSection.rackRule.examples?.map((ex, i) => (
+                  <div key={i} className={`express-ex-item ${ex.firstDigit === '0' ? 'featured' : ''}`}>
+                    <div className="express-ex-code mono">
+                      <span className="prefix">W010-</span>
+                      <strong className="first-digit">[{ex.firstDigit}]</strong>
+                      <span className="rest">{ex.code.slice(6)}</span>
+                    </div>
+                    <div className="express-ex-arrow">➔</div>
+                    <div className="express-ex-target">
+                      <strong>{ex.target}</strong>
+                    </div>
+                    {ex.note && <p className="express-ex-note">{ex.note}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Exception Handling Box (첸 담당자 구역 모아두기) */}
+          {currentPage.idRuleSection.exceptionRule && (
+            <div className="express-exception-box">
+              <div className="express-exception-header">
+                <span className="express-exception-badge">
+                  {currentPage.idRuleSection.exceptionRule.badge}
+                </span>
+                <strong>{currentPage.idRuleSection.exceptionRule.title}</strong>
+              </div>
+              <p className="express-exception-desc">
+                {currentPage.idRuleSection.exceptionRule.desc}
+              </p>
+              <div className="express-exception-cases">
+                {currentPage.idRuleSection.exceptionRule.cases?.map((c, i) => (
+                  <div key={i} className="express-case-chip">
+                    <span className="chip-badge mono">{c.type}</span>
+                    <span className="chip-label">{c.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="express-exception-alert">
+                <span className="alert-icon">🚨</span>
+                <span className="alert-text">
+                  {currentPage.idRuleSection.exceptionRule.actionNotice}
+                </span>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* 3. Detailed Step Breakdown */}
       <section className="wh-section">
         <h3 className="wh-section-title">{currentPage.flowTitle || '작업 세부 절차'}</h3>
@@ -47,6 +147,9 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
       {currentPage.cargoTypes && currentPage.cargoTypes.length > 0 && (
         <section className="wh-section">
           <h3 className="wh-section-title">{currentPage.cargoTypesTitle || '입고 화물 종류 구분'}</h3>
+          {currentPage.cargoTypesLead && (
+            <p className="wh-section-lead">{currentPage.cargoTypesLead}</p>
+          )}
           <div className="cargo-types-grid">
             {currentPage.cargoTypes.map((c, idx) => (
               <div key={idx} className="cargo-type-card">
