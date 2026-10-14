@@ -256,7 +256,7 @@ export default {
             desc: "Pull pallets from outside into the warehouse using a pallet jack (electric or manual) and strip away the plastic stretch wrap.",
             paragraphs: [
               "Cargo arrives on pallets in three primary formats: individual loose boxes, consolidation boxes (consol boxes), and woven sacks (midae).",
-              "Lightly slit the tape or sack exterior with a utility knife and start sorting cargo directly into rack aisles as you unpack. (No need to spread all items across the floor beforehand; sort directly into racks as you take them out.)"
+              "Lightly slit the tape or sack exterior with a utility knife and start sorting cargo directly into rack aisles as you unpack."
             ],
             notice: {
               type: "warning",
