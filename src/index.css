@@ -1536,6 +1536,26 @@
   border-radius: 6px;
 }
 
+.exception-note {
+  font-size: 0.88rem;
+  color: #1e40af;
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.exception-photo-wrap {
+  margin-top: 8px;
+}
+
+.exception-photo-card {
+  max-width: 440px;
+}
+
+.exception-photo-card .placeholder-img-wrap,
+.exception-photo-card .step-photo-img-wrap {
+  aspect-ratio: 16 / 9;
+}
+
 /* Inline Step Photos Strip */
 .step-photos-strip {
   display: grid;

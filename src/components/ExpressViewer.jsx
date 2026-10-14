@@ -148,7 +148,7 @@ function AddressCard({ card }) {
 /**
  * Exception Handling Mini Card
  */
-function ExceptionCard({ card }) {
+function ExceptionCard({ card, onOpenImage, zoomLabel }) {
   if (!card) return null;
   return (
     <div className="express-exception-neutral-box">
@@ -167,6 +167,16 @@ function ExceptionCard({ card }) {
         </div>
       )}
       {card.note && <p className="exception-note">👉 {card.note}</p>}
+      {card.photo && (
+        <div className="exception-photo-wrap">
+          <PhotoCard
+            photo={card.photo}
+            className="exception-photo-card"
+            onOpenImage={onOpenImage}
+            zoomLabel={zoomLabel}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -263,7 +273,11 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
               {/* Exception Card */}
               {(step.exceptionCard || step.exceptionBox) && (
-                <ExceptionCard card={step.exceptionCard || step.exceptionBox} />
+                <ExceptionCard
+                  card={step.exceptionCard || step.exceptionBox}
+                  onOpenImage={onOpenImage}
+                  zoomLabel={zoomLabel}
+                />
               )}
 
               {/* Classification / Type Cards Grid (e.g. Label Marking Types) */}
