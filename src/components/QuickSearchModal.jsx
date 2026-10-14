@@ -120,33 +120,42 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       id: 'express-0',
       manual: 'express',
       page: 0,
+      badge: lang === 'en' ? 'Express 00' : lang === 'zh-HK' ? '特快 00' : '익스프레스 00',
+      title: lang === 'en' ? '00. W-EXPRESS Overview & Workflow' : lang === 'zh-HK' ? '00. W-EXPRESS 業務介紹及流程' : '00. W-EXPRESS 업무 소개',
+      desc: lang === 'en' ? 'Korea-to-Hong Kong air express overview and 2 core daily warehouse workflows: 1. Inbound cargo sorting, 2. Today delivery packing.' : lang === 'zh-HK' ? '韓國至香港航空特快業務介紹及每日兩大核心流程：1. 凌晨抵港貨物整理與上架，2. 當日派送件合箱包裝。' : '한국 → 홍콩 항공 특송 사업 개요 및 일일 2대 핵심 업무 흐름: 1. 새벽 도착 화물 정리, 2. 오늘 배송할 화물 포장.',
+      keywords: 'W-EXPRESS 익스프레스 express 특송 항공특송 인천 홍콩 자키 파레트 07시 출근 정리 포장 개요 소개 2대작업 챕터0'
+    },
+    {
+      id: 'express-1',
+      manual: 'express',
+      page: 1,
       badge: lang === 'en' ? 'Express 01' : lang === 'zh-HK' ? '特快 01' : '익스프레스 01',
       title: lang === 'en' ? '01. Pallet Inbound & Customer ID Rack Sorting (0–9)' : lang === 'zh-HK' ? '01. 卡板到貨及依客戶 ID 貨架分類 (0~9)' : '01. 파레트 입고 및 1차 분류',
       desc: lang === 'en' ? 'Pallet inbound & sorting. Move food boxes (blue tape, F-code) to center work table. Sort general boxes to racks 0-9 by customer ID W01*-****.' : lang === 'zh-HK' ? '卡板到貨與分類。食品箱(藍色膠帶、F開頭)移至中央工作台。一般貨物依客戶ID W01*-****移至0~9號貨架。' : '파레트 입고 및 분류. 파란색 테이프가 둘러진 식품 박스(일반 상자/스티로폼, F코드)는 중앙 작업대로 이동. 일반 화물은 송장 고객 ID(W01*-****) 확인 후 0~9번 랙 앞 배치.',
       keywords: '익스프레스 express 식품박스 파란테이프 파란색테이프 스티로폼 F코드 중앙작업대테이블 중앙작업대 고객ID W01 W010 0161 3949 5851 8276 래핑테이프 하늘길 210 4번게이트 WB HG 0 1 2 3 4 5 6 7 8 9 랙분류 랙앞 파레트 파레트자키 마대 콘솔박스'
     },
     {
-      id: 'express-1',
+      id: 'express-2',
       manual: 'express',
-      page: 1,
+      page: 2,
       badge: lang === 'en' ? 'Express 02' : lang === 'zh-HK' ? '特快 02' : '익스프레스 02',
       title: lang === 'en' ? '02. Labeling & Cross-Check Verification' : lang === 'zh-HK' ? '02. 貼標籤作業及雙重核對' : '02. 라벨 스티커 부착 및 2차 분류',
       desc: lang === 'en' ? 'Double-check 4-digit number match & Cargo Tracking ID match before affixing labels.' : lang === 'zh-HK' ? '嚴格核對四位數編號及貨物 ID (Cargo ID)，兩者相符後方可貼上標籤。' : '고객 ID 및 화물 ID 동시 대조 후 라벨스티커 부착. 같은 고객 ID끼리 모으기 & 라벨 표식(작대기: 당일배송, X: 픽업, 무표시: 일반) 분배.',
       keywords: '라벨링 labeling 라벨스티커 스티커 고객ID 화물ID 합포장 이중대조 작대기 당일배송 픽업 X자 일반화물 랙정리 바깥쪽 통로 전담'
     },
     {
-      id: 'express-2',
+      id: 'express-3',
       manual: 'express',
-      page: 2,
+      page: 3,
       badge: lang === 'en' ? 'Express 03' : lang === 'zh-HK' ? '特快 03' : '익스프레스 03',
       title: lang === 'en' ? '03. Same-Day Dispatch Consolidation' : lang === 'zh-HK' ? '03. 當日送貨合箱與標記' : '03. 당일 배송건 합포장',
       desc: lang === 'en' ? 'Verify cargo number against delivery list, 2-person consolidation & top box marking.' : lang === 'zh-HK' ? '核對送貨清單貨物編號，雙人協同合箱打包與箱頂標記。' : '배송 리스트 화물번호 일치여부 확인, 합포장 및 마킹. 현장 화물 취합(통로+랙) ➔ 2인 1조 대조 및 토스 ➔ 합포장 결속 ➔ 리스트 기록 및 박스 마킹.',
       keywords: '합포장 당일배송 배송리스트 화물번호 CTN 대조 토스 2인1조 번들링 W CLUB 테이핑 덩어리 마킹 TK GB CWB 출고 대기 단품'
     },
     {
-      id: 'express-3',
+      id: 'express-4',
       manual: 'express',
-      page: 3,
+      page: 4,
       badge: lang === 'en' ? 'Express 04' : lang === 'zh-HK' ? '特快 04' : '익스프레스 04',
       title: lang === 'en' ? '04. Remaining Boxes Rack Storage & Sorting' : lang === 'zh-HK' ? '04. 剩餘紙箱貨架整理與存放' : '04. 잔여 상자 창고 랙(Rack) 정리',
       desc: lang === 'en' ? 'Store remaining non-dispatched boxes onto designated warehouse racks by number ranges.' : lang === 'zh-HK' ? '當日送貨出庫後，剩餘未出庫紙箱按指定貨架編號區域整齊碼放存放。' : '배송 후 남은 상자들 창고 랙(선반) 번호대별 안전 적재 및 보관 정리.',

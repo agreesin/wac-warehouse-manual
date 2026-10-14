@@ -239,10 +239,85 @@ export default {
   express: {
     title: "W Express Manual",
     sub: "Air Express Inbound/Outbound, Inspection & Packing Rules",
-    sidebarFoot: "Dawn Air Express Standard · 07:00 Shift\nInbound → Labeling → Bundling → Rack Storage",
+    sidebarFoot: "Dawn Air Express Standard · 07:00 Shift\nOverview → Inbound → Labeling → Bundling → Rack Storage",
     pages: [
       {
         id: "express-0",
+        stepNo: "00",
+        timeBadge: "W-EXPRESS Overview",
+        title: "W-EXPRESS Introduction",
+        sub: "Korea → Hong Kong Air Express & 2 Core Daily Warehouse Workflows (Sorting & Packing)",
+        calloutHead: "W-EXPRESS Operations Manual Guide",
+        calloutLead: "Welcome to the W-EXPRESS manual. This guide is designed to help you understand the overall workflow. You will receive hands-on training before beginning work, so do not worry. Use this manual to absorb the training quickly and refer back whenever you need clarification.",
+        stepsWithPhotos: [
+          {
+            stepNo: "1",
+            title: "Korea → HK Air Express & 07:00 Warehouse Arrival",
+            desc: "Cargo departs Incheon late at night, arrives in Hong Kong at dawn (01:00), and is delivered to our warehouse entrance at 07:00.",
+            paragraphs: [
+              "W-EXPRESS operates an air express shipping service between Korea and Hong Kong.",
+              "Cargo departing Incheon at 22:00 arrives in Hong Kong at 01:00 the next morning, and arrives at our warehouse by 07:00.",
+              "When you arrive at 07:00, you will see palletized cargo wrapped in stretch film placed outside the warehouse entrance."
+            ],
+            photos: [
+              {
+                src: "/express/02-pallet-arrival.jpg",
+                title: "01. Dawn Cargo Arrival (Warehouse Entrance)",
+                desc: "Palletized cargo wrapped in plastic placed outside the entrance upon arrival at 07:00"
+              }
+            ]
+          },
+          {
+            stepNo: "2",
+            title: "Move Pallets Indoors Using Pallet Jack",
+            desc: "Use manual/electric pallet jacks to safely move pallets from outside into the warehouse work area.",
+            paragraphs: [
+              "Workers use pallet jacks (electric or manual) to pull the pallets inside the warehouse.",
+              "Once moved indoors safely, workers strip off the stretch wrap and begin inbound sorting."
+            ],
+            photos: [
+              {
+                src: "/express/01-pallet-jack.jpg",
+                title: "02. Moving Pallets Indoors (Pallet Jack)",
+                desc: "Staff moving pallets from entrance into the indoor working zone using a pallet jack"
+              }
+            ]
+          },
+          {
+            stepNo: "3",
+            title: "Our 2 Core Daily Tasks (At a Glance)",
+            desc: "We process this cargo through 2 primary daily operations.",
+            cargoTypes: [
+              {
+                tag: "Core Task 1",
+                badge: "Arrival Cargo Sorting",
+                head: "1. Sort Dawn Arrival Cargo into Designated Locations!",
+                desc: "Unbox incoming pallets, sort items along floor aisles by Customer ID (0-9), affix tracking labels, and organize into warehouse racks.",
+                tip: "Chapters: 01. Pallet Inbound & 1st Sorting ➔ 02. Labeling ➔ 04. Rack Storage"
+              },
+              {
+                tag: "Core Task 2",
+                badge: "Today Delivery Packing",
+                head: "2. Pack and Consolidate Today's Deliveries!",
+                desc: "Gather all items on today's dispatch list, verify cargo IDs (CTN double-check), consolidate multi-item bundles with W CLUB tape, and mark box tops.",
+                tip: "Chapter: 03. Same-Day Dispatch Consolidation"
+              }
+            ],
+            paragraphs: [
+              "Our workflow centers on these two pillars: 'Sorting dawn cargo' and 'Packing today deliveries'. Step-by-step guidelines are provided in Chapters 01 through 04."
+            ]
+          }
+        ],
+        checklistTitle: "W-EXPRESS Core Onboarding Checklist",
+        checklists: [
+          "Understand the Korea (Incheon) to Hong Kong dawn air express model?",
+          "Check palletized cargo outside warehouse entrance at 07:00 shift start?",
+          "Know how to safely pull pallets indoors using a pallet jack?",
+          "Grasp the two core operations: 'Sorting dawn cargo' & 'Packing today deliveries'?"
+        ]
+      },
+      {
+        id: "express-1",
         stepNo: "01",
         timeBadge: "Inbound & 1st Sorting",
         title: "Pallet Inbound & Floor Rack Sorting (0–9)",
@@ -353,7 +428,7 @@ export default {
         ]
       },
       {
-        id: "express-1",
+        id: "express-2",
         stepNo: "02",
         timeBadge: "Inspection & Verification",
         title: "Labeling & Cross-Check Verification",
@@ -392,7 +467,7 @@ export default {
         }
       },
       {
-        id: "express-2",
+        id: "express-3",
         stepNo: "03",
         timeBadge: "Outbound Packing",
         title: "Same-Day Outbound Consolidation Packaging",
@@ -431,7 +506,7 @@ export default {
         }
       },
       {
-        id: "express-3",
+        id: "express-4",
         stepNo: "04",
         timeBadge: "Warehouse Storage",
         title: "Remaining Boxes Rack Storage & Sorting",

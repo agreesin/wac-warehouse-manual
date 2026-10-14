@@ -1,11 +1,11 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { TruckIcon, TagIcon, CubeIcon, MapIcon, HomeIcon } from './Icons';
+import { TruckIcon, TagIcon, CubeIcon, MapIcon, HomeIcon, DocumentTextIcon } from './Icons';
 
 export function ExpressSidebar({ pageIndex, onSelectPage, onHome, open }) {
   const { t } = useLanguage();
 
-  const stepIcons = [TruckIcon, TagIcon, CubeIcon, MapIcon];
+  const stepIcons = [DocumentTextIcon, TruckIcon, TagIcon, CubeIcon, MapIcon];
 
   return (
     <aside className={`sidebar sidebar-express ${open ? 'open' : ''}`}>
@@ -24,6 +24,7 @@ export function ExpressSidebar({ pageIndex, onSelectPage, onHome, open }) {
         <p className="toc-label">{t.common.contents}</p>
         {t.express?.pages?.map((item, idx) => {
           const Icon = stepIcons[idx % stepIcons.length] || TruckIcon;
+          const displayPrefix = item.stepNo !== undefined ? `${item.stepNo}. ` : `${String(idx).padStart(2, '0')}. `;
           return (
             <button
               key={item.id}
@@ -34,7 +35,7 @@ export function ExpressSidebar({ pageIndex, onSelectPage, onHome, open }) {
               <Icon className="w-5 h-5 flex-shrink-0" />
               <span>
                 <strong>
-                  {String(idx + 1).padStart(2, '0')}. {item.title}
+                  {displayPrefix}{item.title}
                 </strong>
                 <em>{item.sub}</em>
               </span>
