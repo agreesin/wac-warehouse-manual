@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useLanguage } from './context/LanguageContext';
 import { HubHome } from './components/HubHome';
 import { HubWMart } from './components/HubWMart';
@@ -55,13 +55,52 @@ export function App() {
   // Touch swipe tracking ref
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
+  const scrollToTop = () => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+    const mainEl = document.querySelector('.main');
+    if (mainEl) {
+      try {
+        mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch {
+        mainEl.scrollTop = 0;
+      }
+      mainEl.scrollTop = 0;
+    }
+    const pageEl = document.querySelector('.page');
+    if (pageEl) {
+      pageEl.scrollTop = 0;
+    }
+  };
+
+  useLayoutEffect(() => {
+    scrollToTop();
+    const rafId = requestAnimationFrame(scrollToTop);
+    const timerId1 = setTimeout(scrollToTop, 20);
+    const timerId2 = setTimeout(scrollToTop, 80);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timerId1);
+      clearTimeout(timerId2);
+    };
+  }, [route.manual, route.page]);
+
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
     const handleHashChange = () => {
       setRoute(parseHash());
       setMobileMenuOpen(false);
       document.body.style.overflow = '';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -86,18 +125,27 @@ export function App() {
   const ecountPages = t.ecount;
   const expressPages = t.express?.pages || [];
 
-  const goToHub = () => navigate('hub');
-  const goToWMart = () => navigate('wmart');
+  const goToHub = () => {
+    scrollToTop();
+    navigate('hub');
+  };
+  const goToWMart = () => {
+    scrollToTop();
+    navigate('wmart');
+  };
   const goToWarehouse = (p = 0) => {
     const safeP = Math.max(0, Math.min(warehousePages.length - 1, p));
+    scrollToTop();
     navigate('warehouse', safeP);
   };
   const goToEcount = (p = 0) => {
     const safeP = Math.max(0, Math.min(ecountPages.length - 1, p));
+    scrollToTop();
     navigate('ecount', safeP);
   };
   const goToExpress = (p = 0) => {
     const safeP = Math.max(0, Math.min(expressPages.length - 1, p));
+    scrollToTop();
     navigate('express', safeP);
   };
 
@@ -154,14 +202,7 @@ export function App() {
     else if (manual === 'ecount') goToEcount(page);
     else if (manual === 'express') goToExpress(page);
 
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'instant' });
-
-    setTimeout(() => {
-      document.body.style.overflow = '';
-      window.scrollTo({ top: 0, behavior: 'instant' });
-      document.querySelector('.main')?.scrollTo({ top: 0, behavior: 'instant' });
-    }, 50);
+    scrollToTop();
   };
 
   let mainContent = null;
@@ -258,7 +299,10 @@ export function App() {
                 <button
                   type="button"
                   disabled={safeIdx <= 0}
-                  onClick={() => goToEcount(safeIdx - 1)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    goToEcount(safeIdx - 1);
+                  }}
                 >
                   <ArrowLeftIcon className="w-4 h-4" />
                   {t.common.prevBtn}
@@ -269,7 +313,10 @@ export function App() {
                 <button
                   type="button"
                   disabled={safeIdx >= ecountPages.length - 1}
-                  onClick={() => goToEcount(safeIdx + 1)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    goToEcount(safeIdx + 1);
+                  }}
                 >
                   {t.common.nextBtn}
                   <ArrowRightIcon className="w-4 h-4" />
@@ -362,7 +409,10 @@ export function App() {
                 <button
                   type="button"
                   disabled={safeIdx <= 0}
-                  onClick={() => goToExpress(safeIdx - 1)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    goToExpress(safeIdx - 1);
+                  }}
                 >
                   <ArrowLeftIcon className="w-4 h-4" />
                   {t.common.prevBtn}
@@ -373,7 +423,10 @@ export function App() {
                 <button
                   type="button"
                   disabled={safeIdx >= expressPages.length - 1}
-                  onClick={() => goToExpress(safeIdx + 1)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    goToExpress(safeIdx + 1);
+                  }}
                 >
                   {t.common.nextBtn}
                   <ArrowRightIcon className="w-4 h-4" />
@@ -475,7 +528,10 @@ export function App() {
                 <button
                   type="button"
                   disabled={safeIdx <= 0}
-                  onClick={() => goToWarehouse(safeIdx - 1)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    goToWarehouse(safeIdx - 1);
+                  }}
                 >
                   <ArrowLeftIcon className="w-4 h-4" />
                   {t.common.prevBtn}
@@ -486,7 +542,10 @@ export function App() {
                 <button
                   type="button"
                   disabled={safeIdx >= warehousePages.length - 1}
-                  onClick={() => goToWarehouse(safeIdx + 1)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    goToWarehouse(safeIdx + 1);
+                  }}
                 >
                   {t.common.nextBtn}
                   <ArrowRightIcon className="w-4 h-4" />
