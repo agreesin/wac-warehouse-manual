@@ -130,7 +130,7 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       manual: 'express',
       page: 1,
       badge: lang === 'en' ? 'Express 02' : lang === 'zh-HK' ? '特快 02' : '익스프레스 02',
-      title: lang === 'en' ? '02. Labeling & Cross-Check Verification' : lang === 'zh-HK' ? '02. 貼標籤作業及雙重核對' : '02. 라벨 스티커 부착 및 고객 ID별·출고유형별 분류',
+      title: lang === 'en' ? '02. Labeling & Cross-Check Verification' : lang === 'zh-HK' ? '02. 貼標籤作業及雙重核對' : '02. 라벨 스티커 부착 및 2차 분류',
       desc: lang === 'en' ? 'Double-check 4-digit number match & Cargo Tracking ID match before affixing labels.' : lang === 'zh-HK' ? '嚴格核對四位數編號及貨物 ID (Cargo ID)，兩者相符後方可貼上標籤。' : '고객 ID 및 화물 ID 동시 대조 후 라벨스티커 부착. 같은 고객 ID끼리 모으기 & 라벨 표식(작대기: 당일배송, X: 픽업, 무표시: 일반) 분배.',
       keywords: '라벨링 labeling 라벨스티커 스티커 고객ID 화물ID 합포장 이중대조 작대기 당일배송 픽업 X자 일반화물 랙정리 바깥쪽 통로 전담'
     },

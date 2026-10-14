@@ -358,8 +358,8 @@ export default {
         id: "express-1",
         stepNo: "02",
         timeBadge: "라벨링 & 2차 분류",
-        title: "라벨 스티커 부착 및 고객 ID별·출고유형별 분류",
-        sub: "랙 전담 배정 · 고객 ID & 화물 ID 동시 대조 · 동일 고객 ID 모으기 · 당일배송(바깥쪽)/일반화물(랙쪽) 분배",
+        title: "라벨 스티커 부착 및 2차 분류",
+        sub: "고객 ID & 화물 ID 동시 대조, 고객 ID별 분류",
         calloutHead: "라벨링 및 2차 분류 핵심 요약",
         calloutLead: "반드시 ① 고객 ID 일치 여부와 ② 화물 ID 일치 여부 2가지를 동시에 대조한 뒤 라벨을 부착해야 합니다. 하나라도 다르면 오부착 및 오배송 사고로 이어집니다.",
         stepsWithPhotos: [
