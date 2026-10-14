@@ -39,36 +39,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
               {step.desc && <p className="express-step-desc">{step.desc}</p>}
 
-              {/* Top / Hero Photos (Shown early in the step for immediate visual understanding) */}
-              {step.topPhotos && step.topPhotos.length > 0 && (
-                <div className={`step-photos-strip ${step.topPhotos.length === 1 ? 'hero-strip' : ''}`}>
-                  {step.topPhotos.map((photo, pIdx) => (
-                    <div
-                      key={pIdx}
-                      className="step-photo-card"
-                      onClick={() => onOpenImage?.(photo.src, photo.title, photo.desc)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onOpenImage?.(photo.src, photo.title, photo.desc);
-                        }
-                      }}
-                    >
-                      <div className="step-photo-img-wrap">
-                        <img src={photo.src} alt={photo.title} loading="lazy" />
-                        <span className="step-photo-zoom-badge">🔍 크게 보기</span>
-                      </div>
-                      <div className="step-photo-info">
-                        <strong className="step-photo-title">{photo.title}</strong>
-                        <p className="step-photo-desc">{photo.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
               {/* Inbound Cargo 3 Forms Grid (High Scannability) */}
               {step.cargoForms && step.cargoForms.length > 0 && (
                 <div className="express-cargo-forms-grid">
@@ -94,6 +64,33 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                       {para}
                     </p>
                   ))}
+                </div>
+              )}
+
+              {/* Guide Photo (Placed immediately after explanation text) */}
+              {step.guidePhoto && (
+                <div className="step-photos-strip hero-strip">
+                  <div
+                    className="step-photo-card"
+                    onClick={() => onOpenImage?.(step.guidePhoto.src, step.guidePhoto.title, step.guidePhoto.desc)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpenImage?.(step.guidePhoto.src, step.guidePhoto.title, step.guidePhoto.desc);
+                      }
+                    }}
+                  >
+                    <div className="step-photo-img-wrap">
+                      <img src={step.guidePhoto.src} alt={step.guidePhoto.title} loading="lazy" />
+                      <span className="step-photo-zoom-badge">🔍 크게 보기</span>
+                    </div>
+                    <div className="step-photo-info">
+                      <strong className="step-photo-title">{step.guidePhoto.title}</strong>
+                      <p className="step-photo-desc">{step.guidePhoto.desc}</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
