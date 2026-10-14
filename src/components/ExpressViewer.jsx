@@ -275,6 +275,14 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                         <span className="cargo-type-badge">{c.badge}</span>
                       </div>
                       <strong className="cargo-type-head">{c.head}</strong>
+                      {c.photo && (
+                        <PhotoCard
+                          photo={c.photo}
+                          className="cargo-type-photo-card"
+                          onOpenImage={onOpenImage}
+                          zoomLabel={zoomLabel}
+                        />
+                      )}
                       <p className="cargo-type-desc">{c.desc}</p>
                       {c.tip && (
                         <div className="cargo-type-tip">
@@ -510,6 +518,14 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                       <span className="cargo-type-badge">{c.badge}</span>
                     </div>
                     <strong className="cargo-type-head">{c.head}</strong>
+                    {c.photo && (
+                      <PhotoCard
+                        photo={c.photo}
+                        className="cargo-type-photo-card"
+                        onOpenImage={onOpenImage}
+                        zoomLabel={zoomLabel}
+                      />
+                    )}
                     <p className="cargo-type-desc">{c.desc}</p>
                     {c.tip && (
                       <div className="cargo-type-tip">
