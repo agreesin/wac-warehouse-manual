@@ -211,9 +211,9 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
       {/* 3. Integrated Steps with Photos (e.g. Chapter 1) OR Legacy Breakdown */}
       {currentPage.stepsWithPhotos && currentPage.stepsWithPhotos.length > 0 ? (
-        <div className={`express-steps-container ${currentPage.id === 'express-0' ? 'express-overview-container' : ''}`.trim()}>
+        <div className={`express-steps-container ${currentPage.stepsWithPhotos.every(s => !s.stepNo) ? 'express-overview-container' : ''}`.trim()}>
           {currentPage.stepsWithPhotos.map((step, sIdx) => {
-            const isOverview = currentPage.id === 'express-0' || !step.stepNo;
+            const isOverview = !step.stepNo;
             return (
               <section
                 key={sIdx}
