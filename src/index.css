@@ -1533,6 +1533,42 @@
   border-color: #2563eb;
 }
 
+.step-photo-card.placeholder-photo-card {
+  border: 2px dashed #cbd5e1;
+  background: #f8fafc;
+  cursor: default;
+}
+.step-photo-card.placeholder-photo-card:hover {
+  transform: none;
+  border-color: #94a3b8;
+  box-shadow: none;
+}
+.step-photo-card .placeholder-img-wrap {
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.placeholder-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.placeholder-card-icon {
+  font-size: 2.2rem;
+  opacity: 0.5;
+}
+.placeholder-card-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  background: #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  letter-spacing: -0.01em;
+}
+
 .step-photo-img-wrap {
   position: relative;
   width: 100%;

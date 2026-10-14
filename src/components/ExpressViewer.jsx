@@ -6,7 +6,24 @@ import { PlaceholderFrame } from './PlaceholderFrame';
  * Reusable Photo Card with keyboard accessibility and zoom click
  */
 function PhotoCard({ photo, className = '', variant = 'step', onOpenImage, zoomLabel }) {
-  if (!photo?.src) return null;
+  if (!photo) return null;
+
+  if (photo.placeholder || !photo.src) {
+    return (
+      <div className={`step-photo-card placeholder-photo-card ${className}`.trim()}>
+        <div className="step-photo-img-wrap placeholder-img-wrap">
+          <div className="placeholder-card-inner">
+            <span className="placeholder-card-icon">📷</span>
+            <span className="placeholder-card-badge">{photo.badge || '사진 첨부 예정'}</span>
+          </div>
+        </div>
+        <div className="step-photo-info">
+          <strong className="step-photo-title">{photo.title}</strong>
+          <p className="step-photo-desc">{photo.desc || '실제 현장 사진이 추후 첨부될 예정입니다.'}</p>
+        </div>
+      </div>
+    );
+  }
 
   const isExpressVariant = variant === 'express';
   const baseCardClass = isExpressVariant ? 'express-photo-card' : 'step-photo-card';
