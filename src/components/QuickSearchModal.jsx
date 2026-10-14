@@ -139,9 +139,9 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       manual: 'express',
       page: 2,
       badge: lang === 'en' ? 'Express 03' : lang === 'zh-HK' ? '特快 03' : '익스프레스 03',
-      title: lang === 'en' ? '03. Same-Day Consolidation Packaging' : lang === 'zh-HK' ? '03. 當日送貨合箱打包作業' : '03. 당일 배송 건 합포장',
-      desc: lang === 'en' ? 'Filter same-day delivery shipments. Safely bundle and tape multiple boxes for identical recipients.' : lang === 'zh-HK' ? '篩選當日派送貨件。同一收件地址多個紙箱進行安全合箱綑紮與加固打包。' : '당일 출고 건 선별. 동일 수령지/고객 2개 이상 상자 안전 합배송(번들링/테이핑) 실시.',
-      keywords: '합포장 합배송 bundling consolidation 合箱 当日 배송 출고 선별 테이핑 묶음 포장 당일배송'
+      title: lang === 'en' ? '03. Same-Day Consolidation Packaging (Collective Delivery)' : lang === 'zh-HK' ? '03. 當日送貨合箱打包作業 (集合派送)' : '03. 당일 배송 건 합포장 (집합배송 파트)',
+      desc: lang === 'en' ? 'Consolidation for today deliveries. We handle the collective delivery (집합배송) part with TK List bundling & W CLUB taping.' : lang === 'zh-HK' ? '針對當日派送件進行合箱，負責「集合派送」部分的合箱打包、TK List 核對與 W CLUB 膠帶綑紮。' : '오늘 배송 나갈 건들에 대한 합포장 진행. 우리는 집합배송 파트의 합포장을 담당하여 TK List 대조 및 W CLUB 보강 테이핑을 수행.',
+      keywords: '합포장 집합배송 당일배송 TK리스트 TK List 번들링 W CLUB 테이핑 묶음 포장 출고 선별 bundling consolidation 合箱'
     },
     {
       id: 'express-3',
