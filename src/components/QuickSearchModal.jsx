@@ -122,8 +122,8 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       page: 0,
       badge: lang === 'en' ? 'Express 01' : lang === 'zh-HK' ? '特快 01' : '익스프레스 01',
       title: lang === 'en' ? '01. Pallet Inbound & Customer ID Rack Sorting (0–9)' : lang === 'zh-HK' ? '01. 卡板到貨及依客戶 ID 貨架分類 (0~9)' : '01. 파레트 입고 · 고객 ID 기준 0~9번 랙 분류',
-      desc: lang === 'en' ? 'Identify W01*-**** customer ID on packages. Sort to racks 0-9 by first digit of trailing 4 numbers. Move WB/HG/missing IDs to Chen.' : lang === 'zh-HK' ? '確認運單上的 W01*-**** 客戶 ID。按後四位數之首位移至 0~9 號貨架。WB/HG/未標註者移至 Chen (陳) 區域。' : '송장 W01*-**** 고객 ID 확인 후 뒤 4자리 첫 번째 숫자로 0~9번 랙 분류. WB/HG/미표기 예외 화물은 첸(Chen) 구역 집하.',
-      keywords: '익스프레스 express 고객ID W01 W010 0161 3949 5851 8276 첸 Chen 하늘길 210 4번게이트 쿠팡 우체국 올리브영 WB HG 0 1 2 3 4 5 6 7 8 9 랙분류 랙앞 파레트 파레트자키 마대 콘솔박스'
+      desc: lang === 'en' ? 'Identify W01*-**** customer ID on packages. Sort to racks 0-9 by first digit of trailing 4 numbers. Move WB/HG/missing IDs in front of wrapping tape box.' : lang === 'zh-HK' ? '確認運單上的 W01*-**** 客戶 ID。按後四位數之首位移至 0~9 號貨架。WB/HG/未標註者移至膠帶箱前。' : '송장 W01*-**** 고객 ID 확인 후 뒤 4자리 첫 번째 숫자로 0~9번 랙 분류. WB/HG/미표기 예외 화물은 래핑테이프 상자 앞쪽에 모아둠.',
+      keywords: '익스프레스 express 고객ID W01 W010 0161 3949 5851 8276 래핑테이프 하늘길 210 4번게이트 WB HG 0 1 2 3 4 5 6 7 8 9 랙분류 랙앞 파레트 파레트자키 마대 콘솔박스'
     },
     {
       id: 'express-1',
@@ -139,9 +139,9 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       manual: 'express',
       page: 2,
       badge: lang === 'en' ? 'Express 03' : lang === 'zh-HK' ? '特快 03' : '익스프레스 03',
-      title: lang === 'en' ? '03. Same-Day Consolidation Packaging (Collective Delivery)' : lang === 'zh-HK' ? '03. 當日送貨合箱打包作業 (集合派送)' : '03. 당일 배송 건 합포장 (집합배송 파트)',
-      desc: lang === 'en' ? 'Consolidation for today deliveries. We handle the collective delivery (집합배송) part with TK List bundling & W CLUB taping.' : lang === 'zh-HK' ? '針對當日派送件進行合箱，負責「集合派送」部分的合箱打包、TK List 核對與 W CLUB 膠帶綑紮。' : '오늘 배송 나갈 건들에 대한 합포장 진행. 우리는 집합배송 파트의 합포장을 담당하여 TK List 대조 및 W CLUB 보강 테이핑을 수행.',
-      keywords: '합포장 집합배송 당일배송 TK리스트 TK List 번들링 W CLUB 테이핑 묶음 포장 출고 선별 bundling consolidation 合箱'
+      title: lang === 'en' ? '03. Same-Day Dispatch Packing & Consolidation (Collective Delivery)' : lang === 'zh-HK' ? '03. 當日送貨出庫包裝與合箱 (集合派送)' : '03. 당일 배송 건 출고 패킹 및 합포장 (집합배송 파트)',
+      desc: lang === 'en' ? 'Packing today deliveries: single packages go as-is; only 2+ packages for the same recipient are consolidated with TK List & W CLUB taping.' : lang === 'zh-HK' ? '針對當日派送件出庫：單件包裹直接出庫，同一收件人2件以上方進行合箱打包(W CLUB膠帶綑紮與TK List核對)。' : '오늘 배송 나갈 건들에 대해 패킹 및 합포장 진행. 단품(1개 건)은 그대로 출고하며, 동일 수령인 2개 이상 건만 W CLUB 테이핑 묶음 합포장을 수행.',
+      keywords: '출고패킹 합포장 단품 단일화물 집합배송 당일배송 TK리스트 TK List 번들링 W CLUB 테이핑 묶음 포장 출고 선별 bundling consolidation 合箱'
     },
     {
       id: 'express-3',
