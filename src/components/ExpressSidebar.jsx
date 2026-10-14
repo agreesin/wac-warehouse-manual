@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { TruckIcon, TagIcon, CubeIcon, MapIcon, HomeIcon, ArrowTopRightOnSquareIcon } from './Icons';
+import { TruckIcon, TagIcon, CubeIcon, MapIcon, HomeIcon } from './Icons';
 
 export function ExpressSidebar({ pageIndex, onSelectPage, onHome, open }) {
   const { t } = useLanguage();
@@ -15,25 +15,10 @@ export function ExpressSidebar({ pageIndex, onSelectPage, onHome, open }) {
         <p>{t.express?.sub || '항공 특송 입출고 및 검수·패킹 수칙'}</p>
       </div>
 
-      <div className="sidebar-actions-group">
-        <button type="button" className="toc-home" onClick={onHome}>
-          <HomeIcon className="w-4 h-4" />
-          {t.common.homeBtn}
-        </button>
-
-        {t.common.slidesUrl && (
-          <a
-            href={t.common.slidesUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="toc-slides-btn"
-            title="Google Slides 원본 문서 열기"
-          >
-            <ArrowTopRightOnSquareIcon className="w-4 h-4 flex-shrink-0" />
-            <span>Google Slides 원본</span>
-          </a>
-        )}
-      </div>
+      <button type="button" className="toc-home" onClick={onHome}>
+        <HomeIcon className="w-4 h-4" />
+        {t.common.homeBtn}
+      </button>
 
       <nav className="toc" aria-label="W Express 목차">
         <p className="toc-label">{t.common.contents}</p>
