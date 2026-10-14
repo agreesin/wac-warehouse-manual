@@ -39,53 +39,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
               {step.desc && <p className="express-step-desc">{step.desc}</p>}
 
-              {/* Inbound Cargo 3 Forms & Workflow (Step 1) */}
-              {step.cargoWorkTypes && (
-                <div className="express-cargo-workflow-section">
-                  {step.cargoWorkTypes.lead && (
-                    <p className="express-cargo-workflow-lead">
-                      {step.cargoWorkTypes.lead}
-                    </p>
-                  )}
-                  <div className="express-cargo-workflow-grid">
-                    {step.cargoWorkTypes.types?.map((item, tIdx) => (
-                      <div key={tIdx} className="cargo-workflow-card">
-                        <div className="cargo-workflow-card-head">
-                          <div className="cargo-workflow-title-wrap">
-                            <span className="cargo-workflow-num">{item.num}</span>
-                            <strong className="cargo-workflow-name">{item.name}</strong>
-                          </div>
-                          {item.badge && (
-                            <span className={`cargo-workflow-badge ${item.badgeType || ''}`}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-                        <div className="cargo-workflow-body">
-                          <div className="cargo-workflow-row">
-                            <span className="cargo-workflow-label">화물 형태</span>
-                            <p className="cargo-workflow-val">{item.formDesc}</p>
-                          </div>
-                          <div className="cargo-workflow-row work-row">
-                            <span className="cargo-workflow-label work-label">작업 방법</span>
-                            <p className="cargo-workflow-val work-val">{item.workDesc}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {step.cargoWorkTypes.warning && (
-                    <div className="express-step-notice warning cargo-cutter-warning">
-                      <span className="notice-icon">{step.cargoWorkTypes.warning.icon || '⚠️'}</span>
-                      <div className="notice-content">
-                        <strong>{step.cargoWorkTypes.warning.title}</strong>
-                        <p>{step.cargoWorkTypes.warning.text}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Food Box Highlight Card (Placed at the FRONT of sorting workflow) */}
               {step.foodBoxCard && (
