@@ -248,6 +248,28 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 <ExceptionCard card={step.exceptionCard || step.exceptionBox} />
               )}
 
+              {/* Classification / Type Cards Grid (e.g. Label Marking Types) */}
+              {step.cargoTypes && step.cargoTypes.length > 0 && (
+                <div className="cargo-types-grid">
+                  {step.cargoTypes.map((c, idx) => (
+                    <div key={idx} className="cargo-type-card">
+                      <div className="cargo-type-header">
+                        <span className="cargo-type-tag">{c.tag}</span>
+                        <span className="cargo-type-badge">{c.badge}</span>
+                      </div>
+                      <strong className="cargo-type-head">{c.head}</strong>
+                      <p className="cargo-type-desc">{c.desc}</p>
+                      {c.tip && (
+                        <div className="cargo-type-tip">
+                          <span className="tip-icon">💡</span>
+                          <span>{c.tip}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Step Bullets */}
               {step.bullets && step.bullets.length > 0 && (
                 <ul className="express-step-bullets">
