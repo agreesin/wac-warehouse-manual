@@ -39,6 +39,36 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
               {step.desc && <p className="express-step-desc">{step.desc}</p>}
 
+              {/* Top / Hero Photos (Shown early in the step for immediate visual understanding) */}
+              {step.topPhotos && step.topPhotos.length > 0 && (
+                <div className={`step-photos-strip ${step.topPhotos.length === 1 ? 'hero-strip' : ''}`}>
+                  {step.topPhotos.map((photo, pIdx) => (
+                    <div
+                      key={pIdx}
+                      className="step-photo-card"
+                      onClick={() => onOpenImage?.(photo.src, photo.title, photo.desc)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onOpenImage?.(photo.src, photo.title, photo.desc);
+                        }
+                      }}
+                    >
+                      <div className="step-photo-img-wrap">
+                        <img src={photo.src} alt={photo.title} loading="lazy" />
+                        <span className="step-photo-zoom-badge">🔍 크게 보기</span>
+                      </div>
+                      <div className="step-photo-info">
+                        <strong className="step-photo-title">{photo.title}</strong>
+                        <p className="step-photo-desc">{photo.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Narrative Paragraphs */}
               {step.paragraphs && step.paragraphs.length > 0 && (
                 <div className="express-step-narrative">
@@ -58,6 +88,47 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                     {step.notice.title && <strong>{step.notice.title}</strong>}
                     <p>{step.notice.text}</p>
                   </div>
+                </div>
+              )}
+
+              {/* Food Box Highlight Card */}
+              {step.foodBoxCard && (
+                <div className="express-foodbox-card">
+                  <div className="foodbox-head">
+                    <span className="foodbox-badge">상자 구분</span>
+                    <strong className="foodbox-title">{step.foodBoxCard.title}</strong>
+                  </div>
+                  <p className="foodbox-desc">{step.foodBoxCard.desc}</p>
+                  {step.foodBoxCard.bullets && (
+                    <ul className="foodbox-bullets">
+                      {step.foodBoxCard.bullets.map((b, bIdx) => (
+                        <li key={bIdx}>{b}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {step.foodBoxCard.photo && (
+                    <div
+                      className="step-photo-card foodbox-photo-card"
+                      onClick={() => onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc);
+                        }
+                      }}
+                    >
+                      <div className="step-photo-img-wrap">
+                        <img src={step.foodBoxCard.photo.src} alt={step.foodBoxCard.photo.title} loading="lazy" />
+                        <span className="step-photo-zoom-badge">🔍 크게 보기</span>
+                      </div>
+                      <div className="step-photo-info">
+                        <strong className="step-photo-title">{step.foodBoxCard.photo.title}</strong>
+                        <p className="step-photo-desc">{step.foodBoxCard.photo.desc}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
