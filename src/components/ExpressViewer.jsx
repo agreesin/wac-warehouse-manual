@@ -181,6 +181,48 @@ function ExceptionCard({ card, onOpenImage, zoomLabel }) {
   );
 }
 
+function WarehouseLayoutMap({ layout, onOpenImage, zoomLabel }) {
+  if (!layout) return null;
+  const { photo, zones, conclusion } = layout;
+
+  return (
+    <div className="warehouse-layout-container">
+      <div className="warehouse-layout-grid">
+        {photo && (
+          <div className="warehouse-layout-map-col">
+            <PhotoCard
+              photo={photo}
+              className="warehouse-map-photo-card"
+              onOpenImage={onOpenImage}
+              zoomLabel={zoomLabel}
+            />
+          </div>
+        )}
+        {zones && zones.length > 0 && (
+          <div className="warehouse-layout-zones-col">
+            <div className="warehouse-zones-list">
+              {zones.map((zone, zIdx) => (
+                <div key={zIdx} className={`warehouse-zone-item zone-${zone.color || 'blue'}`}>
+                  <div className="warehouse-zone-header">
+                    <span className="warehouse-zone-badge">{zone.badge}</span>
+                    <strong className="warehouse-zone-title">{zone.title}</strong>
+                  </div>
+                  <p className="warehouse-zone-desc">{zone.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {conclusion && (
+        <div className="warehouse-layout-conclusion">
+          <p>{conclusion}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ExpressViewer({ pageIndex, onOpenImage }) {
   const { t } = useLanguage();
   const pages = t.express?.pages || [];
@@ -328,6 +370,15 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                     </p>
                   ))}
                 </div>
+              )}
+
+              {/* Warehouse Layout Map (e.g. Chapter 0 concluding blueprint) */}
+              {step.layoutMap && (
+                <WarehouseLayoutMap
+                  layout={step.layoutMap}
+                  onOpenImage={onOpenImage}
+                  zoomLabel={zoomLabel}
+                />
               )}
 
               {/* Step Bullets */}
