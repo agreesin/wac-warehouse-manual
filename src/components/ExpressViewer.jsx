@@ -69,6 +69,23 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
+              {/* Inbound Cargo 3 Forms Grid (High Scannability) */}
+              {step.cargoForms && step.cargoForms.length > 0 && (
+                <div className="express-cargo-forms-grid">
+                  {step.cargoForms.map((item, cIdx) => (
+                    <div key={cIdx} className="cargo-form-chip">
+                      <div className="cargo-form-icon-wrap">
+                        <span className="cargo-form-icon">{item.icon || '📦'}</span>
+                      </div>
+                      <div className="cargo-form-text">
+                        <strong className="cargo-form-name">{item.name}</strong>
+                        <p className="cargo-form-desc">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Narrative Paragraphs */}
               {step.paragraphs && step.paragraphs.length > 0 && (
                 <div className="express-step-narrative">
