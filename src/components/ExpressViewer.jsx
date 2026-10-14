@@ -185,10 +185,11 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
   return (
     <div className="express-viewer">
       {/* 1. Time & Status Badge */}
-      <div className="express-meta-bar">
-        <span className="express-time-badge">{currentPage.timeBadge}</span>
-        <span className="express-step-badge">STEP {currentPage.stepNo}</span>
-      </div>
+      {currentPage.timeBadge && (
+        <div className="express-meta-bar">
+          <span className="express-time-badge">{currentPage.timeBadge}</span>
+        </div>
+      )}
 
       {/* 2. Core Callout Box */}
       <section className="rule-callout">
