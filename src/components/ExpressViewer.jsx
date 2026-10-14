@@ -211,13 +211,22 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
       {/* 3. Integrated Steps with Photos (e.g. Chapter 1) OR Legacy Breakdown */}
       {currentPage.stepsWithPhotos && currentPage.stepsWithPhotos.length > 0 ? (
-        <div className="express-steps-container">
-          {currentPage.stepsWithPhotos.map((step, sIdx) => (
-            <section key={sIdx} className="express-step-block">
-              <div className="express-step-header">
-                <span className="express-step-num-badge">STEP {step.stepNo}</span>
-                <h3 className="express-step-title">{step.title}</h3>
-              </div>
+        <div className={`express-steps-container ${currentPage.id === 'express-0' ? 'express-overview-container' : ''}`.trim()}>
+          {currentPage.stepsWithPhotos.map((step, sIdx) => {
+            const isOverview = currentPage.id === 'express-0' || !step.stepNo;
+            return (
+              <section
+                key={sIdx}
+                className={isOverview ? 'express-overview-section' : 'express-step-block'}
+              >
+                <div className={isOverview ? 'express-overview-header' : 'express-step-header'}>
+                  {!isOverview && step.stepNo && (
+                    <span className="express-step-num-badge">STEP {step.stepNo}</span>
+                  )}
+                  <h3 className={isOverview ? 'express-overview-title' : 'express-step-title'}>
+                    {step.title}
+                  </h3>
+                </div>
 
               {step.desc && <p className="express-step-desc">{step.desc}</p>}
 
@@ -366,7 +375,8 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
             </section>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <>
