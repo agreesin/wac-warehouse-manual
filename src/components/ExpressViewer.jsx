@@ -213,6 +213,22 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
+              {/* Address Card (Positioned immediately after address ID text) */}
+              {(step.addressCard || step.addressInfo) && (
+                <AddressCard card={step.addressCard || step.addressInfo} />
+              )}
+
+              {/* Sorting Calculation & Rule Paragraphs */}
+              {step.ruleParagraphs && step.ruleParagraphs.length > 0 && (
+                <div className="express-step-narrative">
+                  {step.ruleParagraphs.map((para, pIdx) => (
+                    <p key={pIdx} className="express-step-p">
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              )}
+
               {/* Guide Photo (Placed immediately after explanation text) */}
               {step.guidePhoto && (
                 <div className="step-photos-strip hero-strip">
@@ -226,11 +242,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
               {/* Highlight Notice / Warning Alert */}
               {step.notice && <StepNotice notice={step.notice} />}
-
-              {/* Address Card */}
-              {(step.addressCard || step.addressInfo) && (
-                <AddressCard card={step.addressCard || step.addressInfo} />
-              )}
 
               {/* Exception Card */}
               {(step.exceptionCard || step.exceptionBox) && (

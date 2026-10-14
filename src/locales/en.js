@@ -302,24 +302,26 @@ export default {
             },
             paragraphs: [
               "Checking Customer ID on general cargo waybill address: After setting food boxes aside at the central workbench, look for the 'Customer ID' at the end of the courier waybill address to distribute general items in front of Racks 0–9.",
-              "🔍 Locating Customer ID (W01*-****) in waybill address: As shown in the photo below, the Customer ID in the format 'W01*-****' is printed at the tail end of the delivery address line.",
-              "🎯 Sorting criteria and example: Identify the [very first digit] among the last four digits of the Customer ID, and place the parcel on the floor before that corresponding rack (0–9). In the photo example, the address shows 'W010-0161'; looking at the first digit '0' of the last four digits (0161), place it on the floor [in front of Rack 0]."
+              "🔍 Locating Customer ID (W01*-****) in waybill address: As printed at the tail end of the delivery address line, find the Customer ID formatted as 'W01*-****'."
             ],
-            guidePhoto: {
-              src: "/express/06-customer-id-guide.jpg",
-              title: "Physical Waybill Comparison Guide (Click to Enlarge)",
-              desc: "DO NOT sort to Rack 5 by looking at the last 4 digits (5051) of the QR label! Check W010-0161 (Customer ID) on the courier address to place in front of Rack 0"
-            },
-            notice: {
-              type: "warning",
-              icon: "⛔",
-              title: "Do Not Confuse QR Label Rear 4 Digits (5051) (Critical Mis-sorting Hazard)",
-              text: "The most common field mistake is looking at the rear 4 digits '5051' on the red-boxed QR sticker and mistakenly sending the parcel to Rack 5 based on '5'! This number (W1008-5051) is solely an internal warehouse cargo tracking ID and must be completely ignored during 1st stage sorting. You must verify '0161 (Customer ID)' at the end of the courier waybill address and place it at Rack 0."
-            },
             addressCard: {
               title: "Standard Inbound Customer Address Format",
               address: "서울시 강서구 하늘길 210 4번게이트 , W01*-****",
               note: "The W01*-**** code appended at the end of the address is the sorting Customer ID."
+            },
+            ruleParagraphs: [
+              "🎯 Sorting criteria and example: Identify the [very first digit] among the last four digits of the Customer ID, and place the parcel on the floor before that corresponding rack (0–9). In the photo example below, the address shows 'W010-0161'; looking at the first digit '0' of the last four digits (0161), place it on the floor [in front of Rack 0]."
+            ],
+            guidePhoto: {
+              src: "/express/06-customer-id-guide.jpg",
+              title: "Physical Waybill Comparison Guide (Click to Enlarge)",
+              desc: "Verify Customer ID (W01*-****) on the courier address to place in front of racks instead of sorting by the box's QR label (Cargo ID) number (Example: W010-0161 ➔ Rack 0)"
+            },
+            notice: {
+              type: "warning",
+              icon: "⛔",
+              title: "Warning Against Misidentifying QR Label (Cargo ID)",
+              text: "The number printed on the box's QR label sticker is strictly an internal warehouse 'Cargo ID' and must be completely ignored during 1st stage sorting! In the field, workers most frequently mistake the QR label numbers for rack numbers and mis-sort parcels. Never use the QR label during initial sorting; always check the 'Customer ID (W01*-****)' at the end of the courier waybill address to place parcels at the corresponding rack."
             },
             exceptionCard: {
               title: "Exception Parcels Grouped in Front of Wrapping Tape Boxes",
@@ -343,7 +345,7 @@ export default {
         ],
         checklistTitle: "1st Sorting Checklist",
         checklists: [
-          "❌ Did you avoid confusing the QR label rear 4 digits (e.g. seeing 5051 and going to Rack 5) and ⭕ verify 'W01*-****' Customer ID in the waybill address (0161 ➔ Rack 0)?",
+          "❌ Did you avoid sorting by the box's QR label (Cargo ID) number, and ⭕ verify the 'W01*-****' Customer ID in the courier waybill address?",
           "Did you place parcels in front of Racks 0–9 based on the first digit of the last 4 digits in Customer ID? (e.g. W010-0161 ➔ Rack 0)",
           "🧊 Were food boxes sealed with blue tape (regular cardboard / styrofoam, F-code) placed on the 'Central Workbench' instead of the racks?",
           "Were WB/HG prefix shipments or parcels with missing/unclear IDs segregated in front of the wrapping tape boxes?",
