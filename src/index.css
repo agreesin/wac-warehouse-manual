@@ -1674,7 +1674,12 @@
   aspect-ratio: 16 / 9;
 }
 
-
-
-
-
+@media (max-width: 640px) {
+  .foodbox-content-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .foodbox-photo-card {
+    width: 100%;
+  }
+}

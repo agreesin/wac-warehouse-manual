@@ -39,6 +39,7 @@ export default {
     expressManualTitle: "W Express Manual",
     expressManualSub: "Air Express Inbound/Outbound, Inspection & Packing Rules",
     visualGuideTitle: "Visual Guide & On-site Photos",
+    zoomIn: "🔍 Click to Enlarge",
     slidesUrl: "https://docs.google.com/presentation/d/1mSytr6-bSl01gl0j8bExCryC9Bd-9cIj/edit?usp=sharing&ouid=106832286164196570873&rtpof=true&sd=true"
   },
   warehouse: {
@@ -243,41 +244,111 @@ export default {
       {
         id: "express-0",
         stepNo: "01",
-        timeBadge: "07:00 Shift Start",
-        title: "Pallet Inbound & Number Sorting (0–9)",
-        sub: "Dawn pallet unloading & sorting into floor zones by tracking prefix (0–9)",
-        calloutHead: "Core Inbound & Sorting Rules",
-        calloutLead: "Shipments arrive via air freight the previous night, and usually around 3 pallets arrive outside the warehouse by dawn. Upon arriving at 07:00, unload the pallets immediately and sort boxes into floor zones based on the first digit (0 to 9) of their numbers.",
-        flowTitle: "Step-by-step Workflow",
-        flow: [
+        timeBadge: "Inbound & 1st Sorting",
+        title: "Pallet Inbound & Floor Rack Sorting (0–9)",
+        sub: "Pallet move-in · Unboxing · Waybill Customer ID check · Racks 0–9 floor distribution",
+        calloutHead: "What is 1st Stage Sorting?",
+        calloutLead: "Unbox cargo unloaded from pallets inside the warehouse, then distribute and place items along the floor aisles in front of Racks 0–9 based on the Customer ID (0–9) printed in the courier waybill address.",
+        stepsWithPhotos: [
           {
-            step: "Step 1",
-            head: "Dawn Pallet Arrival Check (~3 Pallets)",
-            desc: "Inspect the quantity of air express pallets (typically 3) outside the warehouse and check plastic wrap integrity."
+            stepNo: "1",
+            title: "Move Pallets Indoors & Cargo Unboxing (Consol Boxes · Sacks)",
+            desc: "Pull pallets from outside into the warehouse using a pallet jack (electric or manual) and strip away the plastic stretch wrap.",
+            paragraphs: [
+              "Cargo arrives on pallets in three primary formats: individual loose boxes, consolidation boxes (consol boxes), and woven sacks (midae).",
+              "Lightly slit the tape or sack exterior with a utility knife and start sorting cargo directly into rack aisles as you unpack. (No need to spread all items across the floor beforehand; sort directly into racks as you take them out.)"
+            ],
+            notice: {
+              type: "warning",
+              icon: "⚠️",
+              title: "Utility Knife Caution (Preventing Product Damage)",
+              text: "When cutting open consol boxes or sacks, never insert the blade deeply. Slit only the surface tape or outer sack fabric lightly to avoid damaging internal merchandise (clothing, food items, bags, etc.)."
+            },
+            photos: [
+              {
+                src: "/express/01-pallet-jack.jpg",
+                title: "01. Move Pallet Indoors",
+                desc: "Transport pallet inside using a pallet jack and remove stretch wrap"
+              },
+              {
+                src: "/express/05-consol-box.jpg",
+                title: "02. Consolidation Box",
+                desc: "Large box containing smaller parcels inside (carefully slit tape)"
+              },
+              {
+                src: "/express/04-midae-inside.jpg",
+                title: "03. Woven Sack (Midae)",
+                desc: "Parcels bundled inside heavy sack (lightly slit outer fabric)"
+              }
+            ]
           },
           {
-            step: "Step 2",
-            head: "07:00 Shift Start: Unload & Move Indoors",
-            desc: "Use a manual pallet jack to safely move pallets into the designated indoor sorting work area."
-          },
-          {
-            step: "Step 3",
-            head: "Sort by First Digit (0–9)",
-            desc: "Check the first digit (0 through 9) on the box labels/tracking numbers and arrange boxes into designated floor zones."
+            stepNo: "2",
+            title: "Physical Waybill Sorting (Food Box Separation & Customer ID Rack Placement)",
+            desc: "Begin sorting immediately upon unboxing. Segregate food boxes sealed with blue tape to the Central Workbench, and distribute general cargo in front of Racks 0–9 by reading the Customer ID in the courier waybill address.",
+            foodBoxCard: {
+              title: "Food Boxes (Blue Tape, F-Code) ➔ Move to [Central Workbench]",
+              desc: "During sorting, whenever you encounter a box sealed with 'blue tape' (applies to both regular cardboard boxes and styrofoam), do not place it in front of the racks; bring it to the [Central Workbench] first.",
+              bullets: [
+                "Boxes sealed with blue tape = Food shipments (cargo code starts with 'F')",
+                "Move to [Central Workbench] instead of Racks 0–9",
+                "Food items (F-boxes) are handled by dedicated team members, so we focus on sorting general products"
+              ],
+              photo: {
+                src: "/express/01-food-box.jpg",
+                title: "Actual Food Box (Blue Tape)",
+                desc: "Boxes wrapped in blue tape (F-Code) ➔ Central Workbench"
+              }
+            },
+            paragraphs: [
+              "Checking Customer ID on general cargo waybill address: After setting food boxes aside at the central workbench, look for the 'Customer ID' at the end of the courier waybill address to distribute general items in front of Racks 0–9.",
+              "🔍 Locating Customer ID (W01*-****) in waybill address: As shown in the photo below, the Customer ID in the format 'W01*-****' is printed at the tail end of the delivery address line.",
+              "🎯 Sorting criteria and example: Identify the [very first digit] among the last four digits of the Customer ID, and place the parcel on the floor before that corresponding rack (0–9). In the photo example, the address shows 'W010-0161'; looking at the first digit '0' of the last four digits (0161), place it on the floor [in front of Rack 0]."
+            ],
+            guidePhoto: {
+              src: "/express/06-customer-id-guide.jpg",
+              title: "Physical Waybill Comparison Guide (Click to Enlarge)",
+              desc: "DO NOT sort to Rack 5 by looking at the last 4 digits (5051) of the QR label! Check W010-0161 (Customer ID) on the courier address to place in front of Rack 0"
+            },
+            notice: {
+              type: "warning",
+              icon: "⛔",
+              title: "Do Not Confuse QR Label Rear 4 Digits (5051) (Critical Mis-sorting Hazard)",
+              text: "The most common field mistake is looking at the rear 4 digits '5051' on the red-boxed QR sticker and mistakenly sending the parcel to Rack 5 based on '5'! This number (W1008-5051) is solely an internal warehouse cargo tracking ID and must be completely ignored during 1st stage sorting. You must verify '0161 (Customer ID)' at the end of the courier waybill address and place it at Rack 0."
+            },
+            addressCard: {
+              title: "Standard Inbound Customer Address Format",
+              address: "서울시 강서구 하늘길 210 4번게이트 , W01*-****",
+              note: "The W01*-**** code appended at the end of the address is the sorting Customer ID."
+            },
+            exceptionCard: {
+              title: "Exception Parcels Grouped in Front of Wrapping Tape Boxes",
+              desc: "If you encounter any of the following during sorting, do not place them at Racks 0–9; set them aside in front of the wrapping tape boxes.",
+              items: [
+                "Numbers starting with WB prefix",
+                "Numbers starting with HG prefix",
+                "Waybills missing the W01*-**** Customer ID in address",
+                "Damaged or unreadable waybills"
+              ],
+              note: "Once grouped, the area supervisor will inspect and process them separately."
+            },
+            photos: [
+              {
+                src: "/express/01-rack-floor-sorting.jpg",
+                title: "Racks 0–9 Floor Alignment Area (Click to Enlarge)",
+                desc: "Workers sorting general parcels along the floor aisles in front of Racks 0–9 by customer ID (exceptions staged at wrapping tape boxes)"
+              }
+            ]
           }
         ],
-        checklistTitle: "Inbound Sorting Checklist",
+        checklistTitle: "1st Sorting Checklist",
         checklists: [
-          "Carefully cut and remove plastic wrap from the top down to prevent falling boxes",
-          "Immediately segregate any visibly damaged, burst, or wet parcels and report to supervisor",
-          "Maintain aisle clearance between zones 0–9 to allow smooth traffic for the next labeling step"
-        ],
-        placeholder: {
-          badge: "Photo & Floor Plan In Progress",
-          title: "Pallet Inbound Status & Zone (0–9) Layout Example",
-          desc: "Actual photos of warehouse pallet arrival and 0–9 floor zone allocations will be updated here.",
-          hint: "Planned: Entrance pallet arrival shot & floor zone sorted boxes shot"
-        }
+          "❌ Did you avoid confusing the QR label rear 4 digits (e.g. seeing 5051 and going to Rack 5) and ⭕ verify 'W01*-****' Customer ID in the waybill address (0161 ➔ Rack 0)?",
+          "Did you place parcels in front of Racks 0–9 based on the first digit of the last 4 digits in Customer ID? (e.g. W010-0161 ➔ Rack 0)",
+          "🧊 Were food boxes sealed with blue tape (regular cardboard / styrofoam, F-code) placed on the 'Central Workbench' instead of the racks?",
+          "Were WB/HG prefix shipments or parcels with missing/unclear IDs segregated in front of the wrapping tape boxes?",
+          "Did you exercise caution when slitting open sacks and consol boxes to avoid slicing into internal goods?"
+        ]
       },
       {
         id: "express-1",

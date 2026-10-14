@@ -39,6 +39,7 @@ export default {
     expressManualTitle: "W Express 메뉴얼",
     expressManualSub: "항공 특송 입출고 및 검수·패킹 수칙",
     visualGuideTitle: "시각 가이드 및 현장 사진",
+    zoomIn: "🔍 크게 보기",
     slidesUrl: "https://docs.google.com/presentation/d/1mSytr6-bSl01gl0j8bExCryC9Bd-9cIj/edit?usp=sharing&ouid=106832286164196570873&rtpof=true&sd=true"
   },
   warehouse: {

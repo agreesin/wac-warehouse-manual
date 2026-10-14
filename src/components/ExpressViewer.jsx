@@ -2,6 +2,158 @@ import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { PlaceholderFrame } from './PlaceholderFrame';
 
+/**
+ * Reusable Photo Card with keyboard accessibility and zoom click
+ */
+function PhotoCard({ photo, className = '', variant = 'step', onOpenImage, zoomLabel }) {
+  if (!photo?.src) return null;
+
+  const isExpressVariant = variant === 'express';
+  const baseCardClass = isExpressVariant ? 'express-photo-card' : 'step-photo-card';
+  const imgWrapClass = isExpressVariant ? 'express-photo-img-wrap' : 'step-photo-img-wrap';
+  const badgeClass = isExpressVariant ? 'express-photo-zoom-badge' : 'step-photo-zoom-badge';
+  const infoClass = isExpressVariant ? 'express-photo-info' : 'step-photo-info';
+  const titleClass = isExpressVariant ? 'express-photo-title' : 'step-photo-title';
+  const descClass = isExpressVariant ? 'express-photo-desc' : 'step-photo-desc';
+
+  const defaultZoom = zoomLabel || '🔍 크게 보기';
+
+  const handleClick = () => onOpenImage?.(photo.src, photo.title, photo.desc);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
+  return (
+    <div
+      className={`${baseCardClass} ${className}`.trim()}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`${photo.title || '사진'} 확대`}
+      onKeyDown={handleKeyDown}
+    >
+      <div className={imgWrapClass}>
+        <img src={photo.src} alt={photo.title || ''} loading="lazy" />
+        <span className={badgeClass}>{defaultZoom}</span>
+      </div>
+      {(photo.title || photo.desc) && (
+        <div className={infoClass}>
+          {photo.title && <strong className={titleClass}>{photo.title}</strong>}
+          {photo.desc && <p className={descClass}>{photo.desc}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Food Box Highlight Card (placed prominently before address sorting)
+ */
+function FoodBoxCard({ card, onOpenImage, zoomLabel }) {
+  if (!card) return null;
+  return (
+    <div className="express-foodbox-card">
+      <div className="foodbox-head">
+        <span className="foodbox-badge">{card.badge || '식품 박스'}</span>
+        <strong className="foodbox-title">{card.title}</strong>
+      </div>
+      <div className="foodbox-content-row">
+        <div className="foodbox-text-col">
+          {card.desc && <p className="foodbox-desc">{card.desc}</p>}
+          {card.bullets && (
+            <ul className="foodbox-bullets">
+              {card.bullets.map((b, idx) => (
+                <li key={idx}>{b}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {card.photo && (
+          <PhotoCard
+            photo={card.photo}
+            className="foodbox-photo-card"
+            onOpenImage={onOpenImage}
+            zoomLabel={zoomLabel}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Notice / Alert Box (Warning, Info, Danger)
+ */
+function StepNotice({ notice }) {
+  if (!notice) return null;
+  return (
+    <div className={`express-step-notice ${notice.type || 'info'}`}>
+      <span className="notice-icon">{notice.icon || '💡'}</span>
+      <div className="notice-content">
+        {notice.title && <strong>{notice.title}</strong>}
+        {notice.text && <p>{notice.text}</p>}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Address Specification Mini Card
+ */
+function AddressCard({ card }) {
+  if (!card) return null;
+  return (
+    <div className="express-address-mini-card">
+      <div className="mini-card-head">
+        <span className="mini-tag">{card.tag || '입고 주소 규격'}</span>
+        <strong>{card.title}</strong>
+      </div>
+      <div className="mini-address-lines">
+        {card.recipient && (
+          <div className="mini-address-row">
+            <span className="mono">{card.recipient}</span>
+          </div>
+        )}
+        {card.address && (
+          <div className="mini-address-row highlight">
+            <span className="mono">{card.address}</span>
+          </div>
+        )}
+        {card.note && <p className="mini-address-note">💡 {card.note}</p>}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Exception Handling Mini Card
+ */
+function ExceptionCard({ card }) {
+  if (!card) return null;
+  return (
+    <div className="express-exception-neutral-box">
+      <div className="exception-head">
+        <span className="exception-badge">{card.badge || '예외 보관'}</span>
+        <strong className="exception-title">{card.title}</strong>
+      </div>
+      {card.desc && <p className="exception-desc">{card.desc}</p>}
+      {(card.items || card.cases) && (
+        <div className="exception-chips">
+          {(card.items || card.cases).map((item, idx) => (
+            <span key={idx} className="exception-chip">
+              {typeof item === 'string' ? item : item.label || item.type}
+            </span>
+          ))}
+        </div>
+      )}
+      {card.note && <p className="exception-note">👉 {card.note}</p>}
+    </div>
+  );
+}
+
 export function ExpressViewer({ pageIndex, onOpenImage }) {
   const { t } = useLanguage();
   const pages = t.express?.pages || [];
@@ -10,6 +162,8 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
   if (!currentPage) {
     return <div className="empty">매뉴얼 내용을 불러올 수 없습니다.</div>;
   }
+
+  const zoomLabel = t.common?.zoomIn || '🔍 크게 보기';
 
   return (
     <div className="express-viewer">
@@ -39,50 +193,13 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
 
               {step.desc && <p className="express-step-desc">{step.desc}</p>}
 
-
               {/* Food Box Highlight Card (Placed at the FRONT of sorting workflow) */}
               {step.foodBoxCard && (
-                <div className="express-foodbox-card">
-                  <div className="foodbox-head">
-                    <span className="foodbox-badge">식품 박스</span>
-                    <strong className="foodbox-title">{step.foodBoxCard.title}</strong>
-                  </div>
-                  <div className="foodbox-content-row">
-                    <div className="foodbox-text-col">
-                      <p className="foodbox-desc">{step.foodBoxCard.desc}</p>
-                      {step.foodBoxCard.bullets && (
-                        <ul className="foodbox-bullets">
-                          {step.foodBoxCard.bullets.map((b, bIdx) => (
-                            <li key={bIdx}>{b}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    {step.foodBoxCard.photo && (
-                      <div
-                        className="step-photo-card foodbox-photo-card"
-                        onClick={() => onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc);
-                          }
-                        }}
-                      >
-                        <div className="step-photo-img-wrap">
-                          <img src={step.foodBoxCard.photo.src} alt={step.foodBoxCard.photo.title} loading="lazy" />
-                          <span className="step-photo-zoom-badge">🔍 크게 보기</span>
-                        </div>
-                        <div className="step-photo-info">
-                          <strong className="step-photo-title">{step.foodBoxCard.photo.title}</strong>
-                          <p className="step-photo-desc">{step.foodBoxCard.photo.desc}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <FoodBoxCard
+                  card={step.foodBoxCard}
+                  onOpenImage={onOpenImage}
+                  zoomLabel={zoomLabel}
+                />
               )}
 
               {/* Narrative Paragraphs */}
@@ -99,82 +216,28 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
               {/* Guide Photo (Placed immediately after explanation text) */}
               {step.guidePhoto && (
                 <div className="step-photos-strip hero-strip">
-                  <div
-                    className="step-photo-card"
-                    onClick={() => onOpenImage?.(step.guidePhoto.src, step.guidePhoto.title, step.guidePhoto.desc)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onOpenImage?.(step.guidePhoto.src, step.guidePhoto.title, step.guidePhoto.desc);
-                      }
-                    }}
-                  >
-                    <div className="step-photo-img-wrap">
-                      <img src={step.guidePhoto.src} alt={step.guidePhoto.title} loading="lazy" />
-                      <span className="step-photo-zoom-badge">🔍 크게 보기</span>
-                    </div>
-                    <div className="step-photo-info">
-                      <strong className="step-photo-title">{step.guidePhoto.title}</strong>
-                      <p className="step-photo-desc">{step.guidePhoto.desc}</p>
-                    </div>
-                  </div>
+                  <PhotoCard
+                    photo={step.guidePhoto}
+                    onOpenImage={onOpenImage}
+                    zoomLabel={zoomLabel}
+                  />
                 </div>
               )}
 
               {/* Highlight Notice / Warning Alert */}
-              {step.notice && (
-                <div className={`express-step-notice ${step.notice.type || 'info'}`}>
-                  <span className="notice-icon">{step.notice.icon || '💡'}</span>
-                  <div className="notice-content">
-                    {step.notice.title && <strong>{step.notice.title}</strong>}
-                    <p>{step.notice.text}</p>
-                  </div>
-                </div>
-              )}
+              {step.notice && <StepNotice notice={step.notice} />}
 
               {/* Address Card */}
-              {step.addressCard && (
-                <div className="express-address-mini-card">
-                  <div className="mini-card-head">
-                    <span className="mini-tag">입고 주소 규격</span>
-                    <strong>{step.addressCard.title}</strong>
-                  </div>
-                  <div className="mini-address-lines">
-                    <div className="mini-address-row highlight">
-                      <span className="mono">{step.addressCard.address}</span>
-                    </div>
-                    {step.addressCard.note && (
-                      <p className="mini-address-note">💡 {step.addressCard.note}</p>
-                    )}
-                  </div>
-                </div>
+              {(step.addressCard || step.addressInfo) && (
+                <AddressCard card={step.addressCard || step.addressInfo} />
               )}
 
               {/* Exception Card */}
-              {step.exceptionCard && (
-                <div className="express-exception-neutral-box">
-                  <div className="exception-head">
-                    <span className="exception-badge">예외 보관</span>
-                    <strong className="exception-title">{step.exceptionCard.title}</strong>
-                  </div>
-                  {step.exceptionCard.desc && (
-                    <p className="exception-desc">{step.exceptionCard.desc}</p>
-                  )}
-                  <div className="exception-chips">
-                    {step.exceptionCard.items?.map((item, iIdx) => (
-                      <span key={iIdx} className="exception-chip">
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                  {step.exceptionCard.note && (
-                    <p className="exception-note">👉 {step.exceptionCard.note}</p>
-                  )}
-                </div>
+              {(step.exceptionCard || step.exceptionBox) && (
+                <ExceptionCard card={step.exceptionCard || step.exceptionBox} />
               )}
 
+              {/* Step Bullets */}
               {step.bullets && step.bullets.length > 0 && (
                 <ul className="express-step-bullets">
                   {step.bullets.map((b, bIdx) => (
@@ -197,24 +260,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Address Info Mini Card (Fallback) */}
-              {step.addressInfo && (
-                <div className="express-address-mini-card">
-                  <div className="mini-card-head">
-                    <span className="mini-tag">입고 주소 규격</span>
-                    <strong>{step.addressInfo.title}</strong>
-                  </div>
-                  <div className="mini-address-lines">
-                    <div className="mini-address-row">
-                      <span className="mono">{step.addressInfo.recipient}</span>
-                    </div>
-                    <div className="mini-address-row highlight">
-                      <span className="mono">{step.addressInfo.address}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Rule Formula Banner (Fallback) */}
               {step.ruleFormula && (
                 <div className="express-rule-mini-card">
@@ -223,48 +268,16 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Exception Box (Fallback) */}
-              {step.exceptionBox && (
-                <div className="express-exception-neutral-box">
-                  <div className="exception-head">
-                    <span className="exception-badge">{step.exceptionBox.badge}</span>
-                    <strong className="exception-title">{step.exceptionBox.title}</strong>
-                  </div>
-                  <p className="exception-desc">{step.exceptionBox.desc}</p>
-                  <div className="exception-chips">
-                    {step.exceptionBox.cases?.map((c, cIdx) => (
-                      <span key={cIdx} className="exception-chip">{c}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Photos directly inside this step */}
               {step.photos && step.photos.length > 0 && (
                 <div className="step-photos-strip">
                   {step.photos.map((photo, pIdx) => (
-                    <div
+                    <PhotoCard
                       key={pIdx}
-                      className="step-photo-card"
-                      onClick={() => onOpenImage?.(photo.src, photo.title, photo.desc)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onOpenImage?.(photo.src, photo.title, photo.desc);
-                        }
-                      }}
-                    >
-                      <div className="step-photo-img-wrap">
-                        <img src={photo.src} alt={photo.title} loading="lazy" />
-                        <span className="step-photo-zoom-badge">🔍 크게 보기</span>
-                      </div>
-                      <div className="step-photo-info">
-                        <strong className="step-photo-title">{photo.title}</strong>
-                        <p className="step-photo-desc">{photo.desc}</p>
-                      </div>
-                    </div>
+                      photo={photo}
+                      onOpenImage={onOpenImage}
+                      zoomLabel={zoomLabel}
+                    />
                   ))}
                 </div>
               )}
@@ -273,12 +286,11 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
         </div>
       ) : (
         <>
-          {/* 2-1. [CORE] Customer ID (W01*-****) & Rack Matching Section */}
+          {/* Legacy Fallback Rendering for other chapters / drafts */}
           {currentPage.idRuleSection && (
             <section className="wh-section express-id-rule-section">
               <h3 className="wh-section-title">{currentPage.idRuleSection.title}</h3>
 
-              {/* Mistake Prevention Warning (DO NOT use 화물 ID vs DO use 고객 ID) */}
               {currentPage.idRuleSection.mistakeWarning && (
                 <div className="express-mistake-card">
                   <div className="express-mistake-header">
@@ -291,7 +303,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                     {currentPage.idRuleSection.mistakeWarning.desc}
                   </p>
                   <div className="express-mistake-grid">
-                    {/* DO Box */}
                     <div className="express-do-box">
                       <div className="do-header">
                         <span className="do-badge">
@@ -306,7 +317,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                         {currentPage.idRuleSection.mistakeWarning.doBox.detail}
                       </p>
                     </div>
-                    {/* DONT Box */}
                     <div className="express-dont-box">
                       <div className="dont-header">
                         <span className="dont-badge">
@@ -325,7 +335,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Address Guide Box */}
               {currentPage.idRuleSection.addressGuide && (
                 <div className="express-address-card">
                   <div className="express-address-header">
@@ -360,7 +369,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Rack Formula & Examples Grid */}
               {currentPage.idRuleSection.rackRule && (
                 <div className="express-rack-card">
                   <div className="express-rack-header">
@@ -389,7 +397,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Exception Handling Box */}
               {currentPage.idRuleSection.exceptionRule && (
                 <div className="express-exception-box">
                   <div className="express-exception-header">
@@ -420,23 +427,25 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
             </section>
           )}
 
-          {/* 3. Detailed Step Breakdown */}
-          <section className="wh-section">
-            <h3 className="wh-section-title">{currentPage.flowTitle || '작업 세부 절차'}</h3>
-            <div className="express-flow-grid">
-              {currentPage.flow?.map((f, idx) => (
-                <div key={idx} className="express-flow-card">
-                  <div className="express-flow-header">
-                    <span className="express-flow-step">{f.step}</span>
-                    <strong className="express-flow-head">{f.head}</strong>
+          {/* Detailed Step Breakdown */}
+          {currentPage.flow && currentPage.flow.length > 0 && (
+            <section className="wh-section">
+              <h3 className="wh-section-title">{currentPage.flowTitle || '작업 세부 절차'}</h3>
+              <div className="express-flow-grid">
+                {currentPage.flow.map((f, idx) => (
+                  <div key={idx} className="express-flow-card">
+                    <div className="express-flow-header">
+                      <span className="express-flow-step">{f.step}</span>
+                      <strong className="express-flow-head">{f.head}</strong>
+                    </div>
+                    <p className="express-flow-desc">{f.desc}</p>
                   </div>
-                  <p className="express-flow-desc">{f.desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
 
-          {/* 4. Inbound Cargo Types Breakdown (마대, 콘솔 박스, 일반 박스) */}
+          {/* Inbound Cargo Types Breakdown */}
           {currentPage.cargoTypes && currentPage.cargoTypes.length > 0 && (
             <section className="wh-section">
               <h3 className="wh-section-title">{currentPage.cargoTypesTitle || '입고 화물 종류 구분'}</h3>
@@ -464,44 +473,37 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
             </section>
           )}
 
-          {/* 5. Visual Evidence & Real Operational Photos */}
+          {/* Visual Evidence & Real Operational Photos */}
           <section className="wh-section">
             <h3 className="wh-section-title">
-              {t.common.visualGuideTitle || '시각 가이드 및 현장 사진'}
+              {t.common?.visualGuideTitle || '시각 가이드 및 현장 사진'}
             </h3>
             {currentPage.photos && currentPage.photos.length > 0 ? (
               <div className="express-photos-grid">
                 {currentPage.photos.map((photo, pIdx) => (
-                  <div
+                  <PhotoCard
                     key={pIdx}
-                    className="express-photo-card"
-                    onClick={() => onOpenImage?.(photo.src, photo.title, photo.desc)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onOpenImage?.(photo.src, photo.title, photo.desc);
-                      }
-                    }}
-                  >
-                    <div className="express-photo-img-wrap">
-                      <img src={photo.src} alt={photo.title} loading="lazy" />
-                      <span className="express-photo-zoom-badge">🔍 크게 보기</span>
-                    </div>
-                    <div className="express-photo-info">
-                      <strong className="express-photo-title">{photo.title}</strong>
-                      <p className="express-photo-desc">{photo.desc}</p>
-                    </div>
-                  </div>
+                    photo={photo}
+                    variant="express"
+                    onOpenImage={onOpenImage}
+                    zoomLabel={zoomLabel}
+                  />
                 ))}
               </div>
             ) : currentPage.img ? (
               <div
                 className="clickable-img-frame"
                 onClick={() => onOpenImage?.(currentPage.img, currentPage.placeholder?.title, currentPage.imgCap)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpenImage?.(currentPage.img, currentPage.placeholder?.title, currentPage.imgCap);
+                  }
+                }}
               >
-                <img src={currentPage.img} alt={currentPage.placeholder?.title} />
+                <img src={currentPage.img} alt={currentPage.placeholder?.title || ''} />
                 {currentPage.imgCap && <p className="label-cap">{currentPage.imgCap}</p>}
               </div>
             ) : (
@@ -516,7 +518,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
         </>
       )}
 
-      {/* 5. Key Checklist Box */}
+      {/* 4. Key Checklist Box */}
       {currentPage.checklists && currentPage.checklists.length > 0 && (
         <section className="callout callout-key">
           <div className="callout-icon">✓</div>

@@ -18,7 +18,7 @@ export function EcountViewer({ pageIndex, onOpenImage }) {
 
   if (!section) return null;
 
-  const zoomText = lang === 'en' ? 'Click to enlarge' : lang === 'zh-HK' ? '點擊放大圖片' : '클릭하여 확대';
+  const zoomText = t.common?.zoomIn || (lang === 'en' ? 'Click to enlarge' : lang === 'zh-HK' ? '點擊放大圖片' : '클릭하여 확대');
 
   return (
     <div className="ecount-page">
