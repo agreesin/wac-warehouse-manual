@@ -36,7 +36,71 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 <span className="express-step-num-badge">STEP {step.stepNo}</span>
                 <h3 className="express-step-title">{step.title}</h3>
               </div>
-              <p className="express-step-desc">{step.desc}</p>
+
+              {step.desc && <p className="express-step-desc">{step.desc}</p>}
+
+              {/* Narrative Paragraphs */}
+              {step.paragraphs && step.paragraphs.length > 0 && (
+                <div className="express-step-narrative">
+                  {step.paragraphs.map((para, pIdx) => (
+                    <p key={pIdx} className="express-step-p">
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {/* Highlight Notice / Warning Alert */}
+              {step.notice && (
+                <div className={`express-step-notice ${step.notice.type || 'info'}`}>
+                  <span className="notice-icon">{step.notice.icon || '💡'}</span>
+                  <div className="notice-content">
+                    {step.notice.title && <strong>{step.notice.title}</strong>}
+                    <p>{step.notice.text}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Address Card */}
+              {step.addressCard && (
+                <div className="express-address-mini-card">
+                  <div className="mini-card-head">
+                    <span className="mini-tag">입고 주소 규격</span>
+                    <strong>{step.addressCard.title}</strong>
+                  </div>
+                  <div className="mini-address-lines">
+                    <div className="mini-address-row highlight">
+                      <span className="mono">{step.addressCard.address}</span>
+                    </div>
+                    {step.addressCard.note && (
+                      <p className="mini-address-note">💡 {step.addressCard.note}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Exception Card */}
+              {step.exceptionCard && (
+                <div className="express-exception-neutral-box">
+                  <div className="exception-head">
+                    <span className="exception-badge">예외 보관</span>
+                    <strong className="exception-title">{step.exceptionCard.title}</strong>
+                  </div>
+                  {step.exceptionCard.desc && (
+                    <p className="exception-desc">{step.exceptionCard.desc}</p>
+                  )}
+                  <div className="exception-chips">
+                    {step.exceptionCard.items?.map((item, iIdx) => (
+                      <span key={iIdx} className="exception-chip">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                  {step.exceptionCard.note && (
+                    <p className="exception-note">👉 {step.exceptionCard.note}</p>
+                  )}
+                </div>
+              )}
 
               {step.bullets && step.bullets.length > 0 && (
                 <ul className="express-step-bullets">
@@ -46,7 +110,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </ul>
               )}
 
-              {/* Warning DO / DONT */}
+              {/* Warning DO / DONT (Fallback) */}
               {step.warningDoDont && (
                 <div className="express-dodont-mini-grid">
                   <div className="express-dodont-card do">
@@ -60,7 +124,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Address Info Mini Card */}
+              {/* Address Info Mini Card (Fallback) */}
               {step.addressInfo && (
                 <div className="express-address-mini-card">
                   <div className="mini-card-head">
@@ -78,7 +142,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Rule Formula Banner */}
+              {/* Rule Formula Banner (Fallback) */}
               {step.ruleFormula && (
                 <div className="express-rule-mini-card">
                   <div className="formula-line mono">{step.ruleFormula}</div>
@@ -86,7 +150,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Exception Box (Neutral style: 래핑테이프 상자 앞쪽) */}
+              {/* Exception Box (Fallback) */}
               {step.exceptionBox && (
                 <div className="express-exception-neutral-box">
                   <div className="exception-head">
