@@ -1674,59 +1674,152 @@
   aspect-ratio: 16 / 9;
 }
 
-/* Inbound Cargo 3 Forms Grid (High Scannability) */
-.express-cargo-forms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin: 6px 0 10px;
-}
-
-.cargo-form-chip {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px 14px;
+/* Inbound Cargo 3 Forms & Workflow (Step 1) */
+.express-cargo-workflow-section {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 12px;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  margin: 10px 0 14px;
 }
 
-.cargo-form-chip:hover {
-  border-color: #94a3b8;
+.express-cargo-workflow-lead {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.5;
+  margin: 0;
+  padding: 8px 12px;
   background: #f1f5f9;
+  border-left: 4px solid #3b82f6;
+  border-radius: 6px;
 }
 
-.cargo-form-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #e2e8f0;
+.express-cargo-workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.cargo-workflow-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cargo-workflow-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.cargo-workflow-card-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.cargo-form-text {
+.cargo-workflow-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cargo-workflow-num {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #475569;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cargo-workflow-name {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.cargo-workflow-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.cargo-workflow-badge.blue {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.cargo-workflow-badge.amber {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.cargo-workflow-badge.green {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.cargo-workflow-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cargo-workflow-row {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.cargo-form-name {
-  font-size: 0.94rem;
-  font-weight: 800;
-  color: #0f172a;
+.cargo-workflow-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.02em;
 }
 
-.cargo-form-desc {
-  font-size: 0.83rem;
-  color: #475569;
-  line-height: 1.45;
+.cargo-workflow-val {
+  font-size: 0.86rem;
+  color: #334155;
+  line-height: 1.5;
   margin: 0;
+}
+
+.cargo-workflow-row.work-row {
+  background: #f8fafc;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.cargo-workflow-label.work-label {
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.cargo-workflow-val.work-val {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.cargo-cutter-warning {
+  margin-top: 2px;
 }
 
 
