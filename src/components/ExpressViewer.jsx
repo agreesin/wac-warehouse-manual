@@ -32,6 +32,53 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
         <section className="wh-section express-id-rule-section">
           <h3 className="wh-section-title">{currentPage.idRuleSection.title}</h3>
 
+          {/* Mistake Prevention Warning (DO NOT use 화물 ID vs DO use 고객 ID) */}
+          {currentPage.idRuleSection.mistakeWarning && (
+            <div className="express-mistake-card">
+              <div className="express-mistake-header">
+                <span className="express-mistake-badge">치명적 주의</span>
+                <strong className="express-mistake-title">
+                  {currentPage.idRuleSection.mistakeWarning.title}
+                </strong>
+              </div>
+              <p className="express-mistake-desc">
+                {currentPage.idRuleSection.mistakeWarning.desc}
+              </p>
+              <div className="express-mistake-grid">
+                {/* DO Box */}
+                <div className="express-do-box">
+                  <div className="do-header">
+                    <span className="do-badge">
+                      {currentPage.idRuleSection.mistakeWarning.doBox.badge}
+                    </span>
+                    <strong>{currentPage.idRuleSection.mistakeWarning.doBox.title}</strong>
+                  </div>
+                  <div className="do-code mono">
+                    {currentPage.idRuleSection.mistakeWarning.doBox.example}
+                  </div>
+                  <p className="do-detail">
+                    {currentPage.idRuleSection.mistakeWarning.doBox.detail}
+                  </p>
+                </div>
+                {/* DONT Box */}
+                <div className="express-dont-box">
+                  <div className="dont-header">
+                    <span className="dont-badge">
+                      {currentPage.idRuleSection.mistakeWarning.dontBox.badge}
+                    </span>
+                    <strong>{currentPage.idRuleSection.mistakeWarning.dontBox.title}</strong>
+                  </div>
+                  <div className="dont-code mono">
+                    {currentPage.idRuleSection.mistakeWarning.dontBox.example}
+                  </div>
+                  <p className="dont-detail">
+                    {currentPage.idRuleSection.mistakeWarning.dontBox.detail}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Address Guide Box */}
           {currentPage.idRuleSection.addressGuide && (
             <div className="express-address-card">
