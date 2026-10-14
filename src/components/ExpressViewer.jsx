@@ -87,6 +87,51 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
+              {/* Food Box Highlight Card (Placed at the FRONT of sorting workflow) */}
+              {step.foodBoxCard && (
+                <div className="express-foodbox-card">
+                  <div className="foodbox-head">
+                    <span className="foodbox-badge">식품 박스</span>
+                    <strong className="foodbox-title">{step.foodBoxCard.title}</strong>
+                  </div>
+                  <div className="foodbox-content-row">
+                    <div className="foodbox-text-col">
+                      <p className="foodbox-desc">{step.foodBoxCard.desc}</p>
+                      {step.foodBoxCard.bullets && (
+                        <ul className="foodbox-bullets">
+                          {step.foodBoxCard.bullets.map((b, bIdx) => (
+                            <li key={bIdx}>{b}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    {step.foodBoxCard.photo && (
+                      <div
+                        className="step-photo-card foodbox-photo-card"
+                        onClick={() => onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc);
+                          }
+                        }}
+                      >
+                        <div className="step-photo-img-wrap">
+                          <img src={step.foodBoxCard.photo.src} alt={step.foodBoxCard.photo.title} loading="lazy" />
+                          <span className="step-photo-zoom-badge">🔍 크게 보기</span>
+                        </div>
+                        <div className="step-photo-info">
+                          <strong className="step-photo-title">{step.foodBoxCard.photo.title}</strong>
+                          <p className="step-photo-desc">{step.foodBoxCard.photo.desc}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Narrative Paragraphs */}
               {step.paragraphs && step.paragraphs.length > 0 && (
                 <div className="express-step-narrative">
@@ -132,51 +177,6 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                   <div className="notice-content">
                     {step.notice.title && <strong>{step.notice.title}</strong>}
                     <p>{step.notice.text}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Food Box Highlight Card (Compact) */}
-              {step.foodBoxCard && (
-                <div className="express-foodbox-card">
-                  <div className="foodbox-head">
-                    <span className="foodbox-badge">식품 박스</span>
-                    <strong className="foodbox-title">{step.foodBoxCard.title}</strong>
-                  </div>
-                  <div className="foodbox-content-row">
-                    <div className="foodbox-text-col">
-                      <p className="foodbox-desc">{step.foodBoxCard.desc}</p>
-                      {step.foodBoxCard.bullets && (
-                        <ul className="foodbox-bullets">
-                          {step.foodBoxCard.bullets.map((b, bIdx) => (
-                            <li key={bIdx}>{b}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    {step.foodBoxCard.photo && (
-                      <div
-                        className="step-photo-card foodbox-photo-card"
-                        onClick={() => onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            onOpenImage?.(step.foodBoxCard.photo.src, step.foodBoxCard.photo.title, step.foodBoxCard.photo.desc);
-                          }
-                        }}
-                      >
-                        <div className="step-photo-img-wrap">
-                          <img src={step.foodBoxCard.photo.src} alt={step.foodBoxCard.photo.title} loading="lazy" />
-                          <span className="step-photo-zoom-badge">🔍 크게 보기</span>
-                        </div>
-                        <div className="step-photo-info">
-                          <strong className="step-photo-title">{step.foodBoxCard.photo.title}</strong>
-                          <p className="step-photo-desc">{step.foodBoxCard.photo.desc}</p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
