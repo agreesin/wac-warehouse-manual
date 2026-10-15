@@ -43,9 +43,12 @@ function PhotoCard({ photo, className = '', variant = 'step', onOpenImage, zoomL
     }
   };
 
+  const portraitClass = (photo.isPortrait || photo.portrait) ? 'portrait-card' : '';
+  const fitClass = photo.fit === 'contain' ? 'fit-contain' : '';
+
   return (
     <div
-      className={`${baseCardClass} ${className}`.trim()}
+      className={`${baseCardClass} ${portraitClass} ${fitClass} ${className}`.trim()}
       onClick={handleClick}
       role="button"
       tabIndex={0}
@@ -337,6 +340,15 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 <StepNotice notice={step.notice} />
               )}
 
+              {/* Multiple Notices Stack */}
+              {step.notices && step.notices.length > 0 && (
+                <div className="express-notices-stack">
+                  {step.notices.map((n, nIdx) => (
+                    <StepNotice key={nIdx} notice={n} />
+                  ))}
+                </div>
+              )}
+
               {/* Exception Card */}
               {(step.exceptionCard || step.exceptionBox) && (
                 <ExceptionCard
@@ -378,11 +390,26 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Outro Paragraphs (Displayed after cargo cards) */}
+              {/* Flow Procedure inside Step (e.g. Chapter 4 3-stage process) */}
+              {step.flow && step.flow.length > 0 && (
+                <div className="express-flow-grid" style={{ marginTop: '14px', marginBottom: '14px' }}>
+                  {step.flow.map((f, idx) => (
+                    <div key={idx} className="express-flow-card">
+                      <div className="express-flow-header">
+                        <span className="express-flow-step">{f.step}</span>
+                        <strong className="express-flow-head">{f.head}</strong>
+                      </div>
+                      <p className="express-flow-desc" style={{ whiteSpace: 'pre-line' }}>{f.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Outro Paragraphs (Displayed after cargo cards / flow) */}
               {step.outroParagraphs && step.outroParagraphs.length > 0 && (
                 <div className="express-step-narrative" style={{ marginTop: '12px' }}>
                   {step.outroParagraphs.map((para, pIdx) => (
-                    <p key={pIdx} className="express-step-p highlight-lead">
+                    <p key={pIdx} className="express-step-p highlight-lead" style={{ whiteSpace: 'pre-line' }}>
                       {para}
                     </p>
                   ))}
@@ -402,7 +429,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
               {step.bullets && step.bullets.length > 0 && (
                 <ul className="express-step-bullets">
                   {step.bullets.map((b, bIdx) => (
-                    <li key={bIdx}>{b}</li>
+                    <li key={bIdx} style={{ whiteSpace: 'pre-line' }}>{b}</li>
                   ))}
                 </ul>
               )}
