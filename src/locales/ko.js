@@ -261,7 +261,7 @@ export default {
               {
                 src: "/express/02-pallet-arrival.jpg",
                 title: "아침 도착 화물 실물 (창고 입구)",
-                desc: "창고 입구 앞에 파렛타이징(비닐 랩 포장)되어 도착한 당일 작업 대상 화물"
+                desc: "창고 입구 앞에 파렛타이징되어 도착한 당일 작업 대상 화물"
               }
             ]
           },
