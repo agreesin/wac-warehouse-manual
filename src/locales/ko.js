@@ -481,7 +481,7 @@ export default {
               },
               {
                 src: "/express/02-labeling-overview.jpg",
-                title: "랙별 라벨링 작업 현장 (전경)",
+                title: "랙별 라벨링 작업 현장",
                 desc: "작업자들이 각자 랙 하나씩을 맡아 랙 앞 바닥의 화물들을 확인하며 라벨 스티커를 부착하는 전체 작업 모습"
               }
             ]
