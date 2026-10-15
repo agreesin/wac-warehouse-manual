@@ -289,7 +289,7 @@ export default {
                 badge: "단독 대형 화물",
                 head: "단독 대형 화물\n(개별 박스)",
                 photo: {
-                  src: "/express/00-cargo-single.jpg",
+                  src: "/express/00-cargo-single.jpg?v=2",
                   title: "단독 화물 실물",
                   desc: "콘솔 포장 없이 개별 상자 그대로 입고된 화물"
                 },
