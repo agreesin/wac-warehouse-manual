@@ -246,7 +246,7 @@ export default {
         stepNo: "00",
         timeBadge: "W-EXPRESS 개요",
         title: "W-EXPRESS 업무 소개",
-        sub: "한국 → 홍콩 항공 특송 및 일일 2대 핵심 업무 흐름 (정리 & 포장)",
+        sub: "항공 특송 핵심 업무 흐름",
         calloutHead: "W-EXPRESS 업무 시작 전 안내",
         calloutLead: "W-EXPRESS의 전체 업무 흐름을 쉽게 파악할 수 있도록 제작된 매뉴얼입니다. 현장 투입 전 담당자의 상세한 교육이 진행되니 부담 갖지 않으셔도 됩니다. 사전 학습용으로는 물론, 실무 중 헷갈리는 내용이 생길 때마다 언제든 참고하시기 바랍니다.",
         stepsWithPhotos: [

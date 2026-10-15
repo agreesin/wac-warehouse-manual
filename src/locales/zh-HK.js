@@ -248,7 +248,7 @@ export default {
         stepNo: "00",
         timeBadge: "W-EXPRESS 概覽",
         title: "W-EXPRESS 業務介紹",
-        sub: "韓國 → 香港航空特快及每日兩大核心流程 (整理與打包)",
+        sub: "航空特快核心業務流程",
         calloutHead: "W-EXPRESS 業務手冊指引",
         calloutLead: "歡迎參閱 W-EXPRESS 業務手冊。本手冊旨在讓您掌握整體作業流程，投入工作前現場負責人亦會進行培訓，請無需過分擔憂。本手冊有助於快速吸收培訓內容，培訓後遇有疑問時可隨時查閱參考。",
         stepsWithPhotos: [

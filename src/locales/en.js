@@ -246,7 +246,7 @@ export default {
         stepNo: "00",
         timeBadge: "W-EXPRESS Overview",
         title: "W-EXPRESS Introduction",
-        sub: "Korea → Hong Kong Air Express & 2 Core Daily Warehouse Workflows (Sorting & Packing)",
+        sub: "Air Express Core Workflows",
         calloutHead: "W-EXPRESS Operations Manual Guide",
         calloutLead: "Welcome to the W-EXPRESS manual. This guide is designed to help you understand the overall workflow. You will receive hands-on training before beginning work, so do not worry. Use this manual to absorb the training quickly and refer back whenever you need clarification.",
         stepsWithPhotos: [
