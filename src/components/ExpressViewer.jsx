@@ -354,7 +354,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                           <span className="cargo-type-tag">{c.tag}</span>
                           <span className="cargo-type-badge">{c.badge}</span>
                         </div>
-                        <strong className="cargo-type-head">{c.head}</strong>
+                        {c.head && <strong className="cargo-type-head">{c.head}</strong>}
                       </div>
                       {c.photo && (
                         <PhotoCard
@@ -620,7 +620,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                         <span className="cargo-type-tag">{c.tag}</span>
                         <span className="cargo-type-badge">{c.badge}</span>
                       </div>
-                      <strong className="cargo-type-head">{c.head}</strong>
+                      {c.head && <strong className="cargo-type-head">{c.head}</strong>}
                     </div>
                     {c.photo && (
                       <PhotoCard
