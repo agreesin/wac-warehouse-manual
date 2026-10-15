@@ -705,28 +705,6 @@ export default {
           },
           {
             stepNo: "2",
-            title: "3-Stage Standard Rack Storage Procedure",
-            desc: "Systematically organize remaining parcels to prevent misplacement and maximize warehouse efficiency.",
-            flow: [
-              {
-                step: "Stage 1 - Tally",
-                head: "Tally Box Counts & Number Range Grouping",
-                desc: "Check number ranges of non-dispatched cargo (e.g. 0000s, 1000s) and allocate to designated rack sections.\n※ Strictly distinguish 010 vs 011 prefixes even if the last 4 digits match."
-              },
-              {
-                step: "Stage 2 - Stack",
-                head: "Mark Box Numbers & Safe Stacking",
-                desc: "Write box numbers largely, face them toward the aisle, and stack neatly onto designated shelves.\n※ Store ultra-small parcels inside the blue container bin."
-              },
-              {
-                step: "Stage 3 - Clear",
-                head: "Clear Aisles & Final Inspection",
-                desc: "Sweep work aisles clean of tape scraps and cardboard debris, and verify all stored items are neatly aligned for tomorrow's dispatch."
-              }
-            ]
-          },
-          {
-            stepNo: "3",
             title: "Final Warehouse Cleanliness & End-of-Day Inspection",
             desc: "Panoramic overview of the entire warehouse after completing same-day dispatches, rack shelving, and aisle sweeping.",
             guidePhoto: {
