@@ -349,7 +349,7 @@ export default {
             ]
           },
           {
-            title: "창고 구역 도면 (화물별 정위치 정리)",
+            title: "창고 구역 도면",
             desc: "이제 이 4가지 종류의 화물들을\n정해진 위치에 정리를 시작합니다.",
             layoutMap: {
               photo: {
