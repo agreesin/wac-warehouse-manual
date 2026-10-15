@@ -512,10 +512,14 @@ export default {
             ],
             photos: [
               {
-                placeholder: true,
-                badge: "사진 첨부 예정",
-                title: "03. 라벨 스티커 부착 실물 예시",
-                desc: "상자에 기부착된 화물코드(화물 ID)와 라벨 스티커의 화물 ID 일치 확인 후 부착한 실물 사진 (추후 등록 예정)"
+                src: "/express/02-label-before.jpg",
+                title: "라벨 부착 전: 고객 ID(W010-4777) & 화물 ID(W1014-5038) 동시 대조",
+                desc: "동일 고객 ID(W010-4777) 스티커 중 화물 겉면 QR 라벨의 화물 ID(W1014-5038)와 정확히 일치하는 스티커 확인"
+              },
+              {
+                src: "/express/02-label-after.jpg",
+                title: "라벨 부착 후: 화물 ID 일치 라벨 스티커 부착 완료",
+                desc: "화물 ID(W1014-5038)가 일치하는 스티커를 겉면 QR 라벨 옆에 부착 완료한 모습 (남은 다른 화물용 스티커와 분리)"
               }
             ]
           },
