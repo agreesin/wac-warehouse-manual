@@ -739,7 +739,7 @@ export default {
           {
             src: "/express/04-rack-organized.jpg",
             title: "랙 정리 후 상자 적재 완료 모습",
-            desc: "통로에서 쉽게 식별할 수 있도록 상자 겉면에 번호를 크게 적어 지정 랙 선반에 번호대별로 깔끔하게 적재 완료한 모습"
+            desc: "통로에서 쉽게 식별할 수 있도록 상자 겉면에 번호를 크게 적어 지정 랙 선반에 번호대별로 적재 완료한 모습"
           },
           {
             src: "/express/04-warehouse-completed.jpg",
