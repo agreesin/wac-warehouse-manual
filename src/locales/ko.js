@@ -476,15 +476,14 @@ export default {
             ],
             photos: [
               {
-                src: "/express/02-labeling-overview.jpg",
-                title: "01. 랙별 라벨링 작업 현장 (전경)",
-                desc: "작업자들이 각자 랙 하나씩을 맡아 랙 앞 바닥의 화물들을 확인하며 라벨 스티커를 부착하는 전체 작업 모습"
+                src: "/express/02-label-stickers-prepared.jpg",
+                title: "고객 ID순 정렬된 라벨 스티커 준비 실물",
+                desc: "바구니에 고객 ID 순서대로 인쇄 및 정리되어 준비된 라벨 스티커 용지 실물"
               },
               {
-                placeholder: true,
-                badge: "사진 첨부 예정",
-                title: "02. 랙 앞 화물 대조 작업",
-                desc: "담당 랙 앞 상자 송장 정보 확인 및 라벨 스티커 대조 작업 사진 (추후 등록 예정)"
+                src: "/express/02-labeling-overview.jpg",
+                title: "랙별 라벨링 작업 현장 (전경)",
+                desc: "작업자들이 각자 랙 하나씩을 맡아 랙 앞 바닥의 화물들을 확인하며 라벨 스티커를 부착하는 전체 작업 모습"
               }
             ]
           },
