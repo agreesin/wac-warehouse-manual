@@ -697,6 +697,13 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 hint={currentPage.placeholder?.hint}
               />
             )}
+
+            {/* Photo Tip / Extra Notice below photos */}
+            {(currentPage.photoNotice || currentPage.photoTip) && (
+              <div style={{ marginTop: '16px' }}>
+                <StepNotice notice={currentPage.photoNotice || currentPage.photoTip} />
+              </div>
+            )}
           </section>
         </>
       )}

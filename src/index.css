@@ -1635,6 +1635,25 @@
   white-space: pre-line;
 }
 
+.express-step-notice.info .notice-content strong {
+  color: #166534;
+}
+.express-step-notice.info .notice-content p {
+  color: #14532d;
+}
+
+.express-step-notice.blue {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #2563eb;
+}
+.express-step-notice.blue .notice-content strong {
+  color: #1e40af;
+}
+.express-step-notice.blue .notice-content p {
+  color: #1e3a8a;
+}
+
 .mini-address-note {
   font-size: 0.82rem;
   color: #0369a1;
