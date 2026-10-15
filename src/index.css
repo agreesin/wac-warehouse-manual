@@ -2056,6 +2056,23 @@
   align-items: start;
 }
 
+.warehouse-layout-grid.single-col {
+  display: block;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.warehouse-layout-grid.single-col .warehouse-layout-map-col {
+  width: 100%;
+}
+
+.warehouse-layout-container.single-layout .warehouse-layout-conclusion {
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 @media (max-width: 860px) {
   .warehouse-layout-grid {
     grid-template-columns: 1fr;
@@ -2078,7 +2095,7 @@
 
 .warehouse-map-photo-card .step-photo-img-wrap {
   aspect-ratio: auto;
-  max-height: 560px;
+  max-height: 720px;
   background: #0f172a;
   display: flex;
   align-items: center;
@@ -2088,7 +2105,7 @@
 .warehouse-map-photo-card .step-photo-img-wrap img {
   width: 100%;
   height: auto;
-  max-height: 560px;
+  max-height: 720px;
   object-fit: contain;
   display: block;
 }

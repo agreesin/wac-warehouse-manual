@@ -184,10 +184,11 @@ function ExceptionCard({ card, onOpenImage, zoomLabel }) {
 function WarehouseLayoutMap({ layout, onOpenImage, zoomLabel }) {
   if (!layout) return null;
   const { photo, zones, conclusion } = layout;
+  const hasZones = zones && zones.length > 0;
 
   return (
-    <div className="warehouse-layout-container">
-      <div className="warehouse-layout-grid">
+    <div className={`warehouse-layout-container ${!hasZones ? 'single-layout' : ''}`.trim()}>
+      <div className={`warehouse-layout-grid ${!hasZones ? 'single-col' : ''}`.trim()}>
         {photo && (
           <div className="warehouse-layout-map-col">
             <PhotoCard
@@ -198,7 +199,7 @@ function WarehouseLayoutMap({ layout, onOpenImage, zoomLabel }) {
             />
           </div>
         )}
-        {zones && zones.length > 0 && (
+        {hasZones && (
           <div className="warehouse-layout-zones-col">
             <div className="warehouse-zones-list">
               {zones.map((zone, zIdx) => (
