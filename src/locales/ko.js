@@ -508,7 +508,7 @@ export default {
               {
                 src: "/express/02-label-after.jpg",
                 title: "라벨 부착 후: 화물 ID 일치 라벨 스티커 부착 완료",
-                desc: "화물 ID(W1014-5038)가 일치하는 스티커를 겉면 QR 라벨 옆에 부착 완료한 모습"
+                desc: "고객 ID와 CTN NO가 일치하는 스티커를 포장지 빈 공간에 부착 완료한 모습"
               }
             ]
           },
