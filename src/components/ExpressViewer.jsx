@@ -332,8 +332,10 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 </div>
               )}
 
-              {/* Highlight Notice / Warning Alert */}
-              {step.notice && <StepNotice notice={step.notice} />}
+              {/* Highlight Notice / Warning Alert (Top placement by default) */}
+              {step.notice && step.notice.position !== 'bottom' && step.noticePosition !== 'bottom' && (
+                <StepNotice notice={step.notice} />
+              )}
 
               {/* Exception Card */}
               {(step.exceptionCard || step.exceptionBox) && (
@@ -439,6 +441,11 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                     />
                   ))}
                 </div>
+              )}
+
+              {/* Highlight Notice / Warning Alert (Bottom placement after photos) */}
+              {(step.noticeBottom || (step.notice && (step.notice.position === 'bottom' || step.noticePosition === 'bottom'))) && (
+                <StepNotice notice={step.noticeBottom || step.notice} />
               )}
             </section>
             );
