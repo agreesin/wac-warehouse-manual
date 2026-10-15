@@ -283,7 +283,7 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                   </h3>
                 </div>
 
-              {step.desc && <p className="express-step-desc">{step.desc}</p>}
+              {step.desc && <p className="express-step-desc" style={{ whiteSpace: 'pre-line' }}>{step.desc}</p>}
 
               {/* Food Box Highlight Card (Placed at the FRONT of sorting workflow) */}
               {step.foodBoxCard && (
