@@ -434,12 +434,18 @@ export default {
                 "송장이 훼손되거나 번호 식별이 어려운 화물"
               ],
               note: "따로 모아두면 담당자가 확인 후 별도 처리를 진행합니다.",
-              photo: {
-                placeholder: true,
-                badge: "사진 첨부 예정",
-                title: "예외 화물 실물 및 보관 위치 예시",
-                desc: "래핑테이프 상자 앞쪽에 모아둔 예외 화물 실물 및 보관 위치 사진 (추후 첨부 예정)"
-              }
+              photos: [
+                {
+                  src: "/express/01-exception-english-prefix.jpg",
+                  title: "예외 실물 ① : WB 등 영문 번호 형식",
+                  desc: "송장 주소란에 W01*-**** 대신 'WB167689' 등 영문 번호가 적힌 화물 ➔ 래핑테이프 상자 앞 보관"
+                },
+                {
+                  src: "/express/01-exception-no-id.jpg",
+                  title: "예외 실물 ② : 고객 ID 누락 화물",
+                  desc: "송장 주소란에 고객 ID가 누락된 화물 (하단 QR 라벨의 화물 ID로 오분류 금지 ➔ 래핑테이프 상자 앞 보관)"
+                }
+              ]
             },
             photos: [
               {

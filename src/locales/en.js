@@ -406,7 +406,19 @@ export default {
                 "Waybills missing the W01*-**** Customer ID in address",
                 "Damaged or unreadable waybills"
               ],
-              note: "Once grouped, the area supervisor will inspect and process them separately."
+              note: "Once grouped, the area supervisor will inspect and process them separately.",
+              photos: [
+                {
+                  src: "/express/01-exception-english-prefix.jpg",
+                  title: "Exception Sample ①: Letter Prefix (e.g. WB167689)",
+                  desc: "Shipments with WB/HG prefix numbers instead of standard Customer IDs ➔ Stage in front of wrapping tape boxes"
+                },
+                {
+                  src: "/express/01-exception-no-id.jpg",
+                  title: "Exception Sample ②: Missing Customer ID",
+                  desc: "Waybill address completely missing Customer ID (do not sort by QR label) ➔ Stage in front of wrapping tape boxes"
+                }
+              ]
             },
             photos: [
               {

@@ -1843,16 +1843,27 @@
 }
 
 .exception-photo-wrap {
-  margin-top: 8px;
+  margin-top: 10px;
+}
+
+.exception-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
 }
 
 .exception-photo-card {
   max-width: 440px;
 }
 
+.exception-photos-grid .exception-photo-card {
+  max-width: 100%;
+}
+
 .exception-photo-card .placeholder-img-wrap,
 .exception-photo-card .step-photo-img-wrap {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 10;
 }
 
 /* Inline Step Photos Strip */

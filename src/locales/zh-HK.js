@@ -408,7 +408,19 @@ export default {
                 "運單地址欄無 W01*-**** 客戶 ID 之貨物",
                 "運單損壞或編號模糊難以辨識之貨物"
               ],
-              note: "集中放置後，負責主管將會進行核對並作後續專項處理。"
+              note: "集中放置後，負責主管將會進行核對並作後續專項處理。",
+              photos: [
+                {
+                  src: "/express/01-exception-english-prefix.jpg",
+                  title: "例外貨物實物 ①：WB·HG 等英文字母開頭 (WB167689)",
+                  desc: "運單地址欄為英文字母開頭而非標準客戶 ID ➔ 集中放於打包膠紙箱前方"
+                },
+                {
+                  src: "/express/01-exception-no-id.jpg",
+                  title: "例外貨物實物 ②：缺少客戶 ID 之貨物",
+                  desc: "運單地址欄完全缺少客戶 ID（切勿依下方 QR 標籤盲目分類）➔ 集中放於打包膠紙箱前方"
+                }
+              ]
             },
             photos: [
               {

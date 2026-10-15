@@ -167,7 +167,19 @@ function ExceptionCard({ card, onOpenImage, zoomLabel }) {
         </div>
       )}
       {card.note && <p className="exception-note">👉 {card.note}</p>}
-      {card.photo && (
+      {card.photos && card.photos.length > 0 ? (
+        <div className="exception-photos-grid">
+          {card.photos.map((p, idx) => (
+            <PhotoCard
+              key={idx}
+              photo={p}
+              className="exception-photo-card"
+              onOpenImage={onOpenImage}
+              zoomLabel={zoomLabel}
+            />
+          ))}
+        </div>
+      ) : card.photo ? (
         <div className="exception-photo-wrap">
           <PhotoCard
             photo={card.photo}
@@ -176,7 +188,7 @@ function ExceptionCard({ card, onOpenImage, zoomLabel }) {
             zoomLabel={zoomLabel}
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
