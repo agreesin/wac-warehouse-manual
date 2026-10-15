@@ -268,8 +268,8 @@ export default {
           },
           {
             stepNo: "2",
-            title: "Move Pallets Indoors Using Pallet Jack",
-            desc: "Use manual/electric pallet jacks to safely move pallets from outside into the warehouse work area.",
+            title: "Move Pallets Indoors",
+            desc: "Use pallet jacks to safely move pallets from outside into the warehouse work area.",
             paragraphs: [
               "Workers use pallet jacks (electric or manual) to pull the pallets inside the warehouse.",
               "Once moved indoors safely, workers strip off the stretch wrap and begin inbound sorting."
