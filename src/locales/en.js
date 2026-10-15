@@ -402,8 +402,7 @@ export default {
               title: "Exception Parcels Grouped in Front of Wrapping Tape Boxes",
               desc: "If you encounter any of the following during sorting, do not place them at Racks 0–9; set them aside in front of the wrapping tape boxes.",
               items: [
-                "Numbers starting with WB prefix",
-                "Numbers starting with HG prefix",
+                "Numbers starting with WB, HG or other letter prefixes",
                 "Waybills missing the W01*-**** Customer ID in address",
                 "Damaged or unreadable waybills"
               ],
