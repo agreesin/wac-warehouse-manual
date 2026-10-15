@@ -478,7 +478,7 @@ export default {
               {
                 src: "/express/02-label-stickers-prepared.jpg",
                 title: "고객 ID순 정렬된 라벨 스티커 준비 실물",
-                desc: "바구니에 고객 ID 순서대로 인쇄 및 정리되어 준비된 라벨 스티커 용지 실물"
+                desc: "라벨 스티커 용지 실물"
               },
               {
                 src: "/express/02-labeling-overview.jpg",
