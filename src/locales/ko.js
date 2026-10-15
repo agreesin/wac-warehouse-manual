@@ -523,6 +523,11 @@ export default {
             stepNo: "3",
             title: "라벨 표식(작대기·X·무표시)별 위치 분배 & 동일 고객 ID 모으기",
             desc: "라벨 스티커를 붙이면서 동시에 출고 유형(배송/픽업/일반)에 따라 상자 위치를 나누고, 같은 고객 ID끼리 한 덩어리로 모아둡니다.",
+            guidePhoto: {
+              src: "/express/02-customer-id-grouping.jpg",
+              title: "라벨 부착 및 고객 ID별 화물 모아두기 실물 현장 (클릭 시 크게 보기)",
+              desc: "라벨 스티커를 부착하면서 동일 고객 ID(예: W010-3332, 키노, 비닐 화물 등)끼리 한곳에 모아둔 현장 모습"
+            },
             notice: {
               type: "info",
               icon: "💡",
