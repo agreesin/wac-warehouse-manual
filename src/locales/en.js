@@ -401,7 +401,7 @@ export default {
               title: "Exception Parcels Grouped in Front of Wrapping Tape Boxes",
               desc: "If you encounter any of the following during sorting, do not place them at Racks 0–9; set them aside in front of the wrapping tape boxes.",
               items: [
-                "Numbers starting with WB, HG or other letter prefixes",
+                "Non-standard code formats with '0001-WB...' (e.g. W011-0001-WB167689)",
                 "Waybills missing the W01*-**** Customer ID in address",
                 "Damaged or unreadable waybills"
               ],
@@ -409,13 +409,13 @@ export default {
               photos: [
                 {
                   src: "/express/01-exception-english-prefix.jpg",
-                  title: "Exception Sample ①: Letter Prefix (e.g. WB167689)",
-                  desc: "Shipments with WB/HG prefix numbers instead of standard Customer IDs ➔ Stage in front of wrapping tape boxes"
+                  title: "Exception Sample ①: 0001-WB Non-standard Long Code",
+                  desc: "Waybills with '0001-WB...' format instead of standard Customer IDs (e.g. W011-0001-WB167689)\n💡 Identification Tip: Check if '0001' is present, or spot 'WB' letters which make the code noticeably longer than standard labels ➔ Stage in designated area"
                 },
                 {
                   src: "/express/01-exception-no-id.jpg",
                   title: "Exception Sample ②: Missing Customer ID",
-                  desc: "Waybill address completely missing Customer ID (do not sort by QR label) ➔ Stage in front of wrapping tape boxes"
+                  desc: "Waybill address completely missing Customer ID (do not sort by QR label) ➔ Stage in designated area"
                 }
               ]
             },
@@ -423,7 +423,7 @@ export default {
               {
                 src: "/express/01-rack-floor-sorting.jpg",
                 title: "Racks 0–9 Floor Alignment Area (Click to Enlarge)",
-                desc: "Workers sorting general parcels along the floor aisles in front of Racks 0–9 by customer ID (exceptions staged at wrapping tape boxes)"
+                desc: "Workers sorting general parcels along the floor aisles in front of Racks 0–9 by customer ID (exceptions staged in designated area)"
               }
             ]
           }
@@ -433,7 +433,7 @@ export default {
           "❌ Did you avoid sorting by the box's QR label (Cargo ID) number, and ⭕ verify the 'W01*-****' Customer ID in the courier waybill address?",
           "Did you place parcels in front of Racks 0–9 based on the first digit of the last 4 digits in Customer ID? (e.g. W010-0161 ➔ Rack 0)",
           "🧊 Were food boxes sealed with blue tape (regular cardboard / styrofoam, F-code) placed on the 'Central Workbench' instead of the racks?",
-          "Were WB/HG prefix shipments or parcels with missing/unclear IDs segregated in front of the wrapping tape boxes?",
+          "Were non-standard parcels (long 0001-WB codes) or unidentifiable parcels staged in the designated area?",
           "Did you exercise caution when slitting open sacks and consol boxes to avoid slicing into internal goods?"
         ]
       },
