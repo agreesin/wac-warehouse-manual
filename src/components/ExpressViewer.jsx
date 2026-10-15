@@ -166,11 +166,7 @@ function ExceptionCard({ card, onOpenImage, zoomLabel }) {
           ))}
         </div>
       )}
-      {card.note && (
-        <p className="exception-note" style={{ whiteSpace: 'pre-line' }}>
-          {card.note.startsWith('💡') || card.note.startsWith('👉') ? card.note : `👉 ${card.note}`}
-        </p>
-      )}
+      {card.note && <p className="exception-note">👉 {card.note}</p>}
       {card.photos && card.photos.length > 0 ? (
         <div className="exception-photos-grid">
           {card.photos.map((p, idx) => (
