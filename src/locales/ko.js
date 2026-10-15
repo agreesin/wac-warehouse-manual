@@ -368,7 +368,7 @@ export default {
         stepNo: "01",
         timeBadge: "입고 및 1차 분류",
         title: "파레트 입고 및 1차 분류",
-        sub: "파레트 포장 해체, 송장 주소란 고객 ID 확인, 랙 별 분류",
+        sub: "송장 주소란 고객 ID 확인, 랙 별 분류",
         calloutHead: "1차 분류 작업이란?",
         calloutLead: "창고 안으로 반입된 파레트의 화물들을 해체한 뒤, 송장 주소란의 고객 ID(0~9번)에 맞춰 0~9번 랙 앞 바닥 통로에 분배하여 가져다 놓는 작업입니다.",
         stepsWithPhotos: [
