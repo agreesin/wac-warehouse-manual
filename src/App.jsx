@@ -271,11 +271,11 @@ export function App() {
           >
             <div className="page-inner">
               <header className="page-head">
-                <div className="page-head-top">
-                  <div>
-                    <h2>{currentPage.title}</h2>
-                    <p>{currentPage.sub}</p>
-                  </div>
+                <div className="page-head-left">
+                  <h2>{currentPage.title}</h2>
+                  <p>{currentPage.sub}</p>
+                </div>
+                <div className="page-head-right">
                   <div className="desktop-actions">
                     <button
                       type="button"
@@ -288,9 +288,9 @@ export function App() {
                     </button>
                     <LanguageSelector className="desktop-lang-selector" />
                   </div>
-                </div>
-                <div className="page-meta mono">
-                  {String(safeIdx + 1).padStart(2, '0')} / {String(ecountPages.length).padStart(2, '0')}
+                  <div className="page-meta mono">
+                    {String(safeIdx + 1).padStart(2, '0')} / {String(ecountPages.length).padStart(2, '0')}
+                  </div>
                 </div>
               </header>
 
@@ -382,11 +382,11 @@ export function App() {
           >
             <div className="page-inner">
               <header className="page-head">
-                <div className="page-head-top">
-                  <div>
-                    <h2>{currentPage?.title}</h2>
-                    <p>{currentPage?.sub}</p>
-                  </div>
+                <div className="page-head-left">
+                  <h2>{currentPage?.title}</h2>
+                  <p>{currentPage?.sub}</p>
+                </div>
+                <div className="page-head-right">
                   <div className="desktop-actions">
                     <button
                       type="button"
@@ -399,9 +399,9 @@ export function App() {
                     </button>
                     <LanguageSelector className="desktop-lang-selector" />
                   </div>
-                </div>
-                <div className="page-meta mono">
-                  {String(safeIdx + 1).padStart(2, '0')} / {String(expressPages.length).padStart(2, '0')}
+                  <div className="page-meta mono">
+                    {String(safeIdx + 1).padStart(2, '0')} / {String(expressPages.length).padStart(2, '0')}
+                  </div>
                 </div>
               </header>
 
@@ -495,11 +495,11 @@ export function App() {
           >
             <div className="page-inner">
               <header className="page-head">
-                <div className="page-head-top">
-                  <div>
-                    <h2>{t.warehouse.chapters[chapter]}</h2>
-                    <p>{currentPage.sub}</p>
-                  </div>
+                <div className="page-head-left">
+                  <h2>{t.warehouse.chapters[chapter]}</h2>
+                  <p>{currentPage.sub}</p>
+                </div>
+                <div className="page-head-right">
                   <div className="desktop-actions">
                     <button
                       type="button"
@@ -512,9 +512,9 @@ export function App() {
                     </button>
                     <LanguageSelector className="desktop-lang-selector" />
                   </div>
-                </div>
-                <div className="page-meta mono">
-                  {String(safeIdx + 1).padStart(2, '0')} / {String(warehousePages.length).padStart(2, '0')}
+                  <div className="page-meta mono">
+                    {String(safeIdx + 1).padStart(2, '0')} / {String(warehousePages.length).padStart(2, '0')}
+                  </div>
                 </div>
               </header>
 
