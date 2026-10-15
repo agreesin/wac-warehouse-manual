@@ -527,7 +527,7 @@ export default {
               {
                 src: "/express/02-customer-id-grouping.jpg",
                 title: "동일 고객 ID끼리 정리한 모습",
-                desc: "라벨 스티커를 부착하면서 동일 고객 ID(예: W010-3332, 키노, 비닐 화물 등)끼리 한곳에 모아둔 현장 모습"
+                desc: "라벨 스티커를 부착하면서 동일 고객 ID끼리 한곳에 모아둔 현장 모습"
               }
             ]
           },
