@@ -111,7 +111,7 @@ function StepNotice({ notice }) {
       <span className="notice-icon">{notice.icon || '💡'}</span>
       <div className="notice-content">
         {notice.title && <strong>{notice.title}</strong>}
-        {notice.text && <p>{notice.text}</p>}
+        {notice.text && <p style={{ whiteSpace: 'pre-line' }}>{notice.text}</p>}
       </div>
     </div>
   );
@@ -364,11 +364,11 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                           zoomLabel={zoomLabel}
                         />
                       )}
-                      <p className="cargo-type-desc">{c.desc}</p>
+                      <p className="cargo-type-desc" style={{ whiteSpace: 'pre-line' }}>{c.desc}</p>
                       {c.tip && (
                         <div className="cargo-type-tip">
                           <span className="tip-icon">💡</span>
-                          <span>{c.tip}</span>
+                          <span style={{ whiteSpace: 'pre-line' }}>{c.tip}</span>
                         </div>
                       )}
                     </div>
@@ -630,11 +630,11 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                         zoomLabel={zoomLabel}
                       />
                     )}
-                    <p className="cargo-type-desc">{c.desc}</p>
+                    <p className="cargo-type-desc" style={{ whiteSpace: 'pre-line' }}>{c.desc}</p>
                     {c.tip && (
                       <div className="cargo-type-tip">
                         <span className="tip-icon">💡</span>
-                        <span>{c.tip}</span>
+                        <span style={{ whiteSpace: 'pre-line' }}>{c.tip}</span>
                       </div>
                     )}
                   </div>

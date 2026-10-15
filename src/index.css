@@ -803,6 +803,8 @@
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.55;
+  word-break: keep-all;
+  white-space: pre-line;
 }
 
 /* 7. Draft Placeholder Frame (for future photos & diagrams) */
@@ -1009,6 +1011,7 @@
   line-height: 1.55;
   flex: 1;
   word-break: keep-all;
+  white-space: pre-line;
 }
 .cargo-type-tip {
   display: flex;
@@ -1023,6 +1026,11 @@
   line-height: 1.45;
   margin-top: auto;
   word-break: keep-all;
+  white-space: pre-line;
+}
+.cargo-type-tip span {
+  word-break: keep-all;
+  white-space: pre-line;
 }
 .cargo-type-tip .tip-icon {
   flex-shrink: 0;
@@ -1573,6 +1581,8 @@
   color: #334155;
   line-height: 1.68;
   margin: 0;
+  word-break: keep-all;
+  white-space: pre-line;
 }
 
 /* Step Notice / Warning Box */
@@ -1613,6 +1623,7 @@
   font-size: 0.94rem;
   color: #92400e;
   font-weight: 800;
+  word-break: keep-all;
 }
 
 .express-step-notice .notice-content p {
@@ -1620,6 +1631,8 @@
   color: #78350f;
   line-height: 1.5;
   margin: 0;
+  word-break: keep-all;
+  white-space: pre-line;
 }
 
 .mini-address-note {
@@ -1817,6 +1830,8 @@
   color: #475569;
   margin: 0;
   line-height: 1.5;
+  word-break: keep-all;
+  white-space: pre-line;
 }
 
 .exception-chips {
@@ -2050,6 +2065,8 @@
   color: #0c4a6e;
   line-height: 1.55;
   margin: 0;
+  word-break: keep-all;
+  white-space: pre-line;
 }
 .foodbox-bullets {
   margin: 0;
@@ -2252,5 +2269,14 @@
 
 .warehouse-layout-conclusion p {
   margin: 0;
+  word-break: keep-all;
+  white-space: pre-line;
 }
+
+.rule-callout p,
+.rule-callout-next {
+  word-break: keep-all;
+  white-space: pre-line;
+}
+
 
