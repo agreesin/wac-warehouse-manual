@@ -131,8 +131,8 @@ export function QuickSearchModal({ isOpen, onClose, onNavigate }) {
       page: 1,
       badge: lang === 'en' ? 'Express 01' : lang === 'zh-HK' ? '特快 01' : '익스프레스 01',
       title: lang === 'en' ? '01. Pallet Inbound & Customer ID Rack Sorting (0–9)' : lang === 'zh-HK' ? '01. 卡板到貨及依客戶 ID 貨架分類 (0~9)' : '01. 파레트 입고 및 1차 분류',
-      desc: lang === 'en' ? 'Pallet inbound & sorting. Move food boxes (blue tape, F-code) to center work table. Sort general boxes to racks 0-9 by customer ID W01*-****.' : lang === 'zh-HK' ? '卡板到貨與分類。食品箱(藍色膠帶、F開頭)移至中央工作台。一般貨物依客戶ID W01*-****移至0~9號貨架。' : '파레트 입고 및 분류. 파란색 테이프가 둘러진 식품 박스(일반 상자/스티로폼, F코드)는 중앙 작업대로 이동. 일반 화물은 송장 고객 ID(W01*-****) 확인 후 0~9번 랙 앞 배치.',
-      keywords: '익스프레스 express 식품박스 파란테이프 파란색테이프 스티로폼 F코드 중앙작업대테이블 중앙작업대 고객ID W01 W010 0161 3949 5851 8276 래핑테이프 하늘길 210 4번게이트 WB HG 0 1 2 3 4 5 6 7 8 9 랙분류 랙앞 파레트 파레트자키 마대 콘솔박스'
+      desc: lang === 'en' ? 'Pallet inbound & sorting. Move food boxes (blue tape, F-code) to packing table. Sort general boxes to racks 0-9 by customer ID W01*-****.' : lang === 'zh-HK' ? '卡板到貨與分類。食品箱(藍色膠帶、F開頭)移至包裝桌。一般貨物依客戶ID W01*-****移至0~9號貨架。' : '파레트 입고 및 분류. 파란색 테이프가 둘러진 식품 박스(일반 상자/스티로폼, F코드)는 포장 테이블로 이동. 일반 화물은 송장 고객 ID(W01*-****) 확인 후 0~9번 랙 앞 배치.',
+      keywords: '익스프레스 express 식품박스 파란테이프 파란색테이프 스티로폼 F코드 포장테이블 중앙작업대테이블 중앙작업대 고객ID W01 W010 0161 3949 5851 8276 래핑테이프 하늘길 210 4번게이트 WB HG 0 1 2 3 4 5 6 7 8 9 랙분류 랙앞 파레트 파레트자키 마대 콘솔박스'
     },
     {
       id: 'express-2',
