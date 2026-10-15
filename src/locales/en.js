@@ -440,80 +440,229 @@ export default {
       {
         id: "express-2",
         stepNo: "02",
-        timeBadge: "Inspection & Verification",
-        title: "Labeling & Cross-Check Verification",
-        sub: "Verify 4-digit number match & Cargo ID match simultaneously before affixing labels",
-        calloutHead: "Double-Check Verification Mandate",
-        calloutLead: "You MUST verify BOTH: ① 4-digit number match and ② Cargo Tracking ID match before affixing labels. Any discrepancy leads to mislabeling and misdelivery accidents.",
-        flowTitle: "Labeling Procedure",
-        flow: [
+        timeBadge: "Labeling & 2nd Sorting",
+        title: "Label Sticker Affixing & 2nd Sorting",
+        sub: "Simultaneous verification of Customer & Cargo ID, isolating same-day dispatches",
+        calloutHead: "Labeling & 2nd Sorting Key Summary",
+        calloutLead: "You MUST verify BOTH: (1) Customer ID match and (2) Cargo ID match before affixing labels,\nwhile simultaneously: ① grouping same Customer ID parcels together and ② setting aside marked parcels.",
+        stepsWithPhotos: [
           {
-            step: "Check 1",
-            head: "4-Digit Number Verification",
-            desc: "Confirm that the 4-digit number on the printed label sheet matches the 4-digit number printed on the box waybill."
+            stepNo: "1",
+            title: "Rack Assignment & Label Sticker Preparation",
+            desc: "Each worker takes charge of floor parcels in front of one rack (Racks 0~9),\nand prepares label stickers sorted in Customer ID order.",
+            paragraphs: [
+              "Individual Rack Assignment: Workers each take responsibility for parcels staged in front of a specific rack (e.g. Worker A oversees Rack 0, Worker B oversees Rack 1, etc.).",
+              "Label Sticker Sequence: The printed label sticker sheet is organized in [Customer ID order], containing both Customer ID and Cargo ID information on each sticker."
+            ],
+            photos: [
+              {
+                src: "/express/02-label-stickers-prepared.jpg",
+                title: "Prepared Label Sticker Sheet (Sorted by Customer ID)",
+                desc: "Physical label sticker sheet prepared for the shift"
+              },
+              {
+                src: "/express/02-labeling-overview.jpg",
+                title: "Floor Labeling Work Overview",
+                desc: "Workers stationed at individual racks inspecting parcels and affixing label stickers across the warehouse floor"
+              }
+            ]
           },
           {
-            step: "Check 2",
-            head: "Cargo ID Cross-Validation",
-            desc: "Verify that the Cargo Tracking ID in the system matches the physical box barcode/identifier to confirm identical cargo."
+            stepNo: "2",
+            title: "Simultaneous Customer ID & Cargo ID Match and Label Affixing",
+            desc: "Check the Customer ID on the courier waybill and the physical Cargo ID on the box,\nlocate the matching sticker, and affix it.",
+            notice: {
+              type: "warning",
+              icon: "⚠️",
+              title: "Cargo ID Verification Mandate",
+              text: "The most crucial step is verifying the Cargo ID!\nWhen a single customer orders multiple items, one Customer ID has multiple Cargo IDs assigned.\nThese parcels share the same Customer ID but have distinct Cargo IDs. Never affix stickers based solely on Customer ID."
+            },
+            paragraphs: [
+              "Step 1 - Check Customer ID: Confirm the Customer ID (W01*-****) at the end of the courier waybill address and locate that Customer ID block on the label sheet.",
+              "Step 2 - Cross-check Cargo ID & Affix: Among stickers with the same Customer ID, find the sticker matching the Cargo ID (CTN number) printed on the parcel exterior, and affix it firmly to the top surface."
+            ],
+            photos: [
+              {
+                src: "/express/02-label-before.jpg",
+                title: "Before Labeling: Verify Customer ID (W010-4777) & Cargo ID (W1014-5038)",
+                desc: "• Yellow highlight: Confirms identical Customer ID (W010-4777).\n• Red highlight: Shows different CTN numbers (Cargo IDs) for different parcels under the same customer.\n➔ Find and affix the sticker matching the parcel's external QR label Cargo ID (W1014-5038)."
+              },
+              {
+                src: "/express/02-label-after.jpg",
+                title: "After Labeling: Matching Cargo ID Sticker Affixed",
+                desc: "Label sticker with matching Customer ID and CTN number neatly affixed onto the open space of the parcel"
+              }
+            ]
           },
           {
-            step: "Affix",
-            head: "Affix Label to Designated Spot",
-            desc: "Once both items match, apply the label flatly onto the designated top/side area without covering existing barcodes."
+            stepNo: "3",
+            title: "[2nd Sorting ①] Group Same Customer ID Parcels Together",
+            desc: "While affixing labels,\ngroup parcels belonging to the same Customer ID together side-by-side.",
+            notice: {
+              type: "info",
+              icon: "💡",
+              title: "Why group identical Customer IDs?",
+              text: "Gathering multi-item customer orders beforehand saves significant time during downstream consolidation packing and rack shelving, preventing lost or scattered boxes."
+            },
+            photos: [
+              {
+                src: "/express/02-customer-id-grouping.jpg",
+                title: "Parcels Grouped by Customer ID",
+                desc: "Physical staging scene showing boxes grouped by identical Customer ID alongside label application"
+              }
+            ]
+          },
+          {
+            stepNo: "4",
+            title: "[2nd Sorting ②] Separate Marked Cargo (Same-Day Delivery / Pickup)",
+            desc: "Parcels with pen markings on the label are scheduled for immediate outbound delivery today,\nso set them aside toward the 'aisle (outer) side' instead of rack-side.",
+            notice: {
+              type: "warning",
+              icon: "🚨",
+              title: "Placement Rule: Marked ➔ [Aisle Side], Unmarked ➔ [Rack Side]!",
+              text: "• Marked (Slash / , Cross X) ➔ Outbound today! Place on aisle side for quick access during consolidation packaging.\n• Unmarked (Blank) ➔ General cargo! Stored on racks later, so align neatly inward toward the rack."
+            },
+            cargoTypes: [
+              {
+                tag: "Same-Day Delivery",
+                badge: "Slash Mark ( / , — )",
+                head: "Outbound for delivery today",
+                desc: "Parcels with a pen slash drawn across the label sticker.\nScheduled for immediate dispatch today.",
+                tip: "Placement:\nStage toward the [aisle (outer) side] so they can be picked immediately during consolidation packing.",
+                photo: {
+                  src: "/express/02-mark-delivery.jpg",
+                  title: "Slash Mark (Same-Day Delivery)",
+                  desc: "Slash mark on label ➔ Outbound today (staged on aisle side for easy packing access)"
+                }
+              },
+              {
+                tag: "Same-Day Pickup",
+                badge: "Cross Mark (X)",
+                head: "Customer pickup today",
+                desc: "Parcels with an X mark drawn on the label sticker.\nScheduled for customer pickup today.",
+                tip: "Placement:\nSet aside separately toward the [aisle (outer) side] for immediate pickup dispatch.",
+                photo: {
+                  src: "/express/02-mark-pickup.jpg",
+                  title: "Cross Mark (Same-Day Pickup)",
+                  desc: "X mark on label ➔ Customer pickup today (staged on aisle side)"
+                }
+              },
+              {
+                tag: "General Cargo",
+                badge: "Unmarked (Blank)",
+                head: "Cargo to be stored on racks after packing",
+                desc: "Parcels with no pen marks on the label sticker.\nGeneral cargo to be organized onto racks after consolidation packing.",
+                tip: "Placement:\nAlign inward toward the [rack side] ready for later shelving.",
+                photo: {
+                  src: "/express/02-mark-general.jpg",
+                  title: "Unmarked (General Cargo)",
+                  desc: "No markings on label ➔ Store on racks after consolidation packing (staged rack-side)"
+                }
+              }
+            ]
           }
         ],
-        checklistTitle: "Labeling Precautions",
+        checklistTitle: "Labeling & 2nd Sorting Checklist",
         checklists: [
-          "Carefully check all 4 digits including the last digit, as similar number sequences can easily cause confusion",
-          "If the Cargo ID does not match, immediately stop labeling and place in the holding area",
-          "Smooth the label down with your palm so it adheres firmly without wrinkles or peeling edges"
-        ],
-        placeholder: {
-          badge: "Photo & Label Example In Progress",
-          title: "4-Digit Number & Cargo ID Cross-Check Screen and Label Position",
-          desc: "Actual comparison photos of waybill labels and Cargo IDs, plus placement guides, will be updated here.",
-          hint: "Planned: Close-up of 4-digit waybill number & Cargo ID barcode cross-check shot"
-        }
+          "⚠️ Even under the same Customer ID, each box has a distinct Cargo ID. Did you verify BOTH waybill Customer ID and physical Cargo ID match before affixing?",
+          "📦 [Sorting ①] Did you gather same Customer ID parcels side-by-side to facilitate easy consolidation and rack storage?",
+          "🚀 [Sorting ②] Were slash (/) and X marked parcels separated toward the outer aisle side for immediate today dispatch?"
+        ]
       },
       {
         id: "express-3",
         stepNo: "03",
-        timeBadge: "Outbound Packing",
-        title: "Same-Day Outbound Consolidation Packaging",
-        sub: "Filter same-day delivery shipments & safely bundle multi-box orders",
-        calloutHead: "Same-Day Delivery Bundling Rules",
-        calloutLead: "Filter parcels scheduled for delivery today from the dispatch list, and perform consolidation (bundling and reinforced taping) for multiple boxes addressed to the same recipient.",
-        flowTitle: "Consolidation Packaging Workflow",
-        flow: [
+        timeBadge: "Same-Day Consolidation",
+        title: "Same-Day Outbound Consolidation Packing",
+        sub: "Delivery list verification, reinforced taping & box marking",
+        calloutHead: "Consolidation Packaging Key Summary",
+        calloutLead: "Floor staff retrieve cargo against the delivery list,\nverify (double-check) parcel numbers, and work in pairs of 2\n(Cross-checker ↔ Packer) with real-time communication to bundle and mark boxes.",
+        stepsWithPhotos: [
           {
-            step: "Filter",
-            head: "Select Same-Day Delivery Parcels",
-            desc: "From labeled cargo, isolate boxes scheduled for immediate outbound delivery today against the manifest."
+            stepNo: "1",
+            title: "Retrieve Cargo by Customer ID (Floor Staff)",
+            desc: "Floor staff check the delivery list and retrieve parcels\nfrom the aisle-side today shipments and warehouse racks, delivering them to the workbench.",
+            photos: [
+              {
+                src: "/express/03-packing-table-02.jpg",
+                title: "Retrieving Cargo & Delivering to Workbench",
+                desc: "Floor worker retrieving customer parcels against the delivery list and staging them at the packing table"
+              }
+            ]
           },
           {
-            step: "Match",
-            head: "Match Multi-Box Consolidations",
-            desc: "Gather multiple boxes bound for the same recipient/destination into a single consolidated set."
+            stepNo: "2",
+            title: "Cross-Check Cargo Number Against Delivery List",
+            desc: "The cross-checker verifies the Cargo ID (CTN) against the delivery list\none-by-one to confirm an exact match before packing.",
+            photos: [
+              {
+                src: "/express/03-packing-table-01.jpg",
+                title: "Double-Checking Cargo Number Against List",
+                desc: "Worker cross-checking parcel CTN numbers against the delivery list at the workbench"
+              }
+            ]
           },
           {
-            step: "Bundle",
-            head: "Banding, Taping & Consolidated Labeling",
-            desc: "Firmly strap and tape boxes together so they cannot separate during transit, and mark consolidation labels."
+            stepNo: "3",
+            title: "Mark Checked Parcels & Record Bundle Count on List",
+            desc: "Tick verified parcel numbers on the delivery list,\nand record the final bundle count once packaging is complete.",
+            photos: [
+              {
+                src: "/express/03-delivery-list.jpg",
+                title: "Original Delivery List (Before Check)",
+                desc: "Original manifest listing Customer ID, inbound date, Cargo ID, recipient name, and item counts"
+              },
+              {
+                src: "/express/03-delivery-list-checked.jpg",
+                title: "Verified Delivery List with Final Counts (After Check)",
+                desc: "Physical delivery list marked with checkmarks and final consolidation bundle counts"
+              }
+            ]
+          },
+          {
+            stepNo: "4",
+            title: "Two-Person Taping Bundling & Top Box Marking",
+            desc: "The cross-checker reads aloud the parcel count and customer info,\nwhile the packer securely tapes the bundle and writes the delivery info on top.",
+            photos: [
+              {
+                src: "/express/03-taping-method.jpg",
+                title: "Secure Cross-Taping Bundling",
+                desc: "Worker tightly bundling multiple boxes into a single consolidated parcel using heavy OPP tape"
+              },
+              {
+                src: "/express/03-marking-example.jpg",
+                title: "Box Top Delivery Marking Example",
+                desc: "Clear pen marking on the box top showing Customer ID, recipient name, and bundle fraction (e.g. 1/1, 1/2, 2/2)"
+              }
+            ]
+          },
+          {
+            stepNo: "5",
+            title: "Handover to Express Representative",
+            desc: "After packaging and marking are complete,\nthe checked delivery list is handed over directly to the Express representative.",
+            notice: {
+              type: "info",
+              icon: "✅",
+              title: "Final Handover to Express Representative",
+              text: "Hand over the completed delivery list to the Express representative.\n(Parcels with missing companion boxes are held for investigation with the representative.)"
+            },
+            photos: [
+              {
+                src: "/express/03-delivery-driver-handover.jpg",
+                title: "Handover of Checked List to Express Representative",
+                desc: "Worker handing over the completed delivery list to the Express representative after final check"
+              }
+            ]
           }
         ],
-        checklistTitle: "Consolidation Checklist",
+        checklistTitle: "Consolidation Packaging Checklist",
         checklists: [
-          "Double-check outbound box counts (e.g. 1/2, 2/2) to ensure no companion box is left behind",
-          "Always place heavier boxes at the bottom and lighter boxes on top when bundling",
-          "Line up finished bundles in the outbound staging area (dock/line) ready for driver pickup"
-        ],
-        placeholder: {
-          badge: "Packaging Guide Photo In Progress",
-          title: "Consolidation Taping Standards & Bundling Completion Example",
-          desc: "Actual photos of multi-box bundling taping techniques and staging alignment will be updated here.",
-          hint: "Planned: 2+ boxes strapped/taped bundling shot & consolidation label mark shot"
-        }
+          "Did you double-check the parcel CTN number against the delivery list before taping?",
+          "Did you record checkmarks and total bundle counts on the delivery list?",
+          "Is the bundle cross-taped securely so parcels cannot shift or separate during transit?",
+          "Is the Customer ID, customer name, and bundle count (e.g. 1/2, 2/2) clearly marked on top?",
+          "Was the completed delivery list handed over directly to the Express representative?"
+        ]
       },
       {
         id: "express-4",
@@ -523,36 +672,81 @@ export default {
         sub: "Store non-dispatched boxes onto designated warehouse racks by number ranges",
         calloutHead: "Remaining Cargo Rack Storage Rules",
         calloutLead: "After all same-day deliveries are dispatched, neatly stack remaining boxes onto designated warehouse rack tiers according to their number ranges for safe storage.",
-        flowTitle: "Rack Storage Workflow",
-        flow: [
+        stepsWithPhotos: [
           {
-            step: "Tally",
-            head: "Tally Remaining Boxes by Number Range",
-            desc: "Group non-dispatched boxes by number range (e.g. 0000s, 1000s, etc.) for organized rack placement."
+            stepNo: "1",
+            title: "Rack Storage Rules & Safe Stacking Example",
+            desc: "After all same-day dispatches leave, write large identification numbers on the remaining boxes,\nand neatly stack them onto designated rack shelves according to their number ranges.",
+            guidePhoto: {
+              src: "/express/04-rack-organized.jpg",
+              title: "Organized Rack Shelf Stacking (Correct Example)",
+              desc: "Boxes stacked sequentially with large numbers facing the aisle, and ultra-small parcels safely placed inside the blue container",
+              isPortrait: true,
+              fit: "contain"
+            },
+            notices: [
+              {
+                type: "warning",
+                icon: "🚨",
+                title: "Customer ID Distinction: Check prefix (010 vs 011) even if last 4 digits match!",
+                text: "When shelving racks, even if the last 4 digits match, different prefixes (010 vs 011) represent completely different customers!\n(e.g. W010-1234 and W011-1234 belong to different people)\nNever assume they belong to the same customer by looking only at the last 4 digits. Always separate 010 and 011 into distinct stacks."
+              },
+              {
+                type: "blue",
+                icon: "💡",
+                title: "Using the Blue Container Box on the Shelf",
+                text: "Dedicated storage bin for ultra-small parcels (poly mailers, small accessories, components) that risk blowing away or falling through shelf wire mesh.\n(Write number ranges on the container exterior for quick identification during next-day dispatch.)"
+              }
+            ],
+            bullets: [
+              "🏷️ Large Number Marking & Aisle-Facing Alignment:\nWrite numbers prominently with thick marker and face them directly outward toward the aisle so workers can instantly spot boxes tomorrow.",
+              "⚖️ Safe Stacking Guidelines (Center of Gravity & Ladders):\nStack heavy, bulky cartons on the lowest shelf tiers to maintain a stable center of gravity, and always follow ladder safety when placing boxes on upper tiers."
+            ]
           },
           {
-            step: "Store",
-            head: "Safe Stacking on Designated Racks",
-            desc: "Neatly stack boxes onto their allocated rack tiers with labels facing outwards toward the aisle for easy visibility."
+            stepNo: "2",
+            title: "3-Stage Standard Rack Storage Procedure",
+            desc: "Systematically organize remaining parcels to prevent misplacement and maximize warehouse efficiency.",
+            flow: [
+              {
+                step: "Stage 1 - Tally",
+                head: "Tally Box Counts & Number Range Grouping",
+                desc: "Check number ranges of non-dispatched cargo (e.g. 0000s, 1000s) and allocate to designated rack sections.\n※ Strictly distinguish 010 vs 011 prefixes even if the last 4 digits match."
+              },
+              {
+                step: "Stage 2 - Stack",
+                head: "Mark Box Numbers & Safe Stacking",
+                desc: "Write box numbers largely, face them toward the aisle, and stack neatly onto designated shelves.\n※ Store ultra-small parcels inside the blue container bin."
+              },
+              {
+                step: "Stage 3 - Clear",
+                head: "Clear Aisles & Final Inspection",
+                desc: "Sweep work aisles clean of tape scraps and cardboard debris, and verify all stored items are neatly aligned for tomorrow's dispatch."
+              }
+            ]
           },
           {
-            step: "Clear",
-            head: "Clear Aisles & Final Inspection",
-            desc: "Clear work aisles of any debris and organize all items sequentially so they can be retrieved immediately tomorrow."
+            stepNo: "3",
+            title: "Final Warehouse Cleanliness & End-of-Day Inspection",
+            desc: "Panoramic overview of the entire warehouse after completing same-day dispatches, rack shelving, and aisle sweeping.",
+            guidePhoto: {
+              src: "/express/04-warehouse-completed.jpg",
+              title: "Final Warehouse Overview (End-of-Day State)",
+              desc: "Full warehouse view with all today dispatches completed, remaining boxes organized on racks, and floor aisles swept clean"
+            },
+            outroParagraphs: [
+              "✨ End-of-Day Readiness Check:\nWith work aisles completely free of obstacles and all cargo staged in correct locations, workers can immediately resume operations smoothly and safely tomorrow morning."
+            ]
           }
         ],
-        checklistTitle: "Rack Storage Safety Rules",
+        checklistTitle: "Rack Storage & Shift Closing Checklist",
         checklists: [
-          "Follow ladder safety guidelines and keep heavy cargo on bottom tiers for stable center of gravity",
-          "Keep box labels (number and Cargo ID) aligned facing the aisle for immediate identification",
-          "Store strictly in sequential order to enable fast retrieval during tomorrow's dispatch"
-        ],
-        placeholder: {
-          badge: "Rack Map & Storage Photo In Progress",
-          title: "Warehouse Rack Zone Diagram & Box Stacking Example",
-          desc: "Actual layout diagrams of W Express racks and completed safe storage photos will be updated here.",
-          hint: "Planned: Front shot of numbered rack tiers & full panoramic view of stacked boxes"
-        }
+          "⚖️ [Safe Stacking] Followed ladder safety and placed heavy cargo on bottom tiers for stable center of gravity?",
+          "🚨 [Customer ID Prefix] Verified 010 vs 011 prefixes to prevent mixing up different customers with identical 4-digit numbers?",
+          "🏷️ [Number Marking] Wrote numbers prominently on box faces and aligned them facing the aisle?",
+          "💡 [Small Parcels] Safely stored lightweight/small poly mailers inside the blue container box?",
+          "🧹 [Clear Aisles] Swept floor aisles clean of all debris to secure unobstructed movement for tomorrow's inbound cargo?"
+        ]
       }
     ]
   }
