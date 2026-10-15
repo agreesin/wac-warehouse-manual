@@ -587,6 +587,12 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
             </section>
           )}
 
+          {currentPage.notice && (
+            <div style={{ marginBottom: '20px' }}>
+              <StepNotice notice={currentPage.notice} />
+            </div>
+          )}
+
           {/* Detailed Step Breakdown */}
           {currentPage.flow && currentPage.flow.length > 0 && (
             <section className="wh-section">
