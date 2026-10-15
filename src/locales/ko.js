@@ -287,7 +287,7 @@ export default {
               {
                 tag: "유형 01",
                 badge: "단독 대형 화물",
-                head: "단독 대형 화물 (개별 박스)",
+                head: "단독 대형 화물\n(개별 박스)",
                 photo: {
                   src: "/express/00-cargo-single.jpg",
                   title: "단독 화물 실물",
@@ -299,7 +299,7 @@ export default {
               {
                 tag: "유형 02",
                 badge: "마대 콘솔",
-                head: "마대 자루 (콘솔 화물)",
+                head: "마대 자루\n(콘솔 화물)",
                 photo: {
                   src: "/express/00-cargo-consol-boxes.jpg",
                   title: "마대 콘솔 실물 (개봉)",
@@ -311,7 +311,7 @@ export default {
               {
                 tag: "유형 03",
                 badge: "CONSOL 상자",
-                head: "대형 콘솔 상자 (겉면 CONSOL 표기)",
+                head: "대형 콘솔 상자\n(CONSOL 표기)",
                 photo: {
                   src: "/express/00-cargo-consol-vinyl.jpg",
                   title: "콘솔 상자 실물 (개봉)",
@@ -322,11 +322,11 @@ export default {
               },
               {
                 tag: "유형 04",
-                badge: "냉장 / 냉동 (식품)",
-                head: "냉장 · 냉동 화물 (파란색 테이프)",
+                badge: "냉장·냉동 식품",
+                head: "냉장 · 냉동 화물\n(파란색 테이프)",
                 photo: {
                   src: "/express/00-cargo-cold.jpg",
-                  title: "냉장/냉동 화물 실물 (파란 테이프)",
+                  title: "냉장·냉동 화물 실물",
                   desc: "스티로폼 상자에 파란색 테이프로 결속되어 입고된 냉장/냉동 화물"
                 },
                 desc: "식품 등 신선 화물로, 스티로폼 또는 상자 겉면에 파란색 테이프가 둘러싸여 있어 일반 화물과 즉시 구분됩니다.",

@@ -337,11 +337,13 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
                 <div className={`cargo-types-grid ${step.cargoTypes.length === 2 ? 'cols-2' : step.cargoTypes.length === 4 ? 'cols-4' : ''}`.trim()}>
                   {step.cargoTypes.map((c, idx) => (
                     <div key={idx} className="cargo-type-card">
-                      <div className="cargo-type-header">
-                        <span className="cargo-type-tag">{c.tag}</span>
-                        <span className="cargo-type-badge">{c.badge}</span>
+                      <div className="cargo-type-top">
+                        <div className="cargo-type-header">
+                          <span className="cargo-type-tag">{c.tag}</span>
+                          <span className="cargo-type-badge">{c.badge}</span>
+                        </div>
+                        <strong className="cargo-type-head">{c.head}</strong>
                       </div>
-                      <strong className="cargo-type-head">{c.head}</strong>
                       {c.photo && (
                         <PhotoCard
                           photo={c.photo}
@@ -601,11 +603,13 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
               <div className="cargo-types-grid">
                 {currentPage.cargoTypes.map((c, idx) => (
                   <div key={idx} className="cargo-type-card">
-                    <div className="cargo-type-header">
-                      <span className="cargo-type-tag">{c.tag}</span>
-                      <span className="cargo-type-badge">{c.badge}</span>
+                    <div className="cargo-type-top">
+                      <div className="cargo-type-header">
+                        <span className="cargo-type-tag">{c.tag}</span>
+                        <span className="cargo-type-badge">{c.badge}</span>
+                      </div>
+                      <strong className="cargo-type-head">{c.head}</strong>
                     </div>
-                    <strong className="cargo-type-head">{c.head}</strong>
                     {c.photo && (
                       <PhotoCard
                         photo={c.photo}
