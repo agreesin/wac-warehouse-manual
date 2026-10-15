@@ -239,7 +239,6 @@ export default {
   express: {
     title: "W Express Manual",
     sub: "Air Express Inbound/Outbound, Inspection & Packing Rules",
-    sidebarFoot: "Dawn Air Express Standard · 07:00 Shift\nOverview → Inbound → Labeling → Bundling → Rack Storage",
     pages: [
       {
         id: "express-0",

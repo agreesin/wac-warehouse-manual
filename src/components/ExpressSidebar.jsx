@@ -44,9 +44,11 @@ export function ExpressSidebar({ pageIndex, onSelectPage, onHome, open }) {
         })}
       </nav>
 
-      <div className="sidebar-foot" style={{ whiteSpace: 'pre-line' }}>
-        {t.express?.sidebarFoot}
-      </div>
+      {t.express?.sidebarFoot && (
+        <div className="sidebar-foot" style={{ whiteSpace: 'pre-line' }}>
+          {t.express?.sidebarFoot}
+        </div>
+      )}
     </aside>
   );
 }

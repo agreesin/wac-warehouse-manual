@@ -241,7 +241,6 @@ export default {
   express: {
     title: "W Express 手冊",
     sub: "空運特快到貨出庫及檢驗·打包守則",
-    sidebarFoot: "清晨空運到港標準 · 07:00 上班作業\n概覽 → 到貨 → 貼標籤 → 合箱打包 → 貨架整理",
     pages: [
       {
         id: "express-0",

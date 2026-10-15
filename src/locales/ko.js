@@ -239,7 +239,6 @@ export default {
   express: {
     title: "W Express 메뉴얼",
     sub: "항공 특송 입출고 및 검수·패킹 수칙",
-    sidebarFoot: "새벽 항공배송 기준 입출고 작업\n개요 → 입고 → 라벨링 → 합포장 → 랙 정리",
     pages: [
       {
         id: "express-0",
