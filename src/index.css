@@ -2124,8 +2124,8 @@
 }
 
 .warehouse-layout-container.single-layout .warehouse-layout-conclusion {
-  max-width: 520px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   width: 100%;
 }
 
@@ -2261,10 +2261,11 @@
   background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
   border: 1px solid #bfdbfe;
   border-radius: 10px;
-  padding: 14px 18px;
+  padding: 14px 20px;
   color: #1e40af;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  text-align: center;
 }
 
 .warehouse-layout-conclusion p {
