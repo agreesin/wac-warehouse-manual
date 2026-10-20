@@ -409,7 +409,11 @@ export function App() {
                 </div>
               </header>
 
-              <ExpressViewer pageIndex={safeIdx} onOpenImage={handleOpenImage} />
+              <ExpressViewer
+                pageIndex={safeIdx}
+                onOpenImage={handleOpenImage}
+                onOpenWmart={goToWMart}
+              />
 
               <nav className="pager" aria-label="페이지 이동">
                 <button
@@ -426,17 +430,27 @@ export function App() {
                 <button type="button" onClick={goToHub}>
                   {t.common.homeBtn}
                 </button>
-                <button
-                  type="button"
-                  disabled={safeIdx >= expressPages.length - 1}
-                  onClick={(e) => {
-                    e.currentTarget.blur();
-                    goToExpress(safeIdx + 1);
-                  }}
-                >
-                  {t.common.nextBtn}
-                  <ArrowRightIcon className="w-4 h-4" />
-                </button>
+                {safeIdx >= expressPages.length - 1 ? (
+                  <button
+                    type="button"
+                    className="pager-btn-next-mission"
+                    onClick={goToWMart}
+                    title={t.common.nextToWmartBtn || "W Mart 매뉴얼 →"}
+                  >
+                    <span>{t.common.nextToWmartBtn || "W Mart 매뉴얼 →"}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.currentTarget.blur();
+                      goToExpress(safeIdx + 1);
+                    }}
+                  >
+                    {t.common.nextBtn}
+                    <ArrowRightIcon className="w-4 h-4" />
+                  </button>
+                )}
               </nav>
             </div>
           </article>

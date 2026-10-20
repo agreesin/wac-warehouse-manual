@@ -476,10 +476,11 @@ export function ExpressStep({ step, onOpenImage, zoomLabel }) {
 /**
  * Main W-Express Manual Viewer Component
  */
-export function ExpressViewer({ pageIndex, onOpenImage }) {
+export function ExpressViewer({ pageIndex, onOpenImage, onOpenWmart }) {
   const { t } = useLanguage();
   const pages = t.express?.pages || [];
   const currentPage = pages[pageIndex] || pages[0];
+  const isLastPage = pageIndex >= pages.length - 1;
 
   if (!currentPage) {
     return <div className="empty">매뉴얼 내용을 불러올 수 없습니다.</div>;
@@ -580,6 +581,29 @@ export function ExpressViewer({ pageIndex, onOpenImage }) {
         title={currentPage.checklistTitle}
         checklists={currentPage.checklists}
       />
+
+      {/* 5. Next Operation Transition Banner (on last page) */}
+      {isLastPage && onOpenWmart && (
+        <section className="express-next-mission-card">
+          <div className="next-mission-kicker">
+            <span className="next-mission-badge">NEXT STEP · 연계 업무</span>
+          </div>
+          <h3 className="next-mission-title">
+            {t.common.nextToWmartTitle || '🎉 W-EXPRESS 오전 특송 업무 완료!'}
+          </h3>
+          <p className="next-mission-desc">
+            {t.common.nextToWmartDesc || '당일 출고 및 잔여 화물 랙 적재·바닥 정리가 모두 완료되었습니다.\n이제 확보된 작업 공간에서 이어지는 W Mart(창고 피킹·패킹 & ECOUNT) 업무 매뉴얼로 이동합니다.'}
+          </p>
+          <button
+            type="button"
+            className="next-mission-btn"
+            onClick={onOpenWmart}
+          >
+            <span>{t.common.nextToWmartCta || 'W Mart 매뉴얼로 이동하기'}</span>
+            <span className="next-mission-arrow" aria-hidden="true">→</span>
+          </button>
+        </section>
+      )}
     </div>
   );
 }

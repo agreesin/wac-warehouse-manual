@@ -2391,4 +2391,108 @@
   transform: translateX(3px);
 }
 
+/* Next Mission Card at the end of W Express */
+.express-next-mission-card {
+  margin-top: 36px;
+  padding: 26px 28px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 5px solid #f97316;
+  border-radius: 14px;
+  color: #f8fafc;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.next-mission-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.15);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+
+.next-mission-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
+.next-mission-desc {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+  word-break: keep-all;
+  white-space: pre-line;
+}
+
+.next-mission-btn {
+  align-self: flex-start;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  background: #f97316;
+  border: 1px solid #fb923c;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+}
+
+.next-mission-btn:hover {
+  background: #ea580c;
+  border-color: #f97316;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.45);
+}
+
+.next-mission-btn:active {
+  transform: translateY(0);
+}
+
+.next-mission-arrow {
+  font-size: 1.15rem;
+  transition: transform 0.2s ease;
+}
+
+.next-mission-btn:hover .next-mission-arrow {
+  transform: translateX(4px);
+}
+
+/* Pager next mission button */
+.pager button.pager-btn-next-mission {
+  background: #f97316;
+  border-color: #ea580c;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pager button.pager-btn-next-mission:hover {
+  background: #ea580c;
+  border-color: #c2410c;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 

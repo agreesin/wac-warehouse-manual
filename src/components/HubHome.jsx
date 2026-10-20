@@ -49,17 +49,17 @@ export function HubHome({ onOpenWmart, onOpenExpress }) {
             initial="hidden"
             animate="show"
           >
-            {/* Unit 1: W MART */}
-            <button type="button" className="hub-unit" onClick={onOpenWmart}>
+            {/* Unit 1: W Express */}
+            <button type="button" className="hub-unit" onClick={onOpenExpress}>
               <span className="hub-unit-meta">
                 <span className="hub-unit-no">01</span>
                 <span className="hub-unit-tag">{t.common.unit1Tag}</span>
               </span>
               <div className="hub-unit-logo-wrap">
                 <img
-                  className="hub-unit-logo hub-unit-logo-mart"
-                  src="/wmart-card-logo.png"
-                  alt="W MART"
+                  className="hub-unit-logo hub-unit-logo-express"
+                  src="/w-express-logo.png"
+                  alt="W Express"
                 />
               </div>
               <strong className="hub-unit-title">{t.common.unit1Title}</strong>
@@ -70,17 +70,17 @@ export function HubHome({ onOpenWmart, onOpenExpress }) {
               </span>
             </button>
 
-            {/* Unit 2: W Express */}
-            <button type="button" className="hub-unit" onClick={onOpenExpress}>
+            {/* Unit 2: W MART */}
+            <button type="button" className="hub-unit" onClick={onOpenWmart}>
               <span className="hub-unit-meta">
                 <span className="hub-unit-no">02</span>
                 <span className="hub-unit-tag">{t.common.unit2Tag}</span>
               </span>
               <div className="hub-unit-logo-wrap">
                 <img
-                  className="hub-unit-logo hub-unit-logo-express"
-                  src="/w-express-logo.png"
-                  alt="W Express"
+                  className="hub-unit-logo hub-unit-logo-mart"
+                  src="/wmart-card-logo.png"
+                  alt="W MART"
                 />
               </div>
               <strong className="hub-unit-title">{t.common.unit2Title}</strong>
