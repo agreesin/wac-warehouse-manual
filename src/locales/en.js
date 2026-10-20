@@ -700,7 +700,7 @@ export default {
             ],
             bullets: [
               "🏷️ Large Number Marking & Aisle-Facing Alignment:\nWrite numbers prominently with thick marker and face them directly outward toward the aisle so workers can instantly spot boxes tomorrow.",
-              "⚖️ Safe Stacking Guidelines (Center of Gravity & Ladders):\nStack heavy, bulky cartons on the lowest shelf tiers to maintain a stable center of gravity, and always follow ladder safety when placing boxes on upper tiers."
+              "⚖️ Safe Stacking Guidelines (Center of Gravity):\nStack heavy, bulky cartons on the lowest shelf tiers to maintain a stable center of gravity and prevent tipping hazards."
             ]
           },
           {
@@ -719,7 +719,7 @@ export default {
         ],
         checklistTitle: "Rack Storage & Shift Closing Checklist",
         checklists: [
-          "⚖️ [Safe Stacking] Followed ladder safety and placed heavy cargo on bottom tiers for stable center of gravity?",
+          "⚖️ [Safe Stacking] Verified center of gravity and placed heavy cargo on the lowest shelf tiers for stable storage?",
           "🚨 [Customer ID Prefix] Verified 010 vs 011 prefixes to prevent mixing up different customers with identical 4-digit numbers?",
           "🏷️ [Number Marking] Wrote numbers prominently on box faces and aligned them facing the aisle?",
           "💡 [Small Parcels] Safely stored lightweight/small poly mailers inside the blue container box?",
