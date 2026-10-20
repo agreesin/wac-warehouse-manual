@@ -2332,4 +2332,63 @@
   white-space: pre-line;
 }
 
+/* W Mart Manual Brand Title Button in WarehouseSidebar */
+.brand-title-wrap {
+  margin: 0;
+  padding: 0;
+  font-size: 1rem;
+  line-height: normal;
+}
+
+.brand-heading-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  color: #f5f3ee;
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-heading-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+
+.brand-heading-btn:active {
+  transform: translateY(0);
+}
+
+.brand-heading-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.brand-heading-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.75;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.brand-heading-btn:hover .brand-heading-icon {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
 

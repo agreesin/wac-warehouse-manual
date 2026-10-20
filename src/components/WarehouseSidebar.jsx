@@ -1,9 +1,9 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { ClipboardCheckIcon, MapIcon, HomeIcon } from './Icons';
+import { ClipboardCheckIcon, MapIcon, HomeIcon, ArrowRightIcon } from './Icons';
 
-export function WarehouseSidebar({ chapter, onSelect, onHome, open }) {
-  const { t } = useLanguage();
+export function WarehouseSidebar({ chapter, onSelect, onHome, onWMartHome, open }) {
+  const { t, lang } = useLanguage();
 
   const navItems = [
     {
@@ -24,7 +24,17 @@ export function WarehouseSidebar({ chapter, onSelect, onHome, open }) {
     <aside className={`sidebar ${open ? "open" : ""}`}>
       <div className="brand">
         <p className="brand-kicker">Warehouse Manual</p>
-        <h1>{t.common.warehouseManualTitle}</h1>
+        <h1 className="brand-title-wrap">
+          <button
+            type="button"
+            className="brand-heading-btn"
+            onClick={onWMartHome}
+            title={lang === 'en' ? 'Go to W Mart Home' : lang === 'zh-HK' ? '前往 W Mart 首頁' : 'W Mart 홈 화면으로 이동'}
+          >
+            <span className="brand-heading-text">{t.common.wmartManualBtn || t.common.warehouseManualTitle}</span>
+            <ArrowRightIcon className="w-4 h-4 brand-heading-icon" />
+          </button>
+        </h1>
         <p>{t.common.warehouseManualSub}</p>
       </div>
 

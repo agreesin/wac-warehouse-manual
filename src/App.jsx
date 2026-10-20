@@ -126,10 +126,14 @@ export function App() {
   const expressPages = t.express?.pages || [];
 
   const goToHub = () => {
+    setMobileMenuOpen(false);
+    if (document.body) document.body.style.overflow = '';
     scrollToTop();
     navigate('hub');
   };
   const goToWMart = () => {
+    setMobileMenuOpen(false);
+    if (document.body) document.body.style.overflow = '';
     scrollToTop();
     navigate('wmart');
   };
@@ -226,7 +230,7 @@ export function App() {
         <EcountSidebar
           pageIndex={safeIdx}
           onSelectPage={goToEcount}
-          onHome={goToWMart}
+          onHome={goToHub}
           open={mobileMenuOpen}
         />
         <main className="main">
@@ -308,7 +312,7 @@ export function App() {
                   <ArrowLeftIcon className="w-4 h-4" />
                   {t.common.prevBtn}
                 </button>
-                <button type="button" onClick={goToWMart}>
+                <button type="button" onClick={goToHub}>
                   {t.common.homeBtn}
                 </button>
                 <button
@@ -450,7 +454,8 @@ export function App() {
         <WarehouseSidebar
           chapter={chapter}
           onSelect={selectWarehouseChapter}
-          onHome={goToWMart}
+          onHome={goToHub}
+          onWMartHome={goToWMart}
           open={mobileMenuOpen}
         />
         <main className="main">
@@ -539,7 +544,7 @@ export function App() {
                   <ArrowLeftIcon className="w-4 h-4" />
                   {t.common.prevBtn}
                 </button>
-                <button type="button" onClick={goToWMart}>
+                <button type="button" onClick={goToHub}>
                   {t.common.homeBtn}
                 </button>
                 <button
