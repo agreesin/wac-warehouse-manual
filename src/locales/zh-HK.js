@@ -448,8 +448,8 @@ export default {
         id: "express-2",
         stepNo: "02",
         timeBadge: "貼標與二次分貨",
-        title: "標籤貼紙張貼及二次分類",
-        sub: "客戶與貨物 ID 雙重核對，隔離當日出庫貨件",
+        title: "貼標籤及二次分類",
+        sub: "客戶·貨物 ID 核對 · 分流當日出庫件",
         calloutHead: "標籤張貼及二次分類核心摘要",
         calloutLead: "必須同時比對 (1) 客戶 ID 是否相符 及 (2) 貨物 ID 是否相符 後方可貼上標籤，\n張貼同時務必：① 將同一客戶 ID 之貨件歸攏集中 ② 有記號貨件移至外側通道。",
         stepsWithPhotos: [
@@ -580,8 +580,8 @@ export default {
         id: "express-3",
         stepNo: "03",
         timeBadge: "當日送貨併箱",
-        title: "當日送貨件併箱打包作業",
-        sub: "派送清單貨號核對、合箱打包與箱頂標記",
+        title: "當日送貨件合箱打包",
+        sub: "核對清單 · 捆綁封箱 · 箱頂標記",
         calloutHead: "當日出庫併箱打包核心摘要",
         calloutLead: "現場作業員依派送清單取貨至工作台，\n由核對員與清單進行貨號雙重核對（Double-Check）後，\n採 2人1組（核對員 ↔ 打包員）即時溝通進行膠帶加固綑紮及箱頂書寫標記。",
         stepsWithPhotos: [
@@ -675,8 +675,8 @@ export default {
         id: "express-4",
         stepNo: "04",
         timeBadge: "倉庫存放階段",
-        title: "剩餘紙箱貨架 (Rack) 整理與存放",
-        sub: "非當日出庫之剩餘貨件，按指定貨架編號區域整齊存放",
+        title: "剩餘紙箱貨架整理與存放",
+        sub: "未出庫貨物上架碼放及清潔地面",
         calloutHead: "未出庫剩餘貨件貨架存放守則",
         calloutLead: "當日送貨貨件全部出庫後，剩餘紙箱外表端正書寫大字編號，\n按編號區間整齊碼放於指定貨架層格安全儲存。",
         stepsWithPhotos: [

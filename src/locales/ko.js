@@ -464,8 +464,8 @@ export default {
         id: "express-2",
         stepNo: "02",
         timeBadge: "라벨링 & 2차 분류",
-        title: "라벨 스티커 부착 및 2차 분류",
-        sub: "고객·화물 ID 동시 대조 및 당일 출고건 분리",
+        title: "라벨 부착 및 2차 분류",
+        sub: "고객·화물 ID 대조 및 당일 출고건 분리",
         calloutHead: "라벨링 및 2차 분류 핵심 요약",
         calloutLead: "반드시 (1) 고객 ID 일치 여부와 (2) 화물 ID 일치 여부 2가지를 대조하여 라벨을 부착하고,\n부착과 동시에 ① 동일 고객 ID끼리 모으고 ② 표식 화물은 따로 빼둡니다.",
         stepsWithPhotos: [
@@ -597,7 +597,7 @@ export default {
         stepNo: "03",
         timeBadge: "당일 배송 합포장",
         title: "당일 배송건 합포장",
-        sub: "배송 리스트 화물번호 일치여부 확인, 합포장 및 마킹",
+        sub: "리스트 대조 · 결속 · 박스 상단 마킹",
         calloutHead: "당일 배송건 합포장 핵심 요약",
         calloutLead: "현장 작업자가 배송 리스트를 보고 화물을 취합해 오면,\n리스트와 화물번호를 대조(더블체크)한 뒤\n2인 1조(대조 ↔ 합포장)로 실시간 소통하며 합포장 및 박스 마킹을 진행합니다.",
         stepsWithPhotos: [
@@ -713,8 +713,8 @@ export default {
         id: "express-4",
         stepNo: "04",
         timeBadge: "창고 보관 단계",
-        title: "잔여 상자 창고 랙(Rack) 정리",
-        sub: "미출고 화물 지정 랙 번호대별 보관 및 정리",
+        title: "잔여 상자 랙(Rack) 정리",
+        sub: "미출고 화물 랙 적재 및 바닥 공간 확보",
         calloutHead: "미출고 잔여 화물 랙 보관 수칙",
         calloutLead: "당일 배송 나가는 건들을 출고한 뒤 남은 상자들은 겉면에 식별 번호를 크게 적고,\n랙에 번호대별로 깔끔하게 적재하여 보관합니다.",
         stepsWithPhotos: [
