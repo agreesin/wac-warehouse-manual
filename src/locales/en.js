@@ -705,25 +705,25 @@ export default {
           },
           {
             stepNo: "2",
-            title: "Final Warehouse Cleanliness & End-of-Day Inspection",
-            desc: "Panoramic overview of the entire warehouse after completing same-day dispatches, rack shelving, and aisle sweeping.",
+            title: "Warehouse Floor Cleanliness & Staging for Mart Operations",
+            desc: "Full warehouse view after dispatching all express shipments, shelving remaining cargo, and clearing floor space for subsequent Mart operations.",
             guidePhoto: {
               src: "/express/04-warehouse-completed.jpg",
-              title: "Final Warehouse Overview (End-of-Day State)",
-              desc: "Full warehouse view with all today dispatches completed, remaining boxes organized on racks, and floor aisles swept clean"
+              title: "Final Warehouse Overview (Express Completion)",
+              desc: "Full warehouse view with all express dispatches completed, remaining boxes organized on racks, and floor cleared for Mart operations"
             },
             outroParagraphs: [
-              "✨ End-of-Day Readiness Check:\nWith work aisles completely free of obstacles and all cargo staged in correct locations, workers can immediately resume operations smoothly and safely tomorrow morning."
+              "✨ Express Shift Wrap-up & Staging for Mart Operations:\nSince W-Express is the first morning shift, once work is done, the floor must be thoroughly swept clean of all obstacles and leftover parcels.\nThe cleared floor space is immediately utilized for the subsequent Mart (W-Mart) inbound and outbound fulfillment operations."
             ]
           }
         ],
-        checklistTitle: "Rack Storage & Shift Closing Checklist",
+        checklistTitle: "Rack Storage & Express Wrap-up Checklist",
         checklists: [
           "⚖️ [Safe Stacking] Verified center of gravity and placed heavy cargo on the lowest shelf tiers for stable storage?",
           "🚨 [Customer ID Prefix] Verified 010 vs 011 prefixes to prevent mixing up different customers with identical 4-digit numbers?",
           "🏷️ [Number Marking] Wrote numbers prominently on box faces and aligned them facing the aisle?",
           "💡 [Small Parcels] Safely stored lightweight/small poly mailers inside the blue container box?",
-          "🧹 [Clear Aisles] Swept floor aisles clean of all debris to secure unobstructed movement for tomorrow's inbound cargo?"
+          "🧹 [Floor Space Ready] Swept the warehouse floor clean of all debris and leftover parcels to secure staging space for subsequent Mart operations?"
         ]
       }
     ]
