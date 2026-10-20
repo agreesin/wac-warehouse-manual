@@ -362,12 +362,12 @@ export default {
             title: "Physical Waybill Sorting (Food Box Separation & Customer ID Rack Placement)",
             desc: "Begin sorting immediately upon unboxing. Segregate food boxes sealed with blue tape to the Central Workbench, and distribute general cargo in front of Racks 0–9 by reading the Customer ID in the courier waybill address.",
             foodBoxCard: {
-              title: "Food Boxes (Blue Tape, F-Code) ➔ Move to [Central Workbench]",
-              desc: "During sorting, whenever you encounter a box sealed with 'blue tape' (applies to both regular cardboard boxes and styrofoam), do not place it in front of the racks; bring it to the [Central Workbench] first.",
+              title: "Food Boxes (Blue / Colored Tape · F-Code) ➔ Separate to [Central Workbench]",
+              desc: "During sorting, whenever you encounter a food box sealed with tape (applies to both regular cardboard boxes and styrofoam), do not place it in front of the racks; separate it to the [Central Workbench] first.",
               bullets: [
-                "Boxes sealed with blue tape = Food shipments (cargo code starts with 'F')",
-                "Move to [Central Workbench] instead of Racks 0–9",
-                "Food items (F-boxes) are handled by dedicated team members, so we focus on sorting general products"
+                "Boxes sealed with blue (colored) tape = Food shipments (cargo code starts with 'F')",
+                "Immediately separate to the [Central Workbench] for ice pack replacement to preserve freshness and dedicated label printing/affixing",
+                "※ Tape color may vary depending on on-site supplies; verify both tape binding and the invoice cargo code (starts with 'F')"
               ],
               photo: {
                 src: "/express/01-food-box.jpg",
@@ -433,7 +433,7 @@ export default {
         checklists: [
           "❌ Did you avoid sorting by the box's QR label (Cargo ID) number, and ⭕ verify the 'W01*-****' Customer ID in the courier waybill address?",
           "Did you place parcels in front of Racks 0–9 based on the first digit of the last 4 digits in Customer ID? (e.g. W010-0161 ➔ Rack 0)",
-          "🧊 Were food boxes sealed with blue tape (regular cardboard / styrofoam, F-code) placed on the 'Central Workbench' instead of the racks?",
+          "🧊 Were food boxes (blue/colored tape, F-code) separated to the 'Central Workbench' for ice pack replacement and dedicated labeling instead of being placed by racks?",
           "Were non-standard parcels (long 0001-WB codes) or unidentifiable parcels staged in the designated area?",
           "Did you exercise caution when slitting open sacks and consol boxes to avoid slicing into internal goods?"
         ]
