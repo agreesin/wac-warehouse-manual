@@ -406,7 +406,7 @@ export default {
               title: "Exception Parcels Grouped in Front of Wrapping Tape Boxes",
               desc: "If you encounter any of the following during sorting, do not place them at Racks 0–9; set them aside in front of the wrapping tape boxes.",
               items: [
-                "Non-standard code formats with '0001-WB...' (e.g. W011-0001-WB167689)",
+                "Non-standard code formats with '0001-WB...', 'HSPG...' (e.g. W011-0001-WB167689, HSPG918398)",
                 "Waybills missing the W01*-**** Customer ID in address",
                 "Damaged or unreadable waybills"
               ],
@@ -418,8 +418,13 @@ export default {
                   desc: "Waybills with '0001-WB...' format instead of standard Customer IDs (e.g. W011-0001-WB167689)\n💡 Identification Tip: Check if '0001' is present, or spot 'WB' letters which make the code noticeably longer than standard labels ➔ Stage in designated area"
                 },
                 {
+                  src: "/express/01-exception-hspg.jpg",
+                  title: "Exception Sample ②: HSPG Non-standard English Prefix (e.g. HSPG918398)",
+                  desc: "Parcels marked with non-standard identifiers like 'HSPG918398' instead of standard 'W01*-****' Customer IDs\n⚠️ Caution: Never confuse the bottom internal QR Cargo ID (e.g., W1016-5116) with customer numbers to avoid mis-sorting to racks ➔ Stage in designated area"
+                },
+                {
                   src: "/express/01-exception-no-id.jpg",
-                  title: "Exception Sample ②: Missing Customer ID",
+                  title: "Exception Sample ③: Missing Customer ID",
                   desc: "Waybill address completely missing Customer ID (do not sort by QR label) ➔ Stage in designated area"
                 }
               ]
@@ -438,7 +443,7 @@ export default {
           "❌ Did you avoid sorting by the box's QR label (Cargo ID) number, and ⭕ verify the 'W01*-****' Customer ID in the courier waybill address?",
           "Did you place parcels in front of Racks 0–9 based on the first digit of the last 4 digits in Customer ID? (e.g. W010-0161 ➔ Rack 0)",
           "🧊 Were food boxes (blue/colored tape, F-code) separated to the 'Central Workbench' for ice pack replacement and dedicated labeling instead of being placed by racks?",
-          "Were non-standard parcels (long 0001-WB codes) or unidentifiable parcels staged in the designated area?",
+          "Were non-standard parcels (long 0001-WB codes, HSPG codes) or unidentifiable parcels staged in the designated area?",
           "Did you exercise caution when slitting open sacks and consol boxes to avoid slicing into internal goods?"
         ]
       },
