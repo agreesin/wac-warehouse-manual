@@ -420,7 +420,7 @@ export default {
                 {
                   src: "/express/01-exception-hspg.jpg",
                   title: "Exception Sample ②: HSPG Non-standard English Prefix (e.g. HSPG918398)",
-                  desc: "Parcels marked with non-standard identifiers like 'HSPG918398' instead of standard 'W01*-****' Customer IDs\n⚠️ Caution: Never confuse the bottom internal QR Cargo ID (e.g., W1016-5116) with customer numbers to avoid mis-sorting to racks ➔ Stage in designated area"
+                  desc: "Parcels marked with non-standard identifiers like 'HSPG918398' instead of standard 'W01*-****' Customer IDs ➔ Stage in designated area"
                 },
                 {
                   src: "/express/01-exception-no-id.jpg",

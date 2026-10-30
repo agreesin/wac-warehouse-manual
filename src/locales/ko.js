@@ -439,7 +439,7 @@ export default {
                 {
                   src: "/express/01-exception-hspg.jpg",
                   title: "예외 실물 ② : HSPG 등 영문 비규격 코드 (예: HSPG918398)",
-                  desc: "송장 주소 끝에 표준 'W01*-****' 대신 'HSPG918398' 등 다른 영문 식별자가 기재된 비규격 화물\n⚠️ 주의: 상자 하단의 창고 내부 QR 라벨(W1016-5116) 번호를 고객 ID로 오인하여 랙에 오분류하지 않도록 주의 ➔ 지정 구역 보관"
+                  desc: "송장 주소 끝에 표준 'W01*-****' 대신 'HSPG918398' 등 다른 영문 식별자가 기재된 비규격 화물 ➔ 지정 구역 보관"
                 },
                 {
                   src: "/express/01-exception-no-id.jpg",

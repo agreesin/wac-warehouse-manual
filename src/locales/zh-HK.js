@@ -422,7 +422,7 @@ export default {
                 {
                   src: "/express/01-exception-hspg.jpg",
                   title: "例外貨物實物 ②：HSPG 等英文前綴非標準代碼（例：HSPG918398）",
-                  desc: "運單地址末端標註「HSPG918398」等非「W01*-****」標準格式之英文代碼貨物\n⚠️ 注意：切勿將箱體下方 QR 標籤的內部貨物 ID（如 W1016-5116）誤認為客戶編號而送至貨架 ➔ 集中放於指定區域"
+                  desc: "運單地址末端標註「HSPG918398」等非「W01*-****」標準格式之英文代碼貨物 ➔ 集中放於指定區域"
                 },
                 {
                   src: "/express/01-exception-no-id.jpg",
