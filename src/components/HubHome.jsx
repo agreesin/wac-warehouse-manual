@@ -16,30 +16,12 @@ const heroVariants = {
   })
 };
 
-export function HubHome({ onOpenWmart, onOpenExpress, onOpenCbm }) {
+export function HubHome({ onOpenWmart, onOpenExpress }) {
   const { t } = useLanguage();
 
   return (
     <div className="hub-shell">
-      <div className="hub-top-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        {onOpenCbm && (
-          <button
-            type="button"
-            onClick={onOpenCbm}
-            style={{
-              background: '#2563eb',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '7px 14px',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            🧊 3D CBM 적재 시뮬레이터
-          </button>
-        )}
+      <div className="hub-top-bar">
         <LanguageSelector />
       </div>
       <div className="hub hub-premium">

@@ -18,12 +18,12 @@ import { CbmSimulator } from './cbm/CbmSimulator';
 function parseHash() {
   const path = window.location.pathname.toLowerCase();
   const host = window.location.hostname.toLowerCase();
-  if (path.startsWith('/cbm') || host.includes('cbm')) {
+  if (host.includes('cbm')) {
     return { manual: 'cbm', page: 0 };
   }
   const hash = window.location.hash.replace(/^#\/?/, '');
   if (!hash || hash === 'hub') return { manual: 'hub', page: 0 };
-  if (hash === 'cbm' || hash.startsWith('cbm/')) return { manual: 'cbm', page: 0 };
+
   if (hash === 'wmart' || hash.startsWith('wmart/')) return { manual: 'wmart', page: 0 };
   if (hash.startsWith('warehouse')) {
     const page = Number(hash.split('/')[1] ?? 0);
