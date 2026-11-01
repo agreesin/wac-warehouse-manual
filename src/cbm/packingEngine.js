@@ -332,6 +332,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     .filter((c) => c.quantity > 0 && c.width > 0 && c.length > 0 && c.height > 0);
 
   const layerTemplates = new Map();
+  const templateMeta = new Map();
   const unpackedErrors = [];
 
   for (const item of queue) {
@@ -351,6 +352,42 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       item.remaining = 0;
     } else {
       layerTemplates.set(item.id, template);
+      let minX = Infinity,
+        maxX = 0,
+        minZ = Infinity,
+        maxZ = 0;
+      for (const p of template) {
+        if (p.x < minX) minX = p.x;
+        if (p.x + p.w > maxX) maxX = p.x + p.w;
+        if (p.z < minZ) minZ = p.z;
+        if (p.z + p.l > maxZ) maxZ = p.z + p.l;
+      }
+      const spanW = maxX - minX;
+      const spanL = maxZ - minZ;
+      const fullOffsetX = Math.floor((item.palletW - spanW) / 2) - minX;
+      const fullOffsetZ = Math.floor((item.palletL - spanL) / 2) - minZ;
+
+      const maxLayersByH = Math.max(1, Math.floor(maxLoadH / item.height));
+      const fullLayerWeight = template.length * item.weight;
+      const maxLayersByW =
+        fullLayerWeight > 0
+          ? Math.max(1, Math.floor(maxCargoWeight / fullLayerWeight))
+          : maxLayersByH;
+      const maxFullLayersPerPallet = Math.max(1, Math.min(maxLayersByH, maxLayersByW));
+
+      templateMeta.set(item.id, {
+        fullCount: template.length,
+        spanW,
+        spanL,
+        fullOffsetX,
+        fullOffsetZ,
+        actualMinX: minX + fullOffsetX,
+        actualMaxX: maxX + fullOffsetX,
+        actualMinZ: minZ + fullOffsetZ,
+        actualMaxZ: maxZ + fullOffsetZ,
+        maxFullLayersPerPallet,
+        boxesPerFullPallet: template.length * maxFullLayersPerPallet,
+      });
     }
   }
 
@@ -377,76 +414,44 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     primaryCargoName: '',
   });
 
-  let currentPallet = null;
-  const hasRemaining = () => queue.some((c) => c.remaining > 0);
+  // Helper: Compute placed box positions for a full or partial layer of `cargoItem`
+  const buildLayerPlacement = (pallet, cargoItem, takeCount) => {
+    const template = layerTemplates.get(cargoItem.id) || [];
+    const meta = templateMeta.get(cargoItem.id);
+    const isFull = takeCount >= template.length;
+    const prevLayer =
+      pallet.layers.length > 0 ? pallet.layers[pallet.layers.length - 1] : null;
 
-  let safetyCounter = 0;
-  while (hasRemaining() && safetyCounter < 5000) {
-    safetyCounter++;
-
-    const nextCandidate = queue.find((c) => c.remaining > 0);
-    if (!nextCandidate) break;
-
-    if (!currentPallet) {
-      currentPallet = createEmptyPallet(
-        pallets.length + 1,
-        nextCandidate.palletW,
-        nextCandidate.palletL,
-        nextCandidate.palletSpecId,
-        nextCandidate.palletSpecName
-      );
-      currentPallet.primaryCargoId = nextCandidate.id;
-      currentPallet.primaryCargoName = nextCandidate.name;
+    // If partial layer sits directly on a full layer of the SAME cargo,
+    // keep the exact column coordinates of the full layer so every box rests squarely on a box below it.
+    if (!isFull && prevLayer && prevLayer.cargoId === cargoItem.id) {
+      const chosen = template.slice(0, takeCount);
+      let lMinX = Infinity,
+        lMaxX = 0,
+        lMinZ = Infinity,
+        lMaxZ = 0;
+      const coords = chosen.map((p) => {
+        const bx = p.x + meta.fullOffsetX;
+        const bz = p.z + meta.fullOffsetZ;
+        if (bx < lMinX) lMinX = bx;
+        if (bx + p.w > lMaxX) lMaxX = bx + p.w;
+        if (bz < lMinZ) lMinZ = bz;
+        if (bz + p.l > lMaxZ) lMaxZ = bz + p.l;
+        return { ...p, x: bx, z: bz };
+      });
+      return {
+        coords,
+        minX: lMinX,
+        maxX: lMaxX,
+        minZ: lMinZ,
+        maxZ: lMaxZ,
+        spanW: lMaxX - lMinX,
+        spanL: lMaxZ - lMinZ,
+        isPartialLayer: true,
+      };
     }
 
-    const currentY = currentPallet.cargoHeight;
-    const remHeight = maxLoadH - currentY;
-    const remWeight = maxCargoWeight - currentPallet.cargoWeight;
-
-    // Only allow cargos with matching pallet dimensions on the same pallet
-    const activeCargo = queue.find(
-      (c) =>
-        c.remaining > 0 &&
-        c.palletW === currentPallet.width &&
-        c.palletL === currentPallet.length &&
-        (mixCargos || currentPallet.boxes.length === 0 || c.id === currentPallet.primaryCargoId) &&
-        c.height <= remHeight &&
-        (c.weight <= remWeight || currentPallet.boxes.length === 0)
-    );
-
-    if (!activeCargo) {
-      if (currentPallet.boxes.length > 0) {
-        pallets.push(currentPallet);
-        currentPallet = null;
-        continue;
-      }
-      break;
-    }
-
-    const template = layerTemplates.get(activeCargo.id) || [];
-    if (template.length === 0) {
-      activeCargo.remaining = 0;
-      continue;
-    }
-
-    const maxByWeight =
-      activeCargo.weight > 0
-        ? Math.max(
-            currentPallet.boxes.length === 0 ? 1 : 0,
-            Math.floor((maxCargoWeight - currentPallet.cargoWeight) / activeCargo.weight)
-          )
-        : activeCargo.remaining;
-
-    const takeCount = Math.min(template.length, activeCargo.remaining, maxByWeight);
-    if (takeCount <= 0) {
-      if (currentPallet.boxes.length > 0) {
-        pallets.push(currentPallet);
-        currentPallet = null;
-        continue;
-      }
-      break;
-    }
-
+    // Otherwise (Full layer OR partial layer on floor / different SKU): center compactly on pallet
     const placedTemplate = template.slice(0, takeCount);
     let minX = Infinity,
       maxX = 0,
@@ -458,54 +463,289 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       if (p.z < minZ) minZ = p.z;
       if (p.z + p.l > maxZ) maxZ = p.z + p.l;
     }
-
-    // Center the boxes on the pallet for optimal Center of Gravity (CoG)
-    const offsetX = Math.floor((currentPallet.width - (maxX - minX)) / 2) - minX;
-    const offsetZ = Math.floor((currentPallet.length - (maxZ - minZ)) / 2) - minZ;
-
-    const layerY = baseH + currentPallet.cargoHeight;
-    const layerBoxes = placedTemplate.map((p, bIdx) => ({
-      id: `${currentPallet.id}-box-${currentPallet.boxes.length + bIdx + 1}`,
-      cargoId: activeCargo.id,
-      name: activeCargo.name,
-      color: activeCargo.color,
-      weight: activeCargo.weight,
+    const offsetX = Math.floor((pallet.width - (maxX - minX)) / 2) - minX;
+    const offsetZ = Math.floor((pallet.length - (maxZ - minZ)) / 2) - minZ;
+    const coords = placedTemplate.map((p) => ({
+      ...p,
       x: p.x + offsetX,
-      y: layerY,
       z: p.z + offsetZ,
+    }));
+    return {
+      coords,
+      minX: minX + offsetX,
+      maxX: maxX + offsetX,
+      minZ: minZ + offsetZ,
+      maxZ: maxZ + offsetZ,
+      spanW: maxX - minX,
+      spanL: maxZ - minZ,
+      isPartialLayer: !isFull,
+    };
+  };
+
+  const addLayerToPallet = (pallet, cargoItem, takeCount) => {
+    const placement = buildLayerPlacement(pallet, cargoItem, takeCount);
+    const layerY = baseH + pallet.cargoHeight;
+    const layerBoxes = placement.coords.map((p, bIdx) => ({
+      id: `${pallet.id}-box-${pallet.boxes.length + bIdx + 1}`,
+      cargoId: cargoItem.id,
+      name: cargoItem.name,
+      color: cargoItem.color,
+      weight: cargoItem.weight,
+      x: p.x,
+      y: layerY,
+      z: p.z,
       w: p.w,
-      h: activeCargo.height,
+      h: cargoItem.height,
       l: p.l,
       rotated: p.rotated,
-      layerIndex: currentPallet.layers.length,
+      layerIndex: pallet.layers.length,
     }));
 
-    currentPallet.boxes.push(...layerBoxes);
-    currentPallet.layers.push({
-      index: currentPallet.layers.length,
+    pallet.boxes.push(...layerBoxes);
+    pallet.layers.push({
+      index: pallet.layers.length,
       y: layerY,
-      height: activeCargo.height,
+      height: cargoItem.height,
       boxCount: layerBoxes.length,
+      cargoId: cargoItem.id,
+      cargoName: cargoItem.name,
+      unitWeight: cargoItem.weight,
+      isPartialLayer: placement.isPartialLayer,
+      minX: placement.minX,
+      maxX: placement.maxX,
+      minZ: placement.minZ,
+      maxZ: placement.maxZ,
+      spanW: placement.spanW,
+      spanL: placement.spanL,
     });
-    currentPallet.cargoHeight += activeCargo.height;
-    currentPallet.totalHeight = baseH + currentPallet.cargoHeight;
+    pallet.cargoHeight += cargoItem.height;
+    pallet.totalHeight = baseH + pallet.cargoHeight;
 
-    const addedWeight = layerBoxes.length * activeCargo.weight;
-    currentPallet.cargoWeight = Number((currentPallet.cargoWeight + addedWeight).toFixed(2));
-    currentPallet.totalWeight = Number((tareWeight + currentPallet.cargoWeight).toFixed(1));
-    currentPallet.cargoCounts[activeCargo.id] =
-      (currentPallet.cargoCounts[activeCargo.id] || 0) + layerBoxes.length;
+    const addedWeight = layerBoxes.length * cargoItem.weight;
+    pallet.cargoWeight = Number((pallet.cargoWeight + addedWeight).toFixed(2));
+    pallet.totalWeight = Number((tareWeight + pallet.cargoWeight).toFixed(1));
+    pallet.cargoCounts[cargoItem.id] =
+      (pallet.cargoCounts[cargoItem.id] || 0) + layerBoxes.length;
 
-    activeCargo.remaining -= layerBoxes.length;
+    cargoItem.remaining -= layerBoxes.length;
+  };
 
-    if (!mixCargos && activeCargo.remaining === 0) {
-      pallets.push(currentPallet);
-      currentPallet = null;
+  // =========================================================================
+  // PHASE 1: 품목별 완적 파레트(Full Single-SKU Pallets) 우선 확정
+  // (자체 수량만으로 완적 파레트가 나오는 물량은 다른 품목 잔량 파레트에 쪼개 넣지 않음)
+  // =========================================================================
+  for (const item of queue) {
+    const meta = templateMeta.get(item.id);
+    if (!meta || item.remaining <= 0) continue;
+
+    while (item.remaining >= meta.boxesPerFullPallet) {
+      const fullPallet = createEmptyPallet(
+        pallets.length + 1,
+        item.palletW,
+        item.palletL,
+        item.palletSpecId,
+        item.palletSpecName
+      );
+      fullPallet.primaryCargoId = item.id;
+      fullPallet.primaryCargoName = item.name;
+
+      for (let l = 0; l < meta.maxFullLayersPerPallet; l++) {
+        addLayerToPallet(fullPallet, item, meta.fullCount);
+      }
+      pallets.push(fullPallet);
+    }
+
+    // 단독 적재 모드(mixCargos === false)이면 남은 잔량도 즉시 전용 파레트로 적재
+    if (!mixCargos && item.remaining > 0) {
+      let remPallet = null;
+      while (item.remaining > 0) {
+        if (!remPallet) {
+          remPallet = createEmptyPallet(
+            pallets.length + 1,
+            item.palletW,
+            item.palletL,
+            item.palletSpecId,
+            item.palletSpecName
+          );
+          remPallet.primaryCargoId = item.id;
+          remPallet.primaryCargoName = item.name;
+        }
+        const remH = maxLoadH - remPallet.cargoHeight;
+        const maxByW =
+          item.weight > 0
+            ? Math.max(
+                remPallet.boxes.length === 0 ? 1 : 0,
+                Math.floor((maxCargoWeight - remPallet.cargoWeight) / item.weight)
+              )
+            : item.remaining;
+        const takeCount = Math.min(meta.fullCount, item.remaining, maxByW);
+        if (item.height > remH || takeCount <= 0) {
+          pallets.push(remPallet);
+          remPallet = null;
+          continue;
+        }
+        addLayerToPallet(remPallet, item, takeCount);
+      }
+      if (remPallet && remPallet.boxes.length > 0) {
+        pallets.push(remPallet);
+      }
     }
   }
 
-  if (currentPallet && currentPallet.boxes.length > 0) {
-    pallets.push(currentPallet);
+  // =========================================================================
+  // PHASE 2: 다품종 혼적 허용 시 잔량(Remainder) 합포장 — 물리적 안정성 검증
+  // 1) 불완전 부분 단(Partial Layer) 위에는 절대 다른 층을 올리지 않음 (부분 단은 무조건 최상단)
+  // 2) 위층의 바닥 외곽이 아래층 지지 면적 밖으로 돌출(공중부양/버섯형)되면 적재 금지
+  // 3) 아래층보다 단중이 과도하게 무거운 품목을 위에 올리는 하중 역전 금지
+  // =========================================================================
+  if (mixCargos) {
+    // 잔량 품목 정렬: 완적 단만 있는 품목 우선 -> 바닥 지지 면적이 넓은 순 -> 단중이 무거운 순
+    const remainderQueue = queue
+      .filter((c) => c.remaining > 0 && templateMeta.has(c.id))
+      .sort((a, b) => {
+        const metaA = templateMeta.get(a.id);
+        const metaB = templateMeta.get(b.id);
+        const aHasPartial = a.remaining % metaA.fullCount !== 0 ? 1 : 0;
+        const bHasPartial = b.remaining % metaB.fullCount !== 0 ? 1 : 0;
+        if (aHasPartial !== bHasPartial) return aHasPartial - bHasPartial;
+        const areaA = metaA.spanW * metaA.spanL;
+        const areaB = metaB.spanW * metaB.spanL;
+        if (Math.abs(areaB - areaA) > 10000) return areaB - areaA;
+        return (b.weight || 0) - (a.weight || 0);
+      });
+
+    const canStackLayerOnPallet = (pallet, candidateCargo, takeCount) => {
+      if (pallet.layers.length === 0) return true;
+      const topLayer = pallet.layers[pallet.layers.length - 1];
+
+      // 규칙 1: 이미 부분 단(Partial Layer)이 올라간 파레트 위에는 절대 추가 적재 불가!
+      if (topLayer.isPartialLayer) return false;
+
+      // 동일 품목의 연속 적재(완적 단 위에 같은 품목의 완적/부분 단 적재)는 항상 허용
+      if (topLayer.cargoId === candidateCargo.id) return true;
+
+      // 규칙 2: 타 품목 적재 시 단중(무게) 역전 체크 (위층 박스가 아래층 박스보다 25% 초과 무거우면 파손 위험으로 차단)
+      if (topLayer.unitWeight > 0 && candidateCargo.weight > topLayer.unitWeight * 1.25) {
+        return false;
+      }
+
+      // 규칙 3: 하부 지지 면적(Support Footprint) 체크 — 위층 박스가 아래층 외곽 밖으로 허공에 뜨는지 검증
+      const preview = buildLayerPlacement(pallet, candidateCargo, takeCount);
+      const overhangMargin = 10; // 10mm 이내 미세 정렬 오차만 허용
+      const supportedInX =
+        preview.minX >= topLayer.minX - overhangMargin &&
+        preview.maxX <= topLayer.maxX + overhangMargin;
+      const supportedInZ =
+        preview.minZ >= topLayer.minZ - overhangMargin &&
+        preview.maxZ <= topLayer.maxZ + overhangMargin;
+
+      if (!supportedInX || !supportedInZ) {
+        return false;
+      }
+
+      return true;
+    };
+
+    let currentPallet = null;
+    let safetyCounter = 0;
+    while (remainderQueue.some((c) => c.remaining > 0) && safetyCounter < 5000) {
+      safetyCounter++;
+
+      if (!currentPallet) {
+        const firstCand = remainderQueue.find((c) => c.remaining > 0);
+        if (!firstCand) break;
+        currentPallet = createEmptyPallet(
+          pallets.length + 1,
+          firstCand.palletW,
+          firstCand.palletL,
+          firstCand.palletSpecId,
+          firstCand.palletSpecName
+        );
+        currentPallet.primaryCargoId = firstCand.id;
+        currentPallet.primaryCargoName = firstCand.name;
+      }
+
+      const remHeight = maxLoadH - currentPallet.cargoHeight;
+      const remWeight = maxCargoWeight - currentPallet.cargoWeight;
+
+      // 현재 파레트 위에 물리적으로 안전하게 올릴 수 있는 다음 층 탐색
+      // (현재 쌓고 있던 품목이 남아 있으면 그 품목을 최우선으로 마저 적재)
+      const lastCargoId =
+        currentPallet.layers.length > 0
+          ? currentPallet.layers[currentPallet.layers.length - 1].cargoId
+          : null;
+
+      const orderedCandidates = [...remainderQueue].sort((a, b) => {
+        if (a.id === lastCargoId && b.id !== lastCargoId) return -1;
+        if (b.id === lastCargoId && a.id !== lastCargoId) return 1;
+        return 0;
+      });
+
+      let matchedCargo = null;
+      let matchedTakeCount = 0;
+
+      for (const cand of orderedCandidates) {
+        if (cand.remaining <= 0) continue;
+        if (cand.palletW !== currentPallet.width || cand.palletL !== currentPallet.length) continue;
+        if (cand.height > remHeight) continue;
+        if (cand.weight > remWeight && currentPallet.boxes.length > 0) continue;
+
+        const meta = templateMeta.get(cand.id);
+        const maxByW =
+          cand.weight > 0
+            ? Math.max(
+                currentPallet.boxes.length === 0 ? 1 : 0,
+                Math.floor((maxCargoWeight - currentPallet.cargoWeight) / cand.weight)
+              )
+            : cand.remaining;
+        const takeCount = Math.min(meta.fullCount, cand.remaining, maxByW);
+        if (takeCount <= 0) continue;
+
+        if (canStackLayerOnPallet(currentPallet, cand, takeCount)) {
+          matchedCargo = cand;
+          matchedTakeCount = takeCount;
+          break;
+        }
+      }
+
+      if (!matchedCargo) {
+        if (currentPallet.boxes.length > 0) {
+          pallets.push(currentPallet);
+          currentPallet = null;
+          continue;
+        }
+        break;
+      }
+
+      addLayerToPallet(currentPallet, matchedCargo, matchedTakeCount);
+
+      // 방금 올린 층이 부분 단(Partial Layer)이면 그 위에는 아무것도 올릴 수 없으므로 즉시 파레트 마감!
+      const justAddedLayer = currentPallet.layers[currentPallet.layers.length - 1];
+      if (justAddedLayer.isPartialLayer) {
+        pallets.push(currentPallet);
+        currentPallet = null;
+      }
+    }
+
+    if (currentPallet && currentPallet.boxes.length > 0) {
+      pallets.push(currentPallet);
+    }
+
+    // 품목별 완적 파레트 바로 뒤에 동일 품목 부분 파레트가 이어지도록 정렬 (복합 혼적 파레트는 맨 뒤 배치)
+    const cargoOrderMap = new Map(queue.map((c, idx) => [c.id, idx]));
+    pallets.sort((a, b) => {
+      const aMixed = Object.keys(a.cargoCounts).length > 1 ? 1 : 0;
+      const bMixed = Object.keys(b.cargoCounts).length > 1 ? 1 : 0;
+      if (aMixed !== bMixed) return aMixed - bMixed;
+      const aOrder = cargoOrderMap.get(a.primaryCargoId) ?? 999;
+      const bOrder = cargoOrderMap.get(b.primaryCargoId) ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return b.boxes.length - a.boxes.length;
+    });
+    pallets.forEach((p, idx) => {
+      p.index = idx + 1;
+      p.id = `pallet-${idx + 1}`;
+    });
   }
 
   // Compute CBM, Volume Utilization, and Local CoG per pallet
