@@ -16,6 +16,11 @@ import { Bars3Icon, XMarkIcon, ArrowLeftIcon, ArrowRightIcon } from './component
 import { CbmSimulator } from './cbm/CbmSimulator';
 
 function parseHash() {
+  const path = window.location.pathname.toLowerCase();
+  const host = window.location.hostname.toLowerCase();
+  if (path.startsWith('/cbm') || host.includes('cbm')) {
+    return { manual: 'cbm', page: 0 };
+  }
   const hash = window.location.hash.replace(/^#\/?/, '');
   if (!hash || hash === 'hub') return { manual: 'hub', page: 0 };
   if (hash === 'cbm' || hash.startsWith('cbm/')) return { manual: 'cbm', page: 0 };
