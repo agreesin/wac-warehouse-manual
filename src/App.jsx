@@ -13,10 +13,12 @@ import { LanguageSelector } from './components/LanguageSelector';
 import { ImageModal } from './components/ImageModal';
 import { QuickSearchModal } from './components/QuickSearchModal';
 import { Bars3Icon, XMarkIcon, ArrowLeftIcon, ArrowRightIcon } from './components/Icons';
+import { CbmSimulator } from './cbm/CbmSimulator';
 
 function parseHash() {
   const hash = window.location.hash.replace(/^#\/?/, '');
   if (!hash || hash === 'hub') return { manual: 'hub', page: 0 };
+  if (hash === 'cbm' || hash.startsWith('cbm/')) return { manual: 'cbm', page: 0 };
   if (hash === 'wmart' || hash.startsWith('wmart/')) return { manual: 'wmart', page: 0 };
   if (hash.startsWith('warehouse')) {
     const page = Number(hash.split('/')[1] ?? 0);
@@ -211,8 +213,18 @@ export function App() {
 
   let mainContent = null;
 
-  if (route.manual === 'hub') {
-    mainContent = <HubHome onOpenWmart={goToWMart} onOpenExpress={() => goToExpress(0)} />;
+  if (route.manual === 'cbm') {
+    mainContent = <CbmSimulator />;
+  } else if (route.manual === 'hub') {
+    mainContent = (
+      <HubHome
+        onOpenWmart={goToWMart}
+        onOpenExpress={() => goToExpress(0)}
+        onOpenCbm={() => {
+          window.location.hash = '#/cbm';
+        }}
+      />
+    );
   } else if (route.manual === 'wmart') {
     mainContent = (
       <HubWMart

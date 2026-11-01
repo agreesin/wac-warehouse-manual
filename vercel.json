@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/cbm", "destination": "/cbm.html" }
+  ]
+}
