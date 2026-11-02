@@ -54,7 +54,7 @@ export function CbmSimulator() {
   // =========================================================================
   const [selectedContainerId, setSelectedContainerId] = useState('40FT_HC');
   const [balanceContainers, setBalanceContainers] = useState(true);
-  const [fullFloorSpread, setFullFloorSpread] = useState(false);
+  const [fullFloorSpread, setFullFloorSpread] = useState(true); // 기본값: 컨테이너 빈 바닥 100% 풀채움 (단수 분산)
   const [optimizeCoG, setOptimizeCoG] = useState(true);
   const [selectedContainerIdx, setSelectedContainerIdx] = useState(0);
   const [containerVisibleStep, setContainerVisibleStep] = useState(100);
@@ -173,6 +173,7 @@ export function CbmSimulator() {
       interlockLayers,
       overhang,
       balanceContainers,
+      fullFloorSpread,
       optimizeCoG,
     });
     const usedSpecs = Array.from(
@@ -192,6 +193,7 @@ export function CbmSimulator() {
     interlockLayers,
     overhang,
     balanceContainers,
+    fullFloorSpread,
     optimizeCoG,
   ]);
 
@@ -316,6 +318,7 @@ export function CbmSimulator() {
     setStackMode('single');
     setMixCargos(false);
     setOverhang(0);
+    setFullFloorSpread(true);
     setPalletSelectionMode('CUSTOM_MIX');
     setUploadNotice({
       type: 'info',
@@ -1615,11 +1618,65 @@ export function CbmSimulator() {
 
           {/* 2-B: Pallet Breakdown Table & Single Pallet 2D/3D Visualization */}
           <div className="cbm-card">
-            <div className="cbm-card-header">
-              <h2>
-                2-B. 품목별 산출 파레트 내역 및 「한 파레트에 어떻게 적재하면 되는지」 시각화
-              </h2>
-              <span className="cbm-badge">표의 행을 클릭하면 아래 적재 도면과 3D가 전환됩니다</span>
+            <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h2>
+                  2-B. 품목별 산출 파레트 내역 및 「한 파레트에 어떻게 적재하면 되는지」 시각화
+                </h2>
+                <span className="cbm-badge" style={{ display: 'inline-block', marginTop: '4px' }}>
+                  표의 행을 클릭하면 아래 적재 도면과 3D가 전환됩니다
+                </span>
+              </div>
+
+              {/* 빈 바닥 채움(기본값) vs 최대한 높게 쌓아 바닥 공간 남김(선택사항) 전환 스위치 */}
+              {simResult.floorSpreadInfo &&
+                (simResult.floorSpreadInfo.emptyFloorSlotsBeforeSpread > 0 ||
+                  simResult.floorSpreadInfo.isSpreadActive) && (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      background: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '9px',
+                      padding: '3px',
+                      gap: '4px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setFullFloorSpread(true)}
+                      style={{
+                        border: 'none',
+                        borderRadius: '7px',
+                        padding: '6px 12px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: fullFloorSpread ? '#059669' : 'transparent',
+                        color: fullFloorSpread ? '#ffffff' : '#94a3b8',
+                      }}
+                    >
+                      🛡️ 빈 바닥 채움 (기본 · 총 {simResult.floorSpreadInfo.totalAvailableFloorSlots}PLT)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFullFloorSpread(false)}
+                      style={{
+                        border: 'none',
+                        borderRadius: '7px',
+                        padding: '6px 12px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: !fullFloorSpread ? '#2563eb' : 'transparent',
+                        color: !fullFloorSpread ? '#ffffff' : '#94a3b8',
+                      }}
+                    >
+                      📦 최대한 높게 쌓아 바닥 공간 만들기 (선택 · 총 {simResult.floorSpreadInfo.basePalletCount}PLT)
+                    </button>
+                  </div>
+                )}
             </div>
 
             {/* Summary Table by Pallet Group */}
@@ -2134,29 +2191,34 @@ export function CbmSimulator() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {simResult.floorSpreadInfo.isSpreadActive ? (
-                      <button
-                        type="button"
-                        className="cbm-btn-xs"
-                        onClick={() => setFullFloorSpread(false)}
-                      >
-                        ↩ 최소 파레트 수({simResult.floorSpreadInfo.basePalletCount}PLT)로 되돌리기
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="cbm-btn-xs primary"
-                        style={{
-                          background: '#059669',
-                          borderColor: '#10b981',
-                          padding: '7px 12px',
-                          fontWeight: 700,
-                        }}
-                        onClick={() => setFullFloorSpread(true)}
-                      >
-                        🛡️ 단수 낮춰 바닥 {simResult.floorSpreadInfo.totalAvailableFloorSlots}칸 100% 풀채움 적용 ({simResult.floorSpreadInfo.basePalletCount}→{simResult.floorSpreadInfo.totalAvailableFloorSlots}PLT)
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="cbm-btn-xs"
+                      style={{
+                        background: fullFloorSpread ? '#059669' : 'rgba(15, 23, 42, 0.8)',
+                        borderColor: fullFloorSpread ? '#10b981' : '#475569',
+                        color: fullFloorSpread ? '#ffffff' : '#cbd5e1',
+                        padding: '7px 12px',
+                        fontWeight: 700,
+                      }}
+                      onClick={() => setFullFloorSpread(true)}
+                    >
+                      🛡️ 빈 바닥 100% 채우기 (기본값 · 총 {simResult.floorSpreadInfo.totalAvailableFloorSlots}PLT)
+                    </button>
+                    <button
+                      type="button"
+                      className="cbm-btn-xs"
+                      style={{
+                        background: !fullFloorSpread ? '#2563eb' : 'rgba(15, 23, 42, 0.8)',
+                        borderColor: !fullFloorSpread ? '#3b82f6' : '#475569',
+                        color: !fullFloorSpread ? '#ffffff' : '#cbd5e1',
+                        padding: '7px 12px',
+                        fontWeight: 700,
+                      }}
+                      onClick={() => setFullFloorSpread(false)}
+                    >
+                      📦 최대한 높게 쌓아 바닥 여유 공간 만들기 (선택 · 총 {simResult.floorSpreadInfo.basePalletCount}PLT)
+                    </button>
                   </div>
                 </div>
               )}
