@@ -263,7 +263,14 @@ export function CbmSimulator() {
     setCargos((prev) =>
       prev.map((c) => {
         if (c.id !== id) return c;
-        if (field === 'name' || field === 'color' || field === 'palletSpecId') {
+        if (
+          field === 'name' ||
+          field === 'color' ||
+          field === 'palletSpecId' ||
+          field === 'layerPattern' ||
+          field === 'stackingStyle' ||
+          field === 'boxPosture'
+        ) {
           return { ...c, [field]: value };
         }
         if (field === 'allowRotate') {
@@ -273,7 +280,14 @@ export function CbmSimulator() {
         return { ...c, [field]: num };
       })
     );
-    if (step2Unlocked && field !== 'palletSpecId' && field !== 'allowedOverhang') {
+    if (
+      step2Unlocked &&
+      field !== 'palletSpecId' &&
+      field !== 'allowedOverhang' &&
+      field !== 'layerPattern' &&
+      field !== 'stackingStyle' &&
+      field !== 'boxPosture'
+    ) {
       setIsStep1Dirty(true);
     }
   };
@@ -1851,6 +1865,333 @@ export function CbmSimulator() {
                     <span>층간 분리뷰(Explode) 켜기</span>
                   </label>
                 </div>
+
+                {/* 🧱 상자를 어떻게 쌓을지 선택 (1층 평면 배열 패턴 · 층간 교차 방식 · 상자 세움/눕힘 자세) */}
+                {simResult.stackingDiagnostics &&
+                  simResult.stackingDiagnostics.length > 0 &&
+                  (() => {
+                    const activeCargoDiag =
+                      simResult.stackingDiagnostics.find(
+                        (d) => d.cargoId === currentPallet.primaryCargoId
+                      ) || simResult.stackingDiagnostics[0];
+                    if (!activeCargoDiag) return null;
+
+                    return (
+                      <div
+                        style={{
+                          marginBottom: '14px',
+                          padding: '14px 16px',
+                          borderRadius: '11px',
+                          background: 'rgba(15, 23, 42, 0.85)',
+                          border: '1px solid rgba(56, 189, 248, 0.35)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '10px',
+                            marginBottom: '10px',
+                            paddingBottom: '8px',
+                            borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#38bdf8' }}>
+                              🧱 상자를 어떻게 쌓을지 선택 (적재 패턴 · 층간 방식 · 세움/눕힘 자세)
+                            </span>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '3px 10px',
+                                borderRadius: '999px',
+                                background: 'rgba(30, 41, 59, 0.9)',
+                                border: '1px solid rgba(148, 163, 184, 0.3)',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                color: '#f8fafc',
+                              }}
+                            >
+                              <span
+                                className="cbm-color-dot"
+                                style={{ background: activeCargoDiag.color }}
+                              />
+                              현재 설정 품목: {activeCargoDiag.cargoName}
+                            </span>
+                          </div>
+
+                          {/* 품목 빠른 전환 탭 */}
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {simResult.stackingDiagnostics.map((d) => {
+                              const isCurrent = d.cargoId === activeCargoDiag.cargoId;
+                              return (
+                                <button
+                                  key={d.cargoId}
+                                  type="button"
+                                  className="cbm-btn-xs"
+                                  style={{
+                                    background: isCurrent ? '#2563eb' : 'rgba(30, 41, 59, 0.7)',
+                                    borderColor: isCurrent ? '#3b82f6' : '#475569',
+                                    color: isCurrent ? '#ffffff' : '#cbd5e1',
+                                    fontWeight: isCurrent ? 700 : 500,
+                                  }}
+                                  onClick={() => {
+                                    const sampleIdx = simResult.pallets.findIndex(
+                                      (p) => p.primaryCargoId === d.cargoId
+                                    );
+                                    if (sampleIdx !== -1) setSelectedPalletIdx(sampleIdx);
+                                  }}
+                                >
+                                  {d.cargoName} 설정 보기
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                            gap: '12px',
+                          }}
+                        >
+                          {/* ① 1층 평면 배열 모양 (5종) */}
+                          <div
+                            style={{
+                              background: 'rgba(30, 41, 59, 0.55)',
+                              border: '1px solid rgba(148, 163, 184, 0.2)',
+                              borderRadius: '9px',
+                              padding: '10px 12px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                color: '#93c5fd',
+                                marginBottom: '6px',
+                              }}
+                            >
+                              ① 한 층(1단) 평면 배열 모양 선택
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              {activeCargoDiag.patternOptions.map((opt) => {
+                                const isSel = activeCargoDiag.currentPattern === opt.id;
+                                return (
+                                  <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() =>
+                                      handleCargoChange(
+                                        activeCargoDiag.cargoId,
+                                        'layerPattern',
+                                        opt.id
+                                      )
+                                    }
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      padding: '6px 9px',
+                                      borderRadius: '7px',
+                                      border: isSel
+                                        ? '1px solid #38bdf8'
+                                        : '1px solid rgba(148, 163, 184, 0.18)',
+                                      background: isSel
+                                        ? 'rgba(56, 189, 248, 0.18)'
+                                        : 'rgba(15, 23, 42, 0.65)',
+                                      color: '#f8fafc',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      fontSize: '0.77rem',
+                                    }}
+                                  >
+                                    <div>
+                                      <strong style={{ color: isSel ? '#38bdf8' : '#e2e8f0' }}>
+                                        {opt.label}
+                                      </strong>
+                                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                        {opt.shortDesc}
+                                      </div>
+                                    </div>
+                                    <span
+                                      style={{
+                                        fontSize: '0.73rem',
+                                        fontWeight: 700,
+                                        color: isSel ? '#fde047' : '#cbd5e1',
+                                        whiteSpace: 'nowrap',
+                                        marginLeft: '8px',
+                                      }}
+                                    >
+                                      1단 {opt.layerBoxCount}박스 · {opt.totalPallets}PLT
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* ② 위로 단을 올릴 때 층간 쌓기 방식 (3종) & ③ 상자 세움/눕힘 자세 (3종) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div
+                              style={{
+                                background: 'rgba(30, 41, 59, 0.55)',
+                                border: '1px solid rgba(148, 163, 184, 0.2)',
+                                borderRadius: '9px',
+                                padding: '10px 12px',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  color: '#fcd34d',
+                                  marginBottom: '6px',
+                                }}
+                              >
+                                ② 위로 단을 쌓아 올리는 방식 (층간 교차 vs 수직 기둥)
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                {activeCargoDiag.stackStyleOptions.map((stOpt) => {
+                                  const isSel = activeCargoDiag.currentStackStyle === stOpt.id;
+                                  return (
+                                    <button
+                                      key={stOpt.id}
+                                      type="button"
+                                      onClick={() =>
+                                        handleCargoChange(
+                                          activeCargoDiag.cargoId,
+                                          'stackingStyle',
+                                          stOpt.id
+                                        )
+                                      }
+                                      style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '6px 9px',
+                                        borderRadius: '7px',
+                                        border: isSel
+                                          ? '1px solid #f59e0b'
+                                          : '1px solid rgba(148, 163, 184, 0.18)',
+                                        background: isSel
+                                          ? 'rgba(245, 158, 11, 0.18)'
+                                          : 'rgba(15, 23, 42, 0.65)',
+                                        color: '#f8fafc',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        fontSize: '0.77rem',
+                                      }}
+                                    >
+                                      <div>
+                                        <strong style={{ color: isSel ? '#fbbf24' : '#e2e8f0' }}>
+                                          {stOpt.label}
+                                        </strong>
+                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                          {stOpt.shortDesc}
+                                        </div>
+                                      </div>
+                                      <span
+                                        style={{
+                                          fontSize: '0.72rem',
+                                          fontWeight: 700,
+                                          color: isSel ? '#fbbf24' : '#64748b',
+                                          marginLeft: '8px',
+                                        }}
+                                      >
+                                        {isSel ? '적용 중' : '선택'}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div
+                              style={{
+                                background: 'rgba(30, 41, 59, 0.55)',
+                                border: '1px solid rgba(148, 163, 184, 0.2)',
+                                borderRadius: '9px',
+                                padding: '10px 12px',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  color: '#6ee7b7',
+                                  marginBottom: '6px',
+                                }}
+                              >
+                                ③ 상자 놓는 자세 (세워 쌓기 vs 옆/앞으로 눕혀 쌓기)
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                {activeCargoDiag.postureOptions.map((posOpt) => {
+                                  const isSel = activeCargoDiag.currentPosture === posOpt.id;
+                                  return (
+                                    <button
+                                      key={posOpt.id}
+                                      type="button"
+                                      onClick={() =>
+                                        handleCargoChange(
+                                          activeCargoDiag.cargoId,
+                                          'boxPosture',
+                                          posOpt.id
+                                        )
+                                      }
+                                      style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '6px 9px',
+                                        borderRadius: '7px',
+                                        border: isSel
+                                          ? '1px solid #10b981'
+                                          : '1px solid rgba(148, 163, 184, 0.18)',
+                                        background: isSel
+                                          ? 'rgba(16, 185, 129, 0.18)'
+                                          : 'rgba(15, 23, 42, 0.65)',
+                                        color: '#f8fafc',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        fontSize: '0.77rem',
+                                      }}
+                                    >
+                                      <div>
+                                        <strong style={{ color: isSel ? '#34d399' : '#e2e8f0' }}>
+                                          {posOpt.label}
+                                        </strong>
+                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                          {posOpt.dimText}
+                                        </div>
+                                      </div>
+                                      <span
+                                        style={{
+                                          fontSize: '0.73rem',
+                                          fontWeight: 700,
+                                          color: isSel ? '#6ee7b7' : '#cbd5e1',
+                                          whiteSpace: 'nowrap',
+                                          marginLeft: '8px',
+                                        }}
+                                      >
+                                        1단 {posOpt.layerBoxCount}박스 · {posOpt.maxLayers}단 (
+                                        {posOpt.totalPallets}PLT)
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                 <div className="cbm-pallet-split-view">
                   {/* Left: 2D Top-Down Layer Blueprint & Loading Guide */}

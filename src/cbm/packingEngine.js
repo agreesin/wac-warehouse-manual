@@ -144,15 +144,56 @@ export const DEFAULT_CARGOS = [
 ];
 
 /**
- * 2D 평면(W x L) 위에 단일 규격 박스(bw x bl)를 가장 많이 배치하는 레이아웃 계산
+ * 상자 놓는 자세(Posture: 세워 쌓기 vs 앞으로 눕혀 쌓기 vs 옆으로 눕혀 쌓기)에 따른 유효 바닥(W×L) 및 높이(H) 계산
  */
-export function computeBest2DLayer(surfaceW, surfaceL, boxW, boxL, allowRotate = true) {
+export function resolveCargoBoxDimsByPosture(cargo, postureOverride) {
+  const rawW = Math.max(1, Number(cargo.width) || 1);
+  const rawL = Math.max(1, Number(cargo.length) || 1);
+  const rawH = Math.max(1, Number(cargo.height) || 1);
+  const posture = postureOverride || cargo.boxPosture || 'UPRIGHT';
+
+  if (posture === 'FLAT_W_H') {
+    return {
+      posture: 'FLAT_W_H',
+      postureLabel: '📐 앞으로 눕혀 쌓기 (가로×높이 바닥)',
+      width: rawW,
+      length: rawH,
+      height: rawL,
+    };
+  }
+  if (posture === 'FLAT_H_L') {
+    return {
+      posture: 'FLAT_H_L',
+      postureLabel: '📐 옆으로 눕혀 쌓기 (높이×세로 바닥)',
+      width: rawH,
+      length: rawL,
+      height: rawW,
+    };
+  }
+  return {
+    posture: 'UPRIGHT',
+    postureLabel: '⬆️ 기본 세워 쌓기 (가로×세로 바닥)',
+    width: rawW,
+    length: rawL,
+    height: rawH,
+  };
+}
+
+/**
+ * 2D 평면(W x L) 위에 단일 규격 박스(bw x bl)를 지정된 패턴 모드(patternMode)에 따라 배치하는 레이아웃 계산
+ */
+export function computeBest2DLayer(
+  surfaceW,
+  surfaceL,
+  boxW,
+  boxL,
+  allowRotate = true,
+  patternMode = 'AUTO_MAX'
+) {
   const bw = Math.max(1, Number(boxW) || 1);
   const bl = Math.max(1, Number(boxL) || 1);
   if (bw > surfaceW && bw > surfaceL) return [];
   if (bl > surfaceW && bl > surfaceL) return [];
-
-  const candidates = [];
 
   const fillGrid = (ox, oz, rw, rl, uw, ul, rotated) => {
     const nx = Math.floor(rw / uw);
@@ -172,14 +213,56 @@ export function computeBest2DLayer(surfaceW, surfaceL, boxW, boxL, allowRotate =
     return placements;
   };
 
-  if (bw <= surfaceW && bl <= surfaceL) {
-    candidates.push(fillGrid(0, 0, surfaceW, surfaceL, bw, bl, false));
+  const gridNormal =
+    bw <= surfaceW && bl <= surfaceL
+      ? fillGrid(0, 0, surfaceW, surfaceL, bw, bl, false)
+      : [];
+  const gridRotated =
+    allowRotate && bl <= surfaceW && bw <= surfaceL
+      ? fillGrid(0, 0, surfaceW, surfaceL, bl, bw, true)
+      : [];
+
+  if (patternMode === 'GRID_NORMAL') {
+    return gridNormal.length > 0 ? gridNormal : gridRotated;
+  }
+  if (patternMode === 'GRID_ROTATED') {
+    return gridRotated.length > 0 ? gridRotated : gridNormal;
   }
 
-  if (allowRotate && bl <= surfaceW && bw <= surfaceL) {
-    candidates.push(fillGrid(0, 0, surfaceW, surfaceL, bl, bw, true));
+  // Generate 4-Quadrant Pinwheel (풍차형 맞물림) candidates
+  const pinwheelCandidates = [];
+  if (allowRotate && bw !== bl) {
+    const maxNx1 = Math.floor(surfaceW / bw);
+    const maxNz1 = Math.floor(surfaceL / bl);
+    const maxNx2 = Math.floor(surfaceW / bl);
+    const maxNz2 = Math.floor(surfaceL / bw);
+
+    for (let nx1 = 1; nx1 <= maxNx1; nx1++) {
+      for (let nz1 = 1; nz1 <= maxNz1; nz1++) {
+        const W1 = nx1 * bw;
+        const L1 = nz1 * bl;
+        for (let nx2 = 1; nx2 <= maxNx2; nx2++) {
+          const W2 = nx2 * bl;
+          if (W1 + W2 > surfaceW) break;
+          for (let nz2 = 1; nz2 <= maxNz2; nz2++) {
+            const L2 = nz2 * bw;
+            if (L1 + L2 > surfaceL) break;
+
+            if ((W1 >= W2 && L2 >= L1) || (W1 <= W2 && L2 <= L1)) {
+              const q1 = fillGrid(0, 0, W1, L1, bw, bl, false);
+              const q2 = fillGrid(W1, 0, W2, L2, bl, bw, true);
+              const q3 = fillGrid(W2, L2, W1, L1, bw, bl, false);
+              const q4 = fillGrid(0, L1, W2, L2, bl, bw, true);
+              pinwheelCandidates.push([...q1, ...q2, ...q3, ...q4]);
+            }
+          }
+        }
+      }
+    }
   }
 
+  // Generate Split-Block Mixed candidates (정방향 + 90°회전 블록 조합)
+  const splitMixCandidates = [];
   if (allowRotate && bw !== bl) {
     const maxKx = Math.floor(surfaceW / bw);
     for (let k = 1; k <= maxKx; k++) {
@@ -187,7 +270,9 @@ export function computeBest2DLayer(surfaceW, surfaceL, boxW, boxL, allowRotate =
       const remW = surfaceW - usedW;
       const part1 = fillGrid(0, 0, usedW, surfaceL, bw, bl, false);
       const part2 = fillGrid(usedW, 0, remW, surfaceL, bl, bw, true);
-      candidates.push([...part1, ...part2]);
+      if (part1.length > 0 && part2.length > 0) {
+        splitMixCandidates.push([...part1, ...part2]);
+      }
     }
 
     const maxKxRot = Math.floor(surfaceW / bl);
@@ -196,7 +281,9 @@ export function computeBest2DLayer(surfaceW, surfaceL, boxW, boxL, allowRotate =
       const remW = surfaceW - usedW;
       const part1 = fillGrid(0, 0, usedW, surfaceL, bl, bw, true);
       const part2 = fillGrid(usedW, 0, remW, surfaceL, bw, bl, false);
-      candidates.push([...part1, ...part2]);
+      if (part1.length > 0 && part2.length > 0) {
+        splitMixCandidates.push([...part1, ...part2]);
+      }
     }
 
     const maxMz = Math.floor(surfaceL / bl);
@@ -205,7 +292,9 @@ export function computeBest2DLayer(surfaceW, surfaceL, boxW, boxL, allowRotate =
       const remL = surfaceL - usedL;
       const part1 = fillGrid(0, 0, surfaceW, usedL, bw, bl, false);
       const part2 = fillGrid(0, usedL, surfaceW, remL, bl, bw, true);
-      candidates.push([...part1, ...part2]);
+      if (part1.length > 0 && part2.length > 0) {
+        splitMixCandidates.push([...part1, ...part2]);
+      }
     }
 
     const maxMzRot = Math.floor(surfaceL / bw);
@@ -214,12 +303,41 @@ export function computeBest2DLayer(surfaceW, surfaceL, boxW, boxL, allowRotate =
       const remL = surfaceL - usedL;
       const part1 = fillGrid(0, 0, surfaceW, usedL, bl, bw, true);
       const part2 = fillGrid(0, usedL, surfaceW, remL, bw, bl, false);
-      candidates.push([...part1, ...part2]);
+      if (part1.length > 0 && part2.length > 0) {
+        splitMixCandidates.push([...part1, ...part2]);
+      }
     }
   }
 
+  if (patternMode === 'PINWHEEL') {
+    let bestPin = [];
+    for (const cand of pinwheelCandidates) {
+      if (cand.length > bestPin.length) bestPin = cand;
+    }
+    if (bestPin.length > 0) return bestPin;
+    for (const cand of splitMixCandidates) {
+      if (cand.length > bestPin.length) bestPin = cand;
+    }
+    if (bestPin.length > 0) return bestPin;
+  }
+
+  if (patternMode === 'SPLIT_MIX') {
+    let bestMix = [];
+    for (const cand of splitMixCandidates) {
+      if (cand.length > bestMix.length) bestMix = cand;
+    }
+    if (bestMix.length > 0) return bestMix;
+  }
+
+  const allCandidates = [
+    gridNormal,
+    gridRotated,
+    ...splitMixCandidates,
+    ...pinwheelCandidates,
+  ];
+
   let best = [];
-  for (const cand of candidates) {
+  for (const cand of allCandidates) {
     if (cand.length > best.length) {
       best = cand;
     }
@@ -313,12 +431,23 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
   const queue = cargos
     .map((c, idx) => {
       const resolvedPallet = resolvePalletDimsForCargo(c, palletConfig);
+      const resolvedPosture = resolveCargoBoxDimsByPosture(c);
       return {
         id: c.id || `cargo-${idx + 1}`,
         name: (c.name || `화물 ${idx + 1}`).trim(),
-        width: Math.max(1, Number(c.width) || 0),
-        length: Math.max(1, Number(c.length) || 0),
-        height: Math.max(1, Number(c.height) || 0),
+        width: resolvedPosture.width,
+        length: resolvedPosture.length,
+        height: resolvedPosture.height,
+        rawWidth: Math.max(1, Number(c.width) || 0),
+        rawLength: Math.max(1, Number(c.length) || 0),
+        rawHeight: Math.max(1, Number(c.height) || 0),
+        boxPosture: resolvedPosture.posture,
+        boxPostureLabel: resolvedPosture.postureLabel,
+        layerPattern: c.layerPattern || options.layerPattern || 'AUTO_MAX',
+        stackingStyle:
+          c.stackingStyle ||
+          options.stackingStyle ||
+          (interlockLayers ? 'INTERLOCK' : 'COLUMN'),
         quantity: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         remaining: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         weight: Math.max(0, Number(c.weight) || 0),
@@ -345,7 +474,14 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const itemOv = item.allowedOverhang;
     const effW = item.palletW + itemOv;
     const effL = item.palletL + itemOv;
-    const template = computeBest2DLayer(effW, effL, item.width, item.length, item.allowRotate);
+    const template = computeBest2DLayer(
+      effW,
+      effL,
+      item.width,
+      item.length,
+      item.allowRotate,
+      item.layerPattern
+    );
     if (template.length === 0 || item.height > maxLoadH) {
       unpackedErrors.push({
         cargoId: item.id,
@@ -482,9 +618,42 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const bMinZ = minZ + offsetZ;
     const bMaxZ = maxZ + offsetZ;
 
-    // 짝수 단(2단, 4단, 6단...)이고 완적 단일 때 교차 적재(interlockLayers)가 켜져 있으면
-    // 외곽 경계는 100% 동일하게 유지하면서 내부 박스 배열을 180° 대칭 교차(벽돌식 이음선 엇갈림)
-    const shouldMirror = interlockLayers && isFull && isEvenLayer;
+    const itemStackStyle = cargoItem.stackingStyle || (interlockLayers ? 'INTERLOCK' : 'COLUMN');
+
+    // CROSS_TIER (홀·짝수단 90° 직교 교차): 짝수 단이고 완적 단일 때 가로↔세로 결을 90° 직교 전환 (정사각형 파레트 또는 폭·길이 수용 가능 시)
+    if (
+      itemStackStyle === 'CROSS_TIER' &&
+      isFull &&
+      isEvenLayer &&
+      maxZ - minZ <= pallet.width + (cargoItem.allowedOverhang || 0) &&
+      maxX - minX <= pallet.length + (cargoItem.allowedOverhang || 0)
+    ) {
+      const rotSpanW = maxZ - minZ;
+      const rotSpanL = maxX - minX;
+      const rotOffX = Math.floor((pallet.width - rotSpanW) / 2) - minZ;
+      const rotOffZ = Math.floor((pallet.length - rotSpanL) / 2) - minX;
+      const coords = placedTemplate.map((p) => ({
+        ...p,
+        x: p.z + rotOffX,
+        z: p.x + rotOffZ,
+        w: p.l,
+        l: p.w,
+        rotated: !p.rotated,
+      }));
+      return {
+        coords,
+        minX: minZ + rotOffX,
+        maxX: maxZ + rotOffX,
+        minZ: minX + rotOffZ,
+        maxZ: maxX + rotOffZ,
+        spanW: rotSpanW,
+        spanL: rotSpanL,
+        isPartialLayer: false,
+      };
+    }
+
+    // INTERLOCK (벽돌식 홀·짝수단 180° 대칭 교차)
+    const shouldMirror = itemStackStyle === 'INTERLOCK' && isFull && isEvenLayer;
 
     const coords = placedTemplate.map((p) => {
       const rawX = p.x + offsetX;
@@ -1900,6 +2069,162 @@ export function spreadPalletsToFillFloorSlots(initialPallets, targetFloorSlots, 
 }
 
 /**
+ * 품목(SKU)별로 '상자를 어떻게 쌓을지' (1층 평면 배열 패턴 5종 / 층간 교차 방식 3종 / 상자 세움·눕힘 자세 3종) 비교 분석
+ */
+export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) {
+  const baseH = Math.max(0, Number(palletConfig.baseHeight) ?? 150);
+  const maxTotalH = Math.max(baseH + 50, Number(palletConfig.maxTotalHeight) || 1700);
+  const maxLoadH = maxTotalH - baseH;
+  const maxCargoWeight = Math.max(1, Number(palletConfig.maxWeight) || 1000);
+  const defaultOv = Math.max(0, Number(options.overhang) || 0);
+  const defaultInterlock = options.interlockLayers !== false;
+
+  const PATTERN_DEFS = [
+    {
+      id: 'AUTO_MAX',
+      label: '⚡ 자동 최대 혼합',
+      shortDesc: '가장 많이 들어가는 최적 배열 자동 선택',
+    },
+    {
+      id: 'PINWHEEL',
+      label: '🌀 핀휠 (풍차형 맞물림)',
+      shortDesc: '4면을 풍차처럼 돌려 맞물리게 배치 (흔들림에 강함)',
+    },
+    {
+      id: 'SPLIT_MIX',
+      label: '🧩 블록 혼합 (정방향+회전)',
+      shortDesc: '정방향 열과 90° 회전 열을 조합하여 빈 공간 최소화',
+    },
+    {
+      id: 'GRID_NORMAL',
+      label: '⬆️ 일자 정방향 바둑판',
+      shortDesc: '모든 상자를 회전 없이 같은 방향으로 줄 맞춰 정렬',
+    },
+    {
+      id: 'GRID_ROTATED',
+      label: '↪️ 일자 90°회전 바둑판',
+      shortDesc: '모든 상자를 90° 회전 방향으로 통일하여 줄 맞춰 정렬',
+    },
+  ];
+
+  const STACK_STYLE_DEFS = [
+    {
+      id: 'INTERLOCK',
+      label: '🧱 벽돌식 홀·짝수단 대칭 교차',
+      shortDesc: '홀수단과 짝수단을 180° 대칭 교차하여 층간 무너짐 방지',
+    },
+    {
+      id: 'CROSS_TIER',
+      label: '🔄 홀·짝수단 90° 직교 교차',
+      shortDesc: '홀수단 가로열 ↔ 짝수단 세로열로 층마다 결을 90° 직교 배치',
+    },
+    {
+      id: 'COLUMN',
+      label: '🏛️ 기둥식 수직 일자 정렬',
+      shortDesc: '1단~끝단까지 동일 위치로 수직 기둥 정렬 (박스 모서리 강도 최고)',
+    },
+  ];
+
+  const POSTURE_DEFS = [
+    { id: 'UPRIGHT', label: '⬆️ 기본 세워 쌓기' },
+    { id: 'FLAT_W_H', label: '📐 앞으로 눕혀 쌓기 (세로=높이)' },
+    { id: 'FLAT_H_L', label: '📐 옆으로 눕혀 쌓기 (가로=높이)' },
+  ];
+
+  return cargos
+    .filter((c) => Number(c.quantity) > 0 && Number(c.width) > 0 && Number(c.length) > 0)
+    .map((c, idx) => {
+      const resolvedPallet = resolvePalletDimsForCargo(c, palletConfig);
+      const itemOv =
+        c.allowedOverhang !== undefined && c.allowedOverhang !== null
+          ? Math.max(0, Number(c.allowedOverhang) || 0)
+          : defaultOv;
+      const effPalletW = resolvedPallet.width + itemOv;
+      const effPalletL = resolvedPallet.length + itemOv;
+
+      const curPosture = resolveCargoBoxDimsByPosture(c);
+      const curPattern = c.layerPattern || options.layerPattern || 'AUTO_MAX';
+      const curStackStyle =
+        c.stackingStyle ||
+        options.stackingStyle ||
+        (defaultInterlock ? 'INTERLOCK' : 'COLUMN');
+      const qty = Math.max(0, Math.floor(Number(c.quantity) || 0));
+      const unitW = Math.max(0, Number(c.weight) || 0);
+      const customMaxL = Number(c.maxLayers) > 0 ? Math.floor(Number(c.maxLayers)) : 999;
+
+      const calcStats = (perLayerCnt, boxH) => {
+        if (perLayerCnt <= 0 || boxH > maxLoadH) {
+          return { maxLayers: 0, boxesPerPallet: 0, totalPallets: 0 };
+        }
+        const byH = Math.max(1, Math.floor(maxLoadH / Math.max(1, boxH)));
+        const layerW = perLayerCnt * unitW;
+        const byW = layerW > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerW)) : byH;
+        const maxLayers = Math.max(1, Math.min(byH, byW, customMaxL));
+        const boxesPerPallet = perLayerCnt * maxLayers;
+        return {
+          maxLayers,
+          boxesPerPallet,
+          totalPallets: Math.ceil(qty / boxesPerPallet),
+        };
+      };
+
+      // 1. 5가지 1층 평면 배열 패턴별 결과 비교
+      const patternOptions = PATTERN_DEFS.map((pDef) => {
+        const tpl = computeBest2DLayer(
+          effPalletW,
+          effPalletL,
+          curPosture.width,
+          curPosture.length,
+          c.allowRotate !== false,
+          pDef.id
+        );
+        const normalCnt = tpl.filter((b) => !b.rotated).length;
+        const rotCnt = tpl.filter((b) => b.rotated).length;
+        const stats = calcStats(tpl.length, curPosture.height);
+        return {
+          ...pDef,
+          layerBoxCount: tpl.length,
+          normalCnt,
+          rotCnt,
+          ...stats,
+        };
+      });
+
+      // 2. 3가지 상자 세움/눕힘 자세별 결과 비교
+      const postureOptions = POSTURE_DEFS.map((posDef) => {
+        const pDims = resolveCargoBoxDimsByPosture(c, posDef.id);
+        const tpl = computeBest2DLayer(
+          effPalletW,
+          effPalletL,
+          pDims.width,
+          pDims.length,
+          c.allowRotate !== false,
+          curPattern
+        );
+        const stats = calcStats(tpl.length, pDims.height);
+        return {
+          ...posDef,
+          dimText: `바닥 ${pDims.width}×${pDims.length}mm · 높이 ${pDims.height}mm`,
+          layerBoxCount: tpl.length,
+          ...stats,
+        };
+      });
+
+      return {
+        cargoId: c.id || `cargo-${idx + 1}`,
+        cargoName: c.name || `화물 ${idx + 1}`,
+        color: c.color || CARGO_COLORS[idx % CARGO_COLORS.length],
+        currentPattern: curPattern,
+        currentStackStyle: curStackStyle,
+        currentPosture: curPosture.posture,
+        patternOptions,
+        stackStyleOptions: STACK_STYLE_DEFS,
+        postureOptions,
+      };
+    });
+}
+
+/**
  * 전체 시뮬레이션 통합 실행 (파레트 규격별 비교 + 컨테이너 규격별 비교 포함)
  */
 export function runFullSimulation(cargos, palletConfig, selectedContainerId, options = {}) {
@@ -1908,6 +2233,7 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
   const { unpackedErrors } = palletResult;
   const basePalletCount = pallets.length;
   const overhangDiagnostics = analyzeOverhangDiagnostics(cargos, palletConfig, options);
+  const stackingDiagnostics = analyzeCargoStackingOptions(cargos, palletConfig, options);
 
   const selectedSpec =
     CONTAINER_SPECS[selectedContainerId] || CONTAINER_SPECS['40FT_HC'];
@@ -2081,6 +2407,7 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
     palletWeightGroups,
     palletSpecComparison,
     overhangDiagnostics,
+    stackingDiagnostics,
     unpackedErrors,
     selectedSpec,
     containerResult,
