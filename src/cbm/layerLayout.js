@@ -1,5 +1,5 @@
 // 2D 파레트 평면 레이아웃 알고리즘 및 상자 자세/파레트 치수 변환 헬퍼
-import { PALLET_PRESETS } from './constants';
+import { PALLET_PRESETS } from './constants.js';
 
 /**
  * 상자 놓는 자세(Posture: 세워 쌓기 vs 앞으로 눕혀 쌓기 vs 옆으로 눕혀 쌓기)에 따른 유효 바닥(W×L) 및 높이(H) 계산

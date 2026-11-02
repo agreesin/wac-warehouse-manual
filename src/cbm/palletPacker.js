@@ -4,14 +4,14 @@ import {
   PATTERN_DEFS,
   STACK_STYLE_DEFS,
   POSTURE_DEFS,
-} from './constants';
+} from './constants.js';
 import {
   resolveCargoBoxDimsByPosture,
   resolvePalletDimsForCargo,
   computeBest2DLayer,
   measureLayerBounds,
   describeLayerOrientation,
-} from './layerLayout';
+} from './layerLayout.js';
 
 /**
  * 파레트 내부 3D 무게중심(Local CoG) 계산
