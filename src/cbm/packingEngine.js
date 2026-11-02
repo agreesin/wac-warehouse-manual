@@ -1161,6 +1161,8 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
   const cHeight = Number(containerSpec.height) || 2698;
   const cMaxWeight = Number(containerSpec.maxWeight) || 26500;
   const allowDoubleStack = Boolean(options.doubleStack);
+  const fullFloorSpread = options.fullFloorSpread !== false; // 기본값(true): 빈 바닥 채움(1단 바닥 전체 균등 배치) / false: 최대한 높게 쌓아 바닥 공간 만들기
+  const effectiveDoubleStack = allowDoubleStack || !fullFloorSpread;
   const balanceContainers = options.balanceContainers !== false; // 기본 균등/무게중심 배분 활성화
   const optimizeCoG = options.optimizeCoG !== false; // 무게중심 최적화 배치
 
@@ -1269,6 +1271,43 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       }
     }
 
+    // 선택사항('최대한 높게 쌓아 바닥 공간 만들기', fullFloorSpread === false)일 때:
+    // 1단 완파레트 위에 2단으로 올릴 수 있는 낮은 파레트(잔량/저단 파레트 등)를 먼저 분리하여
+    // 1단 바닥 슬롯을 차지하지 않고 바로 2단(Tier 2)으로 올라가도록 예약한다.
+    const reservedForTier2 = [];
+    if (!fullFloorSpread && workingList.length > 2) {
+      const ascendingByHeight = [...workingList].sort(
+        (a, b) => a.totalHeight - b.totalHeight || a.totalWeight - b.totalWeight
+      );
+      const usedBottomIds = new Set();
+      const reservedTopIds = new Set();
+
+      for (const topCand of ascendingByHeight) {
+        if (reservedTopIds.has(topCand.id)) continue;
+        // 바닥에 남을 파레트가 최소 2개 이상이 되도록 보장
+        if (workingList.length - reservedTopIds.size <= 2) break;
+
+        const bottomMatch = workingList.find(
+          (b) =>
+            b.id !== topCand.id &&
+            !b.isPartial &&
+            !usedBottomIds.has(b.id) &&
+            !reservedTopIds.has(b.id) &&
+            b.totalHeight + topCand.totalHeight <= cHeight - 15 &&
+            topCand.totalWeight <= b.totalWeight * 1.15
+        );
+        if (bottomMatch) {
+          usedBottomIds.add(bottomMatch.id);
+          reservedTopIds.add(topCand.id);
+          reservedForTier2.push(topCand);
+        }
+      }
+
+      if (reservedTopIds.size > 0) {
+        workingList = workingList.filter((p) => !reservedTopIds.has(p.id));
+      }
+    }
+
     const placedPallets = [];
     const overflowPallets = [];
     let currentWeight = 0;
@@ -1281,11 +1320,13 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     const rawLengthSum = workingList
       .slice(0, targetFloorPallets)
       .reduce((acc, p, i) => (i % 2 === 0 ? acc + Math.max(p.width, p.length) : acc), 0);
-    const needsTightFit = rawLengthSum + Math.max(0, estCols - 1) * 15 > cLength;
-    const colGapX = needsTightFit ? 2 : 12;
+    const needsTightFit =
+      !fullFloorSpread || rawLengthSum + Math.max(0, estCols - 1) * 12 > cLength;
+    const colGapX = !fullFloorSpread ? 4 : needsTightFit ? 4 : 14;
 
     let idx = 0;
-    const openTopSlots = []; // floor slots available for 2nd tier AFTER floor is filled
+    const openTopSlots = []; // floor slots available for 2nd tier
+    const placedColumns = []; // track Tier 1 columns for even floor spreading
 
     // =========================================================================
     // PHASE 1: 컨테이너 1단 바닥(Tier 1) 우선 배치
@@ -1303,7 +1344,7 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       let o1 = orientPalletFor2Rows(p1, false);
       let o2 = p2Candidate ? orientPalletFor2Rows(p2Candidate, false) : null;
 
-      // If tight fit is needed and one of (p1, p2) is 1100 and the other is 1200x1000, we can orient 1200 along Z (1200+1100=2300 <= 2352) to save 100mm of container length!
+      // If tight fit or compact mode (!fullFloorSpread) is active, orient 1200 along Z (1000 along X) when possible to save floor length
       if (needsTightFit && p2Candidate) {
         const tryO1 = orientPalletFor2Rows(p1, true);
         const tryO2 = orientPalletFor2Rows(p2Candidate, true);
@@ -1315,6 +1356,9 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         } else if (o1.widthZ + tryO2.widthZ <= cWidth) {
           o2 = tryO2;
         }
+      } else if (!fullFloorSpread && !p2Candidate) {
+        const tryO1 = orientPalletFor2Rows(p1, true);
+        if (tryO1.widthZ <= cWidth) o1 = tryO1;
       }
 
       if (cursorX + o1.lengthX > cLength) {
@@ -1359,13 +1403,15 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         };
 
         placedPallets.push(slot1, slot2);
+        const colLen = Math.max(o1.lengthX, o2.lengthX);
+        placedColumns.push({ slots: [slot1, slot2], colLen });
         currentWeight += p1.totalWeight + p2Candidate.totalWeight;
-        if (allowDoubleStack) {
-          openTopSlots.push({ ...slot1, bottomPallet: p1 });
-          openTopSlots.push({ ...slot2, bottomPallet: p2Candidate });
+        if (effectiveDoubleStack) {
+          openTopSlots.push({ slotRef: slot1, bottomPallet: p1 });
+          openTopSlots.push({ slotRef: slot2, bottomPallet: p2Candidate });
         }
         idx += 2;
-        cursorX += Math.max(o1.lengthX, o2.lengthX) + colGapX;
+        cursorX += colLen + colGapX;
       } else {
         // 마지막 단독 파레트(홀수 파레트): 한쪽 구석에 치우치지 않도록 폭 중앙(Center-Lock)에 배치하여 앞열 좌·우 파레트를 동시에 지지!
         const zCenter = Math.max(0, Math.round((cWidth - o1.widthZ) / 2));
@@ -1381,27 +1427,49 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
           rotated: o1.rotated,
         };
         placedPallets.push(slot1);
+        placedColumns.push({ slots: [slot1], colLen: o1.lengthX });
         currentWeight += p1.totalWeight;
-        if (allowDoubleStack) {
-          openTopSlots.push({ ...slot1, bottomPallet: p1 });
+        if (effectiveDoubleStack) {
+          openTopSlots.push({ slotRef: slot1, bottomPallet: p1 });
         }
         idx += 1;
         cursorX += o1.lengthX + colGapX;
       }
     }
 
+    // 기본값('빈 바닥 채움 — 1단 바닥 전체 균등 배치', fullFloorSpread === true)일 때:
+    // 컨테이너 바닥 전체 길이에 파레트 열들이 고르게 분포되도록 열 간격을 균등 배분
+    if (fullFloorSpread && placedColumns.length >= 2) {
+      const totalColLen = placedColumns.reduce((acc, col) => acc + col.colLen, 0);
+      const targetSpan = Math.max(totalColLen, cLength - 110);
+      const evenGap = Math.min(
+        130,
+        Math.max(10, Math.floor((targetSpan - totalColLen) / (placedColumns.length - 1)))
+      );
+      let spreadX = 0;
+      for (const col of placedColumns) {
+        for (const s of col.slots) {
+          s.x = spreadX;
+        }
+        spreadX += col.colLen + evenGap;
+      }
+      cursorX = spreadX;
+    }
+
     // =========================================================================
-    // PHASE 2: 1단 바닥을 모두 채운 뒤에도 남은 파레트가 있고 2단 적재가 허용된 경우에만 2단(Tier 2) 배치
+    // PHASE 2: 2단(Tier 2) 적재 배치 (예약된 상단 파레트 + 잔여 파레트)
     // =========================================================================
-    if (allowDoubleStack && idx < workingList.length && openTopSlots.length > 0) {
+    const tier2Candidates = [...reservedForTier2, ...workingList.slice(idx)];
+    if (effectiveDoubleStack && tier2Candidates.length > 0 && openTopSlots.length > 0) {
       // 무게중심(CoG) 안정을 위해 컨테이너 중앙부 슬롯부터 2단 적재
       const midX = cursorX / 2;
       openTopSlots.sort(
-        (a, b) => Math.abs(a.x + a.length / 2 - midX) - Math.abs(b.x + b.length / 2 - midX)
+        (a, b) =>
+          Math.abs(a.slotRef.x + a.slotRef.length / 2 - midX) -
+          Math.abs(b.slotRef.x + b.slotRef.length / 2 - midX)
       );
 
-      for (let k = idx; k < workingList.length; k++) {
-        const cand = workingList[k];
+      for (const cand of tier2Candidates) {
         const sIdx = openTopSlots.findIndex(
           (s) =>
             !s.bottomPallet.isPartial &&
@@ -1410,13 +1478,14 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
             cand.totalWeight <= s.bottomPallet.totalWeight * 1.15
         );
         if (sIdx !== -1) {
-          const targetSlot = openTopSlots.splice(sIdx, 1)[0];
+          const target = openTopSlots.splice(sIdx, 1)[0];
+          const targetSlot = target.slotRef;
           placedPallets.push({
             pallet: cand,
             slotIndex: targetSlot.slotIndex,
             tier: 2,
             x: targetSlot.x,
-            y: targetSlot.bottomPallet.totalHeight,
+            y: target.bottomPallet.totalHeight,
             z: targetSlot.z,
             length: targetSlot.length,
             width: targetSlot.width,
@@ -1427,8 +1496,8 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
           overflowPallets.push(cand);
         }
       }
-    } else if (idx < workingList.length) {
-      overflowPallets.push(...workingList.slice(idx));
+    } else if (tier2Candidates.length > 0) {
+      overflowPallets.push(...tier2Candidates);
     }
 
     return { placedPallets, overflowPallets };
@@ -1585,7 +1654,12 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     c.cargoCbm = Number(cargoCbm.toFixed(3));
     c.palletEnvelopeCbm = Number(envCbm.toFixed(3));
     c.boxCount = boxesCnt;
-    c.skuBreakdown = skuBreakdown;
+    c.skuBreakdown = Object.entries(skuBreakdown).map(([name, info]) => ({
+      name,
+      palletCount: info.pallets,
+      boxes: info.boxes,
+      weightKg: Number(info.weight.toFixed(1)),
+    }));
     c.internalCbm = Number(containerInternalCbm.toFixed(2));
     c.volumeUtilization = Number(
       Math.min(100, (c.palletEnvelopeCbm / containerInternalCbm) * 100).toFixed(1)
@@ -1607,13 +1681,13 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     );
     const doorH = Number(c.spec.doorHeight) || cHeight - 110;
     const doorClearanceMm = doorH - maxStackH;
-    let doorStatus = 'SAFE';
+    let doorStatus = 'safe';
     let doorStatusText = `도어 통과 여유 +${doorClearanceMm}mm (지게차 진입 원활)`;
     if (doorClearanceMm < 0) {
-      doorStatus = 'DANGER';
+      doorStatus = 'danger';
       doorStatusText = `도어 입구 높이(${doorH}mm) ${Math.abs(doorClearanceMm)}mm 초과 — 문턱 걸림 주의!`;
     } else if (doorClearanceMm < 80) {
-      doorStatus = 'WARN';
+      doorStatus = 'warning';
       doorStatusText = `도어 상부 여유 ${doorClearanceMm}mm (밀착 진입·마스트 틸팅 주의)`;
     }
 
@@ -1623,12 +1697,12 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     );
     const rearClearanceMm = Math.max(0, cLength - maxOccupiedX);
     let shoringText = '여유 공간 적정';
-    if (rearClearanceMm <= 180) {
-      shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 밀착 적재로 전후 쏠림/쇼링 부담 최소화`;
+    if (rearClearanceMm <= 220) {
+      shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 바닥 전체 균등·밀착 배치로 전후 쏠림 및 쇼링 비용 최소화`;
     } else if (rearClearanceMm <= 900) {
       shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 운송 중 밀림 방지를 위해 후미 쇼링목/라싱 벨트 권장`;
     } else {
-      shoringText = `도어 쪽 여유 ${(rearClearanceMm / 1000).toFixed(2)}m — 후미 파레트 고박(Lashing) 또는 계단식 배치 권장`;
+      shoringText = `도어 쪽 여유 ${(rearClearanceMm / 1000).toFixed(2)}m 확보 — 전방 밀착·고단 적재로 후미 바닥 여유 공간 확보됨`;
     }
 
     // 폭 방향(Z축) 유격 및 에어백(Dunnage Bag) 진단
@@ -1659,6 +1733,7 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       doorClearanceMm,
       doorStatus,
       doorStatusText,
+      usedLengthMm: maxOccupiedX,
       rearClearanceMm,
       shoringText,
       lateralGapMm,
@@ -2238,28 +2313,54 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
   const selectedSpec =
     CONTAINER_SPECS[selectedContainerId] || CONTAINER_SPECS['40FT_HC'];
 
-  // 먼저 기본 파레트로 컨테이너 적재 시뮬레이션 실행
-  let containerResult = packPalletsIntoContainers(pallets, selectedSpec, options);
+  // 산출된 파레트 수(예: 38 PLT)를 그대로 유지하여 컨테이너 적재 시뮬레이션 실행
+  const containerResult = packPalletsIntoContainers(pallets, selectedSpec, options);
+
+  // '빈 바닥 채움(기본값)' vs '최대한 높게 쌓아 바닥 공간 만들기(선택사항)' 비교 지표 산출
+  const spreadCompare = packPalletsIntoContainers(pallets, selectedSpec, {
+    ...options,
+    fullFloorSpread: true,
+  });
+  const compactCompare = packPalletsIntoContainers(pallets, selectedSpec, {
+    ...options,
+    fullFloorSpread: false,
+  });
 
   const floorSlotsPerUnit = selectedSpec.id === '20FT_DRY' ? 10 : 20;
   const totalAvailableFloorSlots = containerResult.containers.length * floorSlotsPerUnit;
   const emptyFloorSlotsBeforeSpread = Math.max(0, totalAvailableFloorSlots - basePalletCount);
 
-  // 만약 '컨테이너 바닥 전체 채움(단수 분산)' 옵션(fullFloorSpread)이 켜져 있고 빈 바닥 슬롯이 있다면,
-  // 고단 파레트의 상부 단을 분할하여 모든 컨테이너 바닥 슬롯을 골고루 채우도록 재적재!
-  if (options.fullFloorSpread && emptyFloorSlotsBeforeSpread > 0) {
-    const spreadRes = spreadPalletsToFillFloorSlots(
-      pallets,
-      totalAvailableFloorSlots,
-      cargos,
-      palletConfig
-    );
-    if (spreadRes) {
-      pallets = spreadRes.pallets;
-      palletWeightGroups = spreadRes.palletWeightGroups;
-      containerResult = packPalletsIntoContainers(pallets, selectedSpec, options);
-    }
-  }
+  const avgSpreadUsedLenMm =
+    spreadCompare.containers.length > 0
+      ? Math.round(
+          spreadCompare.containers.reduce(
+            (acc, c) => acc + (c.fieldDiagnostics?.usedLengthMm || 0),
+            0
+          ) / spreadCompare.containers.length
+        )
+      : 0;
+  const avgCompactUsedLenMm =
+    compactCompare.containers.length > 0
+      ? Math.round(
+          compactCompare.containers.reduce(
+            (acc, c) => acc + (c.fieldDiagnostics?.usedLengthMm || 0),
+            0
+          ) / compactCompare.containers.length
+        )
+      : 0;
+  const avgCompactRearClearanceMm =
+    compactCompare.containers.length > 0
+      ? Math.round(
+          compactCompare.containers.reduce(
+            (acc, c) => acc + (c.fieldDiagnostics?.rearClearanceMm || 0),
+            0
+          ) / compactCompare.containers.length
+        )
+      : 0;
+  const compactTier2Count = compactCompare.containers.reduce(
+    (acc, c) => acc + (c.tier2Count || 0),
+    0
+  );
 
   // 파레트 사이즈(종류)별 비교 시뮬레이션 (단일 규격 4종 + 품목별 최적 혼합 1종)
   const palletSpecComparison = Object.values(PALLET_PRESETS).map((preset) => {
@@ -2302,27 +2403,16 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       );
       palletsForSpec = specPalletRes.pallets;
     }
-    let res = packPalletsIntoContainers(palletsForSpec, spec, options);
-    const specFloorSlots = (spec.id === '20FT_DRY' ? 10 : 20) * res.containers.length;
-    if (options.fullFloorSpread && palletsForSpec.length < specFloorSlots) {
-      const spreadSpec = spreadPalletsToFillFloorSlots(
-        palletsForSpec,
-        specFloorSlots,
-        cargos,
-        palletConfig
-      );
-      if (spreadSpec) {
-        palletsForSpec = spreadSpec.pallets;
-        res = packPalletsIntoContainers(palletsForSpec, spec, options);
-      }
-    }
+    const res = packPalletsIntoContainers(palletsForSpec, spec, options);
     return {
       spec,
       palletCount: palletsForSpec.length,
       containerCount: res.containers.length,
       containers: res.containers,
       floorSlots: spec.id === '20FT_DRY' ? 10 : 20,
-      maxCapacity: (spec.id === '20FT_DRY' ? 10 : 20) * (options.doubleStack ? 2 : 1),
+      maxCapacity:
+        (spec.id === '20FT_DRY' ? 10 : 20) *
+        (options.doubleStack || options.fullFloorSpread === false ? 2 : 1),
       unfitCount: res.unfitPallets.length,
       avgUtilization:
         res.containers.length > 0
@@ -2350,22 +2440,22 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
   // 실무 복합 컨테이너 배차 추천 (예: 40HC 단독 vs 40HC + 20ft 혼합 조합 비교)
   const hcComp = containerComparison.find((c) => c.spec.id === '40FT_HC');
   const ft20Comp = containerComparison.find((c) => c.spec.id === '20FT_DRY');
-  const cap40 = hcComp ? hcComp.maxCapacity : 20;
-  const cap20 = ft20Comp ? ft20Comp.maxCapacity : 10;
+  const cap40 = hcComp ? hcComp.floorSlots : 20;
+  const cap20 = ft20Comp ? ft20Comp.floorSlots : 10;
   const totalPlt = pallets.length;
 
   const fleetRecommendations = [];
   if (totalPlt > 0) {
     const hcOnlyCnt = Math.ceil(totalPlt / cap40);
     const hcOnlySlots = hcOnlyCnt * cap40;
-    const hcOnlyEmpty = hcOnlySlots - totalPlt;
+    const hcOnlyEmpty = Math.max(0, hcOnlySlots - totalPlt);
 
     const full40Cnt = Math.floor(totalPlt / cap40);
     const remPlt = totalPlt - full40Cnt * cap40;
 
     if (remPlt > 0 && remPlt <= cap20 && full40Cnt >= 1) {
       const comboSlots = full40Cnt * cap40 + cap20;
-      const comboEmpty = comboSlots - totalPlt;
+      const comboEmpty = Math.max(0, comboSlots - totalPlt);
       fleetRecommendations.push({
         id: 'COMBO_40HC_20FT',
         badge: '💰 운임·공간 최적 혼합 배차 추천',
@@ -2387,15 +2477,15 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       id: 'SINGLE_40HC',
       badge: hcOnlyEmpty <= 2 ? '⭐ 바닥 공간 최적 매칭 추천' : '⚖️ 전 호기 균등 배분 배차',
       title: `40ft High Cube × ${hcOnlyCnt}대 (${perHcSplit})`,
-      detail: `총 바닥 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트 균등 배치 (남는 바닥 슬롯 총 ${hcOnlyEmpty}칸)`,
+      detail: `총 ${totalPlt}파레트를 호기별로 균등 배분 (바닥 ${hcOnlySlots}슬롯 기준)`,
       note:
-        hcOnlyEmpty === 0
-          ? '전 컨테이너 바닥 100% 밀착 채움 완료 (쏠림·고정장치 불필요)'
-          : `호기별 균등 배분 적용됨 · '바닥 100% 풀채움(단수 분산)' 활성화 시 ${hcOnlySlots}칸 전량 채움 가능`,
+        options.fullFloorSpread !== false
+          ? '전 컨테이너 1단 바닥 전체 균등 배치 완료 (쏠림·전도 및 추가 고정장치 불필요)'
+          : `고단(2단) 스태킹 & 앞벽 밀착 배치로 호기당 약 ${(avgCompactRearClearanceMm / 1000).toFixed(2)}m 바닥 여유 공간 확보`,
       desc:
         hcOnlyEmpty <= 2
-          ? `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트를 채워 바닥 공간 활용도가 매우 높습니다 (여유 ${hcOnlyEmpty}슬롯).`
-          : `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트 적재 (여유 ${hcOnlyEmpty}슬롯 · 호차별 균등 배분 적용).`,
+          ? `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트를 채워 바닥 공간 활용도가 매우 높습니다.`
+          : `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트 적재 (호차별 균등 배분 적용).`,
       totalSlots: hcOnlySlots,
       emptySlots: hcOnlyEmpty,
       isRecommended: fleetRecommendations.length === 0,
@@ -2418,7 +2508,11 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       spreadPalletCount: pallets.length,
       totalAvailableFloorSlots,
       emptyFloorSlotsBeforeSpread,
-      isSpreadActive: Boolean(options.fullFloorSpread && pallets.length > basePalletCount),
+      isSpreadActive: options.fullFloorSpread !== false,
+      avgSpreadUsedLenMm,
+      avgCompactUsedLenMm,
+      avgCompactRearClearanceMm,
+      compactTier2Count,
     },
     summary: {
       totalBoxesPacked,
