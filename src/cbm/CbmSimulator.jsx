@@ -780,24 +780,101 @@ export function CbmSimulator() {
             <div className="cbm-field-label" style={{ marginTop: '14px' }}>
               ③ 파레트 높이(mm) 및 중량(kg) 제한 설정
             </div>
-            <div className="cbm-height-quick-bar">
-              <span>최대 적재높이 빠른 선택 (파레트 높이 포함):</span>
-              <div className="cbm-height-chips">
-                {[1700, 1850, 2000, 2200].map((hVal) => (
-                  <button
-                    key={hVal}
-                    type="button"
-                    disabled={stackMode === 'double_auto'}
-                    className={`cbm-height-chip ${
-                      effectivePalletConfig.maxTotalHeight === hVal ? 'active' : ''
-                    }`}
-                    onClick={() =>
-                      setPalletConfig((p) => ({ ...p, maxTotalHeight: hVal }))
-                    }
-                  >
-                    {hVal.toLocaleString()}mm
-                  </button>
-                ))}
+            <div
+              className="cbm-height-quick-bar"
+              style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px' }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <span>
+                  최대 적재높이 드래그 조절 (<strong>10mm 단위</strong> · 파레트 포함):{' '}
+                  <strong style={{ color: '#60a5fa', fontSize: '14px' }}>
+                    {effectivePalletConfig.maxTotalHeight.toLocaleString()}mm
+                  </strong>{' '}
+                  <small style={{ color: '#94a3b8' }}>
+                    (순수 화물 높이:{' '}
+                    {Math.max(
+                      0,
+                      effectivePalletConfig.maxTotalHeight - palletConfig.baseHeight
+                    ).toLocaleString()}
+                    mm)
+                  </small>
+                </span>
+                <div className="cbm-height-chips">
+                  {[1620, 1700, 1850, 2000, 2200].map((hVal) => (
+                    <button
+                      key={hVal}
+                      type="button"
+                      disabled={stackMode === 'double_auto'}
+                      className={`cbm-height-chip ${
+                        effectivePalletConfig.maxTotalHeight === hVal ? 'active' : ''
+                      }`}
+                      onClick={() =>
+                        setPalletConfig((p) => ({ ...p, maxTotalHeight: hVal }))
+                      }
+                    >
+                      {hVal.toLocaleString()}mm
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="cbm-height-chip"
+                  disabled={stackMode === 'double_auto'}
+                  onClick={() =>
+                    setPalletConfig((p) => ({
+                      ...p,
+                      maxTotalHeight: Math.max(500, (Number(p.maxTotalHeight) || 1700) - 10),
+                    }))
+                  }
+                  title="10mm 낮추기"
+                >
+                  -10mm
+                </button>
+                <input
+                  type="range"
+                  min={500}
+                  max={2550}
+                  step={10}
+                  disabled={stackMode === 'double_auto'}
+                  value={effectivePalletConfig.maxTotalHeight}
+                  onChange={(e) =>
+                    setPalletConfig((p) => ({
+                      ...p,
+                      maxTotalHeight: Math.round(Number(e.target.value) / 10) * 10,
+                    }))
+                  }
+                  style={{
+                    flex: 1,
+                    accentColor: '#3b82f6',
+                    cursor: stackMode === 'double_auto' ? 'not-allowed' : 'grab',
+                    height: '6px',
+                  }}
+                />
+                <button
+                  type="button"
+                  className="cbm-height-chip"
+                  disabled={stackMode === 'double_auto'}
+                  onClick={() =>
+                    setPalletConfig((p) => ({
+                      ...p,
+                      maxTotalHeight: Math.min(2550, (Number(p.maxTotalHeight) || 1700) + 10),
+                    }))
+                  }
+                  title="10mm 높이기"
+                >
+                  +10mm
+                </button>
               </div>
             </div>
 
@@ -810,7 +887,7 @@ export function CbmSimulator() {
                   disabled={stackMode === 'double_auto'}
                   min={500}
                   max={2650}
-                  step={50}
+                  step={10}
                   onChange={(e) =>
                     setPalletConfig((p) => ({
                       ...p,
@@ -833,6 +910,25 @@ export function CbmSimulator() {
                       baseHeight: Number(e.target.value) || 150,
                     }))
                   }
+                />
+                <input
+                  type="range"
+                  min={50}
+                  max={250}
+                  step={10}
+                  value={palletConfig.baseHeight}
+                  onChange={(e) =>
+                    setPalletConfig((p) => ({
+                      ...p,
+                      baseHeight: Math.round(Number(e.target.value) / 10) * 10,
+                    }))
+                  }
+                  style={{
+                    width: '100%',
+                    marginTop: '4px',
+                    accentColor: '#3b82f6',
+                    cursor: 'grab',
+                  }}
                 />
               </label>
               <label className="cbm-input-group">
