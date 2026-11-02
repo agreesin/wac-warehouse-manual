@@ -307,6 +307,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
   const maxCargoWeight = Math.max(1, Number(palletConfig.maxWeight) || 1000);
   const tareWeight = Math.max(0, Number(palletConfig.tareWeight) ?? 17);
   const mixCargos = Boolean(options.mixCargos);
+  const interlockLayers = options.interlockLayers !== false; // 기본 홀·짝수단 교차 적재(인터로킹) 활성화
 
   // Prepare working queue of cargos
   const queue = cargos
@@ -321,6 +322,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         quantity: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         remaining: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         weight: Math.max(0, Number(c.weight) || 0),
+        maxLayers: Math.max(0, Math.floor(Number(c.maxLayers) || 0)), // 품목별 최대 적재 단수 제한 (0 = 자동)
         color: c.color || CARGO_COLORS[idx % CARGO_COLORS.length],
         allowRotate: c.allowRotate !== false,
         palletSpecId: resolvedPallet.specId,
@@ -373,7 +375,11 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         fullLayerWeight > 0
           ? Math.max(1, Math.floor(maxCargoWeight / fullLayerWeight))
           : maxLayersByH;
-      const maxFullLayersPerPallet = Math.max(1, Math.min(maxLayersByH, maxLayersByW));
+      const customMaxL = item.maxLayers > 0 ? item.maxLayers : 999;
+      const maxFullLayersPerPallet = Math.max(
+        1,
+        Math.min(maxLayersByH, maxLayersByW, customMaxL)
+      );
 
       templateMeta.set(item.id, {
         fullCount: template.length,
@@ -421,6 +427,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const isFull = takeCount >= template.length;
     const prevLayer =
       pallet.layers.length > 0 ? pallet.layers[pallet.layers.length - 1] : null;
+    const isEvenLayer = pallet.layers.length % 2 === 1;
 
     // If partial layer sits directly on a full layer of the SAME cargo,
     // keep the exact column coordinates of the full layer so every box rests squarely on a box below it.
@@ -465,17 +472,30 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     }
     const offsetX = Math.floor((pallet.width - (maxX - minX)) / 2) - minX;
     const offsetZ = Math.floor((pallet.length - (maxZ - minZ)) / 2) - minZ;
-    const coords = placedTemplate.map((p) => ({
-      ...p,
-      x: p.x + offsetX,
-      z: p.z + offsetZ,
-    }));
+    const bMinX = minX + offsetX;
+    const bMaxX = maxX + offsetX;
+    const bMinZ = minZ + offsetZ;
+    const bMaxZ = maxZ + offsetZ;
+
+    // 짝수 단(2단, 4단, 6단...)이고 완적 단일 때 교차 적재(interlockLayers)가 켜져 있으면
+    // 외곽 경계는 100% 동일하게 유지하면서 내부 박스 배열을 180° 대칭 교차(벽돌식 이음선 엇갈림)
+    const shouldMirror = interlockLayers && isFull && isEvenLayer;
+
+    const coords = placedTemplate.map((p) => {
+      const rawX = p.x + offsetX;
+      const rawZ = p.z + offsetZ;
+      return {
+        ...p,
+        x: shouldMirror ? bMinX + bMaxX - (rawX + p.w) : rawX,
+        z: shouldMirror ? bMinZ + bMaxZ - (rawZ + p.l) : rawZ,
+      };
+    });
     return {
       coords,
-      minX: minX + offsetX,
-      maxX: maxX + offsetX,
-      minZ: minZ + offsetZ,
-      maxZ: maxZ + offsetZ,
+      minX: bMinX,
+      maxX: bMaxX,
+      minZ: bMinZ,
+      maxZ: bMaxZ,
       spanW: maxX - minX,
       spanL: maxZ - minZ,
       isPartialLayer: !isFull,
@@ -579,7 +599,9 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
               )
             : item.remaining;
         const takeCount = Math.min(meta.fullCount, item.remaining, maxByW);
-        if (item.height > remH || takeCount <= 0) {
+        const reachedCustomMaxL =
+          item.maxLayers > 0 && remPallet.layers.length >= item.maxLayers;
+        if (item.height > remH || takeCount <= 0 || reachedCustomMaxL) {
           pallets.push(remPallet);
           remPallet = null;
           continue;
@@ -1340,12 +1362,78 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     c.tier1Count = c.placedPallets.filter((p) => p.tier === 1).length;
     c.tier2Count = c.placedPallets.filter((p) => p.tier === 2).length;
     c.cog = analyzeContainerCoG(c);
+
+    // 실무 컨테이너 작업성 & 쇼링/에어백/도어 클리어런스 정밀 진단
+    const maxStackH = c.placedPallets.reduce(
+      (max, pp) => Math.max(max, pp.y + pp.pallet.totalHeight),
+      0
+    );
+    const doorH = Number(c.spec.doorHeight) || cHeight - 110;
+    const doorClearanceMm = doorH - maxStackH;
+    let doorStatus = 'SAFE';
+    let doorStatusText = `도어 통과 여유 +${doorClearanceMm}mm (지게차 진입 원활)`;
+    if (doorClearanceMm < 0) {
+      doorStatus = 'DANGER';
+      doorStatusText = `도어 입구 높이(${doorH}mm) ${Math.abs(doorClearanceMm)}mm 초과 — 문턱 걸림 주의!`;
+    } else if (doorClearanceMm < 80) {
+      doorStatus = 'WARN';
+      doorStatusText = `도어 상부 여유 ${doorClearanceMm}mm (밀착 진입·마스트 틸팅 주의)`;
+    }
+
+    const maxOccupiedX = c.placedPallets.reduce(
+      (max, pp) => Math.max(max, pp.x + pp.length),
+      0
+    );
+    const rearClearanceMm = Math.max(0, cLength - maxOccupiedX);
+    let shoringText = '여유 공간 적정';
+    if (rearClearanceMm <= 180) {
+      shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 밀착 적재로 전후 쏠림/쇼링 부담 최소화`;
+    } else if (rearClearanceMm <= 900) {
+      shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 운송 중 밀림 방지를 위해 후미 쇼링목/라싱 벨트 권장`;
+    } else {
+      shoringText = `도어 쪽 여유 ${(rearClearanceMm / 1000).toFixed(2)}m — 후미 파레트 고박(Lashing) 또는 계단식 배치 권장`;
+    }
+
+    // 폭 방향(Z축) 유격 및 에어백(Dunnage Bag) 진단
+    const tier1Pallets = c.placedPallets.filter((p) => p.tier === 1);
+    const occupiedFloorAreaMm2 = tier1Pallets.reduce(
+      (acc, pp) => acc + pp.length * pp.width,
+      0
+    );
+    const floorUtilizationPct = Number(
+      Math.min(100, (occupiedFloorAreaMm2 / (cLength * cWidth)) * 100).toFixed(1)
+    );
+
+    const avgRowWidthZ =
+      tier1Pallets.length > 0
+        ? tier1Pallets.reduce((acc, pp) => acc + pp.width, 0) / tier1Pallets.length
+        : 1100;
+    const lateralGapMm = Math.max(0, Math.round(cWidth - avgRowWidthZ * 2));
+    let dunnageBagText = `좌우 여유 합계 약 ${lateralGapMm}mm (표준 유격)`;
+    if (lateralGapMm >= 250) {
+      dunnageBagText = `좌우 유격 약 ${lateralGapMm}mm — 열(Row) 사이 에어백(Dunnage Bag) 충진 권장`;
+    } else if (lateralGapMm < 60) {
+      dunnageBagText = `좌우 여유 ${lateralGapMm}mm — 타이트핏 (지게차 사이드쉬프트 정밀 진입 필요)`;
+    }
+
+    c.fieldDiagnostics = {
+      maxStackHeightMm: maxStackH,
+      doorHeightMm: doorH,
+      doorClearanceMm,
+      doorStatus,
+      doorStatusText,
+      rearClearanceMm,
+      shoringText,
+      lateralGapMm,
+      dunnageBagText,
+      floorUtilizationPct,
+    };
   }
 
   return {
     containers,
-    floorSlotsPerContainer: 20,
-    maxPalletsPerContainer: allowDoubleStack ? 40 : 20,
+    floorSlotsPerContainer: cLength < 7000 ? 10 : 20,
+    maxPalletsPerContainer: (cLength < 7000 ? 10 : 20) * (allowDoubleStack ? 2 : 1),
     unfitPallets,
   };
 }
@@ -1464,6 +1552,50 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
     pallets.reduce((acc, p) => acc + p.totalWeight, 0).toFixed(1)
   );
 
+  // 실무 복합 컨테이너 배차 추천 (예: 40HC 단독 vs 40HC + 20ft 혼합 조합 비교)
+  const hcComp = containerComparison.find((c) => c.spec.id === '40FT_HC');
+  const ft20Comp = containerComparison.find((c) => c.spec.id === '20FT_DRY');
+  const cap40 = hcComp ? hcComp.maxCapacity : 20;
+  const cap20 = ft20Comp ? ft20Comp.maxCapacity : 10;
+  const totalPlt = pallets.length;
+
+  const fleetRecommendations = [];
+  if (totalPlt > 0) {
+    const hcOnlyCnt = Math.ceil(totalPlt / cap40);
+    const hcOnlySlots = hcOnlyCnt * cap40;
+    const hcOnlyEmpty = hcOnlySlots - totalPlt;
+
+    const full40Cnt = Math.floor(totalPlt / cap40);
+    const remPlt = totalPlt - full40Cnt * cap40;
+
+    if (remPlt > 0 && remPlt <= cap20 && full40Cnt >= 1) {
+      const comboSlots = full40Cnt * cap40 + cap20;
+      const comboEmpty = comboSlots - totalPlt;
+      fleetRecommendations.push({
+        id: 'COMBO_40HC_20FT',
+        badge: '💰 운임·공간 최적 혼합 배차',
+        title: `40ft HC × ${full40Cnt}대 + 20ft Dry × 1대 (총 ${full40Cnt + 1}대)`,
+        desc: `잔여 ${remPlt}파레트를 40HC 대신 20ft 1대에 적재하여 빈 바닥 슬롯을 ${hcOnlyEmpty}개 → ${comboEmpty}개로 줄이는 실무 추천 조합입니다.`,
+        totalSlots: comboSlots,
+        emptySlots: comboEmpty,
+        isRecommended: true,
+      });
+    }
+
+    fleetRecommendations.push({
+      id: 'SINGLE_40HC',
+      badge: hcOnlyEmpty <= 4 ? '⭐ 바닥 정원 최적 매칭' : '표준 단일 배차',
+      title: `40ft High Cube × ${hcOnlyCnt}대 단독 배차`,
+      desc:
+        hcOnlyEmpty <= 2
+          ? `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트를 채워 바닥 공간 활용도가 매우 높습니다 (여유 ${hcOnlyEmpty}슬롯).`
+          : `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트 적재 (여유 ${hcOnlyEmpty}슬롯 · 호차별 균등 배분 적용).`,
+      totalSlots: hcOnlySlots,
+      emptySlots: hcOnlyEmpty,
+      isRecommended: fleetRecommendations.length === 0,
+    });
+  }
+
   return {
     pallets,
     palletWeightGroups,
@@ -1472,6 +1604,7 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
     selectedSpec,
     containerResult,
     containerComparison,
+    fleetRecommendations,
     summary: {
       totalBoxesPacked,
       totalPallets: pallets.length,

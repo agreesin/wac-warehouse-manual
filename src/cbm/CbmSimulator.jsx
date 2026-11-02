@@ -35,7 +35,9 @@ export function CbmSimulator() {
   // stackMode: 'single' (1단 적재) | 'double_auto' (2단 적재 - 높이 자동 맞춤) | 'double_manual' (2단 적재 - 지정 높이 유지)
   const [stackMode, setStackMode] = useState('single');
   const [mixCargos, setMixCargos] = useState(false); // 기본: 품목별 단독 적재
+  const [interlockLayers, setInterlockLayers] = useState(true); // 기본: 홀·짝수단 벽돌식 교차 적재(인터로킹)
   const [overhang, setOverhang] = useState(0);
+  const [unitMode, setUnitMode] = useState('mm'); // 'mm' | 'cm' 치수 입력/표시 단위 전환
 
   // =========================================================================
   // STEP 2 STATE: 파레트 사이즈 선택 모드 (단일 규격 vs 여러 파레트 섞어 쓰기)
@@ -140,6 +142,7 @@ export function CbmSimulator() {
       doubleStack: stackMode !== 'single',
       doubleStackAuto: stackMode === 'double_auto',
       mixCargos,
+      interlockLayers,
       overhang,
       balanceContainers,
       optimizeCoG,
@@ -151,6 +154,7 @@ export function CbmSimulator() {
     selectedContainerId,
     stackMode,
     mixCargos,
+    interlockLayers,
     overhang,
     balanceContainers,
     optimizeCoG,
@@ -163,6 +167,7 @@ export function CbmSimulator() {
       doubleStack: stackMode !== 'single',
       doubleStackAuto: stackMode === 'double_auto',
       mixCargos,
+      interlockLayers,
       overhang,
       balanceContainers,
       optimizeCoG,
@@ -181,6 +186,7 @@ export function CbmSimulator() {
     selectedContainerId,
     stackMode,
     mixCargos,
+    interlockLayers,
     overhang,
     balanceContainers,
     optimizeCoG,
@@ -393,6 +399,54 @@ export function CbmSimulator() {
       null
     : null;
 
+  const handleCopyReportText = () => {
+    if (!simResult) return;
+    const lines = [];
+    lines.push('■ [파레트 & 컨테이너 적재 산출 요약서]');
+    lines.push(
+      `• 총 화물 수량: ${simResult.summary.totalBoxesPacked.toLocaleString()} CTNS (순수 화물 ${simResult.summary.totalCargoCbm} CBM)`
+    );
+    lines.push(
+      `• 총 파레트 수: ${simResult.summary.totalPallets} PLT (총 중량 ${simResult.summary.totalWeight.toLocaleString()} kg / 파레트 자중 ${effectivePalletConfig.tareWeight}kg 포함)`
+    );
+    lines.push('');
+    lines.push('1. 품목별 파레트 분할 산출 내역');
+    simResult.palletWeightGroups.forEach((g) => {
+      lines.push(
+        `  - ${g.label} [${g.palletDim}]: 1단 ${g.firstLayerBoxCount}박스 × ${g.layerCount}단 (${g.boxesPerPallet} CTNS/PLT, 높이 약 ${(g.totalHeight / 10).toFixed(0)}cm) ➔ ${g.palletCount} PLT (PLT당 약 ${g.unitPalletWeight}kg / 합계 ${g.totalGroupWeight.toLocaleString()}kg)`
+      );
+    });
+    lines.push('');
+    lines.push(
+      `2. ${simResult.selectedSpec.name} × ${simResult.summary.totalContainers}대 적재 배분 플랜`
+    );
+    simResult.containerResult.containers.forEach((c) => {
+      lines.push(
+        `  • 컨테이너 ${c.index}호기 (${c.placedPallets.length} PLT / ${c.boxCount.toLocaleString()} CTNS / ${c.totalWeight.toLocaleString()} kg / 바닥활용 ${c.fieldDiagnostics?.floorUtilizationPct || c.volumeUtilization}%):`
+      );
+      Object.entries(c.skuBreakdown || {}).forEach(([skuLabel, info]) => {
+        lines.push(
+          `    - ${skuLabel}: ${info.pallets} PLT (${info.boxes.toLocaleString()} CTNS · ${info.weight.toLocaleString()} kg)`
+        );
+      });
+      if (c.fieldDiagnostics) {
+        lines.push(
+          `    - 작업성 진단: ${c.fieldDiagnostics.doorStatusText} / ${c.fieldDiagnostics.shoringText}`
+        );
+      }
+    });
+
+    const text = lines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setUploadNotice({
+          type: 'success',
+          message: '📋 화주·현장 공유용 견적 및 작업지시서 요약 문구가 클립보드에 복사되었습니다! (카톡·메일에 바로 붙여넣기 가능)',
+        });
+      });
+    }
+  };
+
   return (
     <div className="cbm-app">
       {/* =====================================================================
@@ -454,17 +508,35 @@ export function CbmSimulator() {
             📥 엑셀 양식 다운로드
           </button>
           {simResult && (
-            <button
-              type="button"
-              className="cbm-btn cbm-btn-emerald"
-              onClick={() =>
-                exportSimulationResultExcel(simResult, effectiveCargos, effectivePalletConfig, {
-                  doubleStack: stackMode !== 'single',
-                })
-              }
-            >
-              📊 견적 리포트 엑셀 저장
-            </button>
+            <>
+              <button
+                type="button"
+                className="cbm-btn cbm-btn-outline"
+                onClick={handleCopyReportText}
+                title="카톡이나 메일에 바로 붙여넣을 수 있는 요약 텍스트 복사"
+              >
+                📋 견적 요약 복사
+              </button>
+              <button
+                type="button"
+                className="cbm-btn cbm-btn-outline"
+                onClick={() => window.print()}
+                title="현재 화면 리포트 인쇄 또는 PDF 저장"
+              >
+                🖨️ 인쇄/PDF
+              </button>
+              <button
+                type="button"
+                className="cbm-btn cbm-btn-emerald"
+                onClick={() =>
+                  exportSimulationResultExcel(simResult, effectiveCargos, effectivePalletConfig, {
+                    doubleStack: stackMode !== 'single',
+                  })
+                }
+              >
+                📊 견적 리포트 엑셀 저장
+              </button>
+            </>
           )}
           <input
             ref={fileInputRef}
@@ -532,6 +604,48 @@ export function CbmSimulator() {
             <div className="cbm-card-header">
               <h2>1-A. 화물(박스) 리스트 입력</h2>
               <div className="cbm-card-header-btns">
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    background: '#0f172a',
+                    borderRadius: '6px',
+                    border: '1px solid #334155',
+                    overflow: 'hidden',
+                    marginRight: '4px',
+                  }}
+                  title="화물 치수 입력 및 표시 단위 전환"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setUnitMode('mm')}
+                    style={{
+                      background: unitMode === 'mm' ? '#2563eb' : 'transparent',
+                      color: unitMode === 'mm' ? '#fff' : '#94a3b8',
+                      border: 'none',
+                      padding: '4px 9px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    mm 단위
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUnitMode('cm')}
+                    style={{
+                      background: unitMode === 'cm' ? '#2563eb' : 'transparent',
+                      color: unitMode === 'cm' ? '#fff' : '#94a3b8',
+                      border: 'none',
+                      padding: '4px 9px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    cm 단위
+                  </button>
+                </div>
                 <button
                   type="button"
                   className="cbm-btn-xs"
@@ -580,122 +694,166 @@ export function CbmSimulator() {
                   <tr>
                     <th>색상</th>
                     <th>화물명 (품목명)</th>
-                    <th>가로 (mm)</th>
-                    <th>세로 (mm)</th>
-                    <th>높이 (mm)</th>
+                    <th>가로 ({unitMode})</th>
+                    <th>세로 ({unitMode})</th>
+                    <th>높이 ({unitMode})</th>
                     <th>수량 (박스)</th>
                     <th>박스단중 (kg)</th>
+                    <th>단수제한</th>
                     <th>회전허용</th>
                     <th>삭제</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {cargos.map((cargo) => (
-                    <tr key={cargo.id}>
-                      <td>
-                        <input
-                          type="color"
-                          value={cargo.color}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'color', e.target.value)
-                          }
-                          style={{
-                            width: '26px',
-                            height: '26px',
-                            border: 'none',
-                            background: 'transparent',
-                            cursor: 'pointer',
-                          }}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="cbm-table-input name-input"
-                          value={cargo.name}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'name', e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="cbm-table-input dim-input"
-                          value={cargo.width}
-                          min={10}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'width', e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="cbm-table-input dim-input"
-                          value={cargo.length}
-                          min={10}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'length', e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="cbm-table-input dim-input"
-                          value={cargo.height}
-                          min={10}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'height', e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="cbm-table-input qty-input"
-                          value={cargo.quantity}
-                          min={1}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'quantity', e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="cbm-table-input weight-input"
-                          value={cargo.weight}
-                          min={0.01}
-                          step={0.1}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'weight', e.target.value)
-                          }
-                        />
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <input
-                          type="checkbox"
-                          checked={cargo.allowRotate !== false}
-                          onChange={(e) =>
-                            handleCargoChange(cargo.id, 'allowRotate', e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="cbm-row-del-btn"
-                          onClick={() => handleRemoveCargo(cargo.id)}
-                          disabled={cargos.length <= 1}
-                          title="행 삭제"
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {cargos.map((cargo) => {
+                    const dispW =
+                      unitMode === 'cm' ? Number((cargo.width / 10).toFixed(1)) : cargo.width;
+                    const dispL =
+                      unitMode === 'cm' ? Number((cargo.length / 10).toFixed(1)) : cargo.length;
+                    const dispH =
+                      unitMode === 'cm' ? Number((cargo.height / 10).toFixed(1)) : cargo.height;
+                    const factor = unitMode === 'cm' ? 10 : 1;
+
+                    return (
+                      <tr key={cargo.id}>
+                        <td>
+                          <input
+                            type="color"
+                            value={cargo.color}
+                            onChange={(e) =>
+                              handleCargoChange(cargo.id, 'color', e.target.value)
+                            }
+                            style={{
+                              width: '26px',
+                              height: '26px',
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            className="cbm-table-input name-input"
+                            value={cargo.name}
+                            onChange={(e) =>
+                              handleCargoChange(cargo.id, 'name', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="cbm-table-input dim-input"
+                            value={dispW}
+                            min={1}
+                            step={unitMode === 'cm' ? 0.5 : 10}
+                            onChange={(e) =>
+                              handleCargoChange(
+                                cargo.id,
+                                'width',
+                                Math.round((Number(e.target.value) || 0) * factor)
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="cbm-table-input dim-input"
+                            value={dispL}
+                            min={1}
+                            step={unitMode === 'cm' ? 0.5 : 10}
+                            onChange={(e) =>
+                              handleCargoChange(
+                                cargo.id,
+                                'length',
+                                Math.round((Number(e.target.value) || 0) * factor)
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="cbm-table-input dim-input"
+                            value={dispH}
+                            min={1}
+                            step={unitMode === 'cm' ? 0.5 : 10}
+                            onChange={(e) =>
+                              handleCargoChange(
+                                cargo.id,
+                                'height',
+                                Math.round((Number(e.target.value) || 0) * factor)
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="cbm-table-input qty-input"
+                            value={cargo.quantity}
+                            min={1}
+                            onChange={(e) =>
+                              handleCargoChange(cargo.id, 'quantity', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="cbm-table-input weight-input"
+                            value={cargo.weight}
+                            min={0.01}
+                            step={0.1}
+                            onChange={(e) =>
+                              handleCargoChange(cargo.id, 'weight', e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <select
+                            className="cbm-table-input"
+                            style={{ width: '78px', padding: '4px 4px', fontSize: '12px' }}
+                            value={cargo.maxLayers || 0}
+                            onChange={(e) =>
+                              handleCargoChange(cargo.id, 'maxLayers', Number(e.target.value) || 0)
+                            }
+                            title="품목별 최대 적재 단수 제한 (파손 방지 또는 단수 고정)"
+                          >
+                            <option value={0}>자동(높이)</option>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((lNum) => (
+                              <option key={lNum} value={lNum}>
+                                최대 {lNum}단
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={cargo.allowRotate !== false}
+                            onChange={(e) =>
+                              handleCargoChange(cargo.id, 'allowRotate', e.target.checked)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="cbm-row-del-btn"
+                            onClick={() => handleRemoveCargo(cargo.id)}
+                            disabled={cargos.length <= 1}
+                            title="행 삭제"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -753,9 +911,31 @@ export function CbmSimulator() {
               </button>
             </div>
 
-            {/* Option 2: 혼적 허용 여부 */}
-            <div className="cbm-field-label" style={{ marginTop: '14px' }}>
-              ② 한 파레트 내 화물 혼적 여부
+            {/* Option 2: 혼적 허용 여부 & 교차 적재 */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: '14px',
+                marginBottom: '6px',
+              }}
+            >
+              <div className="cbm-field-label" style={{ margin: 0 }}>
+                ② 한 파레트 내 화물 혼적 및 교차 적재(인터로킹)
+              </div>
+              <label
+                className="cbm-mini-check"
+                style={{ fontSize: '12px', color: '#93c5fd' }}
+                title="짝수 단(2·4·6단)을 180° 대칭 교차시켜 박스 이음선이 엇갈리게 쌓음으로써 파레트 붕괴를 방지합니다."
+              >
+                <input
+                  type="checkbox"
+                  checked={interlockLayers}
+                  onChange={(e) => setInterlockLayers(e.target.checked)}
+                />
+                <span>🧱 홀·짝수단 벽돌식 교차 적재(인터로킹)</span>
+              </label>
             </div>
             <div className="cbm-radio-pair">
               <button
@@ -771,8 +951,8 @@ export function CbmSimulator() {
                 className={`cbm-radio-card ${mixCargos ? 'active' : ''}`}
                 onClick={() => setMixCargos(true)}
               >
-                <strong>이종 화물 혼적 허용</strong>
-                <span>앞 품목 적재 후 남는 높이에 다음 품목 이어서 적재</span>
+                <strong>다품종 잔량 혼적 허용 (안전검증)</strong>
+                <span>완적 파레트 우선 확정 후, 지지면적·하중이 안전한 잔량만 합포장</span>
               </button>
             </div>
 
@@ -956,6 +1136,22 @@ export function CbmSimulator() {
                   max={150}
                   step={10}
                   onChange={(e) => setOverhang(Math.max(0, Number(e.target.value) || 0))}
+                />
+              </label>
+              <label className="cbm-input-group">
+                <span>파레트 최대하중(kg)</span>
+                <input
+                  type="number"
+                  value={palletConfig.maxWeight}
+                  min={100}
+                  max={3000}
+                  step={50}
+                  onChange={(e) =>
+                    setPalletConfig((p) => ({
+                      ...p,
+                      maxWeight: Math.max(100, Number(e.target.value) || 1000),
+                    }))
+                  }
                 />
               </label>
             </div>
@@ -1578,6 +1774,142 @@ export function CbmSimulator() {
                 );
               })}
             </div>
+
+            {/* 최적 혼합 배차 추천 & 컨테이너 호기별 품목(SKU) 적재 명세표 */}
+            <div
+              style={{
+                marginTop: '14px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              {simResult.fleetRecommendations && simResult.fleetRecommendations.length > 0 && (
+                <div
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.75)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    borderRadius: '10px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.84rem',
+                      fontWeight: 700,
+                      color: '#38bdf8',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    🚛 실무 최적 배차 조합 제안 (단독 배차 vs 혼합 배차 비교)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {simResult.fleetRecommendations.map((rec) => (
+                      <div
+                        key={rec.id}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          background: rec.badge.includes('추천')
+                            ? 'rgba(16, 185, 129, 0.12)'
+                            : 'rgba(30, 41, 59, 0.65)',
+                          border: rec.badge.includes('추천')
+                            ? '1px solid rgba(16, 185, 129, 0.4)'
+                            : '1px solid rgba(148, 163, 184, 0.2)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            color: '#f8fafc',
+                          }}
+                        >
+                          <span>{rec.title}</span>
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              padding: '2px 7px',
+                              borderRadius: '999px',
+                              background: rec.badge.includes('추천') ? '#059669' : '#334155',
+                              color: '#fff',
+                            }}
+                          >
+                            {rec.badge}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.77rem', color: '#cbd5e1', marginTop: '3px' }}>
+                          {rec.detail} — <span style={{ color: '#94a3b8' }}>{rec.note}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.75)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.84rem',
+                    fontWeight: 700,
+                    color: '#34d399',
+                    marginBottom: '8px',
+                  }}
+                >
+                  📋 컨테이너 호기별 적재 품목(SKU) 배분 명세표 ({simResult.selectedSpec.name})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {simResult.containerResult.containers.map((c) => (
+                    <div
+                      key={`sku-bd-${c.id}`}
+                      style={{
+                        padding: '7px 10px',
+                        borderRadius: '8px',
+                        background: 'rgba(30, 41, 59, 0.65)',
+                        border: '1px solid rgba(148, 163, 184, 0.18)',
+                        fontSize: '0.78rem',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontWeight: 700,
+                          color: '#f8fafc',
+                          marginBottom: '3px',
+                        }}
+                      >
+                        <span>
+                          #{c.index}호기 (총 {c.placedPallets.length} PLT /{' '}
+                          {c.boxCount.toLocaleString()} 박스)
+                        </span>
+                        <span style={{ color: '#6ee7b7' }}>
+                          총 {c.totalWeight.toLocaleString()} kg
+                        </span>
+                      </div>
+                      <div style={{ color: '#cbd5e1', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {(c.skuBreakdown || []).map((s) => (
+                          <span key={s.name}>
+                            • <strong>{s.name}</strong>: {s.palletCount}PLT (
+                            {s.boxes.toLocaleString()}박스, {s.weightKg.toLocaleString()}kg)
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 3-B: 3D Container Stuffing Visualization & 2D Floor Map with CoG */}
@@ -1892,6 +2224,66 @@ export function CbmSimulator() {
                       </small>
                     </div>
                   </div>
+
+                  {/* 현장 지게차 도어 통과 · 쇼링(Shoring) · 에어백 정밀 진단 패널 */}
+                  {currentContainer.fieldDiagnostics && (
+                    <div
+                      style={{
+                        marginTop: '12px',
+                        paddingTop: '12px',
+                        borderTop: '1px solid rgba(148, 163, 184, 0.2)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          color: '#93c5fd',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        🚜 현장 컨테이너 적입(Stuffing) · 도어 통과 · 쇼링/에어백 작업성 정밀 진단
+                      </div>
+                      <div className="cbm-cog-metrics-grid">
+                        <div className="cbm-cog-metric">
+                          <span>🚪 컨테이너 도어 프레임 통과 여유 (유효고 {currentContainer.spec.doorHeight}mm)</span>
+                          <strong
+                            style={{
+                              color:
+                                currentContainer.fieldDiagnostics.doorStatus === 'danger'
+                                  ? '#f87171'
+                                  : currentContainer.fieldDiagnostics.doorStatus === 'warning'
+                                  ? '#fbbf24'
+                                  : '#34d399',
+                            }}
+                          >
+                            최고 적재고 {currentContainer.fieldDiagnostics.maxStackHeightMm}mm (도어 여유{' '}
+                            {currentContainer.fieldDiagnostics.doorClearanceMm >= 0 ? '+' : ''}
+                            {currentContainer.fieldDiagnostics.doorClearanceMm}mm)
+                          </strong>
+                          <small>{currentContainer.fieldDiagnostics.doorStatusText}</small>
+                        </div>
+
+                        <div className="cbm-cog-metric">
+                          <span>⚓ 도어측 잔여 길이 & 쇼링(Shoring)/래싱 진단</span>
+                          <strong>
+                            적재 길이 {(currentContainer.fieldDiagnostics.usedLengthMm / 1000).toFixed(2)}m / 도어 여유{' '}
+                            {currentContainer.fieldDiagnostics.rearClearanceMm}mm
+                          </strong>
+                          <small>{currentContainer.fieldDiagnostics.shoringText}</small>
+                        </div>
+
+                        <div className="cbm-cog-metric">
+                          <span>🛡️ 좌우 측면 유격 & 에어백(Dunnage Bag) 규격</span>
+                          <strong>
+                            2열 폭 유격 {currentContainer.fieldDiagnostics.lateralGapMm}mm (바닥 면적 활용률{' '}
+                            {currentContainer.fieldDiagnostics.floorUtilizationPct}%)
+                          </strong>
+                          <small>{currentContainer.fieldDiagnostics.dunnageBagText}</small>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

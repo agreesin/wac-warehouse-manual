@@ -1591,3 +1591,17 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+@media print {
+  body,
+  .cbm-page {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .cbm-step-action-bar,
+  .cbm-playback-bar,
+  .cbm-camera-toolbar,
+  .cbm-top-actions button {
+    display: none !important;
+  }
+}
