@@ -1039,19 +1039,27 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
   // and put partial/light pallets in Container #2 near the door!
   let orderedContainerBuckets = [];
 
-  // Helper to pack a list of pallets into a single container using 2-row column layout
-  // For each pallet, orient it so that 2 pallets fit side-by-side across container width (cWidth = 2352mm):
-  // - 1100 x 1100 -> length 1100 (along X), width 1100 (along Z, 2*1100 = 2200 <= 2352)
-  // - 1200 x 1000 -> length 1200 (along X), width 1000 (along Z, 2*1000 = 2000 <= 2352)
-  //   OR if paired with 1100, 1000+1100 = 2100 <= 2352!
-  const orientPalletFor2Rows = (p) => {
-    // We want the Z-dimension (width inside container) to be <= cWidth / 2 (1176mm) if possible
-    const halfW = cWidth / 2;
+  // Helper to orient a pair of pallets (p1, p2) or single pallet (p1) across container width (cWidth = 2352mm)
+  // while adapting to whether we want compact X-length (to fit 10 columns in 40ft) or extended X-length (to cover more floor when <10 columns)
+  const orientPalletFor2Rows = (p, preferCompactX = false) => {
+    const halfW = cWidth / 2; // 1176mm
+    const maxDim = Math.max(p.width, p.length);
+    const minDim = Math.min(p.width, p.length);
+
+    // If pallet is 1200x1000 and preferCompactX is true, check if 1200mm can go along Z (when paired with <=1100mm or alone)
+    if (preferCompactX && maxDim <= 1220 && minDim <= 1050 && p.width !== p.length) {
+      // lengthX = 1000, widthZ = 1200
+      return {
+        lengthX: minDim,
+        widthZ: maxDim,
+        rotated: p.length !== minDim,
+      };
+    }
+
     if (p.width <= halfW && p.length <= halfW) {
       return { lengthX: p.length, widthZ: p.width, rotated: false };
     }
     if (p.length <= halfW && p.width > halfW) {
-      // e.g. width=1200, length=1000 -> put 1200 along X (container length), 1000 along Z (container width)
       return { lengthX: p.width, widthZ: p.length, rotated: true };
     }
     if (p.width <= halfW && p.length > halfW) {
@@ -1061,28 +1069,25 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
   };
 
   // Try packing a given list of pallets into 1 container; returns { placedPallets, overflowPallets }
+  // 핵심 원칙:
+  // 1) 무조건 1단 바닥(Tier 1)을 컨테이너 끝까지 먼저 채워서 바닥 면적을 최대로 활용한다.
+  // 2) 2단 적재(allowDoubleStack)가 켜져 있더라도 바닥(Tier 1)이 다 차기 전에는 절대 2단에 올리지 않는다.
+  // 3) 바닥 마지막 열이 홀수(1개)로 끝날 경우, 한쪽 구석이 아니라 폭 중앙(Center-Lock)에 배치해 좌우 열을 동시에 지지한다.
   const tryPackSingleContainer = (palletList) => {
     let workingList = [...palletList];
 
-    // If optimizeCoG is enabled, order pallets so heavy full pallets are balanced in the middle/front
-    // and lighter/partial pallets are placed near the door (end), while alternating left/right rows by weight!
     if (optimizeCoG && workingList.length > 2) {
-      // Keep full pallets of each SKU grouped cleanly, but ensure heaviest pallets are toward the center/front
-      // and lightest partial pallets are at the very end (door side) for safe unloading
       workingList.sort((a, b) => {
         if (a.isPartial !== b.isPartial) return a.isPartial ? 1 : -1;
         return b.totalWeight - a.totalWeight;
       });
 
-      // Symmetrize longitudinal CoG: place medium-heavy at front wall, heaviest in the middle, medium-heavy + light toward door
       const fullHeavy = workingList.filter((p) => !p.isPartial);
       const partials = workingList.filter((p) => p.isPartial);
       if (fullHeavy.length >= 6) {
         const reordered = new Array(fullHeavy.length);
-        // Place from center outward or alternate front/back pairs to keep CoG near 50% of occupied length
         let leftPtr = 0;
         let rightPtr = fullHeavy.length - 1;
-        // Put medium-heavy at outer ends and heaviest near center so longitudinal CoG is dead-center
         const asc = [...fullHeavy].sort((a, b) => a.totalWeight - b.totalWeight);
         asc.forEach((item, idx) => {
           if (idx % 2 === 0) {
@@ -1101,31 +1106,144 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     let cursorX = 0;
     let slotCounter = 0;
 
-    // Pair pallets into columns of 2 (Row 0: Left Z, Row 1: Right Z)
-    // If doubleStack is enabled, each floor slot can also take a 2nd-tier pallet
+    // Estimate how many floor columns we want to fit so we can pick adaptive gap & orientation
+    const targetFloorPallets = Math.min(workingList.length, floorSlotsPerContainer);
+    const estCols = Math.ceil(targetFloorPallets / 2);
+    const rawLengthSum = workingList
+      .slice(0, targetFloorPallets)
+      .reduce((acc, p, i) => (i % 2 === 0 ? acc + Math.max(p.width, p.length) : acc), 0);
+    const needsTightFit = rawLengthSum + Math.max(0, estCols - 1) * 15 > cLength;
+    const colGapX = needsTightFit ? 2 : 12;
+
     let idx = 0;
-    const openTopSlots = []; // floor slots available for 2nd tier
+    const openTopSlots = []; // floor slots available for 2nd tier AFTER floor is filled
 
+    // =========================================================================
+    // PHASE 1: 컨테이너 1단 바닥(Tier 1) 우선 배치
+    // =========================================================================
     while (idx < workingList.length) {
-      const p = workingList[idx];
+      const p1 = workingList[idx];
 
-      if (currentWeight + p.totalWeight > cMaxWeight && placedPallets.length > 0) {
-        overflowPallets.push(...workingList.slice(idx));
+      if (currentWeight + p1.totalWeight > cMaxWeight && placedPallets.length > 0) {
         break;
       }
 
-      // First check if doubleStack is enabled and we can place on an open 2nd-tier slot
-      if (allowDoubleStack && openTopSlots.length > 0) {
-        const compatibleSlotIdx = openTopSlots.findIndex(
+      const p2Candidate = idx + 1 < workingList.length ? workingList[idx + 1] : null;
+
+      // Determine orientation for p1 (and p2Candidate if present)
+      let o1 = orientPalletFor2Rows(p1, false);
+      let o2 = p2Candidate ? orientPalletFor2Rows(p2Candidate, false) : null;
+
+      // If tight fit is needed and one of (p1, p2) is 1100 and the other is 1200x1000, we can orient 1200 along Z (1200+1100=2300 <= 2352) to save 100mm of container length!
+      if (needsTightFit && p2Candidate) {
+        const tryO1 = orientPalletFor2Rows(p1, true);
+        const tryO2 = orientPalletFor2Rows(p2Candidate, true);
+        if (tryO1.widthZ + tryO2.widthZ <= cWidth) {
+          o1 = tryO1;
+          o2 = tryO2;
+        } else if (tryO1.widthZ + o2.widthZ <= cWidth) {
+          o1 = tryO1;
+        } else if (o1.widthZ + tryO2.widthZ <= cWidth) {
+          o2 = tryO2;
+        }
+      }
+
+      if (cursorX + o1.lengthX > cLength) {
+        // 1단 바닥 길이 소진 완료 -> Phase 2(2단 적재) 또는 다음 컨테이너로 이동
+        break;
+      }
+
+      // Check if a second pallet (Right Row) will also be placed in this column
+      const canPlaceP2 =
+        Boolean(p2Candidate) &&
+        o1.widthZ + o2.widthZ <= cWidth &&
+        cursorX + o2.lengthX <= cLength &&
+        currentWeight + p1.totalWeight + p2Candidate.totalWeight <= cMaxWeight;
+
+      if (canPlaceP2) {
+        const totalZ = o1.widthZ + o2.widthZ;
+        const zGap = Math.max(8, Math.floor((cWidth - totalZ) / 3));
+        const zLeft = Math.max(0, zGap);
+        const zRight = Math.max(zLeft + o1.widthZ + 4, cWidth - o2.widthZ - Math.max(0, zGap));
+
+        const slot1 = {
+          pallet: p1,
+          slotIndex: slotCounter++,
+          tier: 1,
+          x: cursorX,
+          y: 0,
+          z: zLeft,
+          length: o1.lengthX,
+          width: o1.widthZ,
+          rotated: o1.rotated,
+        };
+        const slot2 = {
+          pallet: p2Candidate,
+          slotIndex: slotCounter++,
+          tier: 1,
+          x: cursorX,
+          y: 0,
+          z: zRight,
+          length: o2.lengthX,
+          width: o2.widthZ,
+          rotated: o2.rotated,
+        };
+
+        placedPallets.push(slot1, slot2);
+        currentWeight += p1.totalWeight + p2Candidate.totalWeight;
+        if (allowDoubleStack) {
+          openTopSlots.push({ ...slot1, bottomPallet: p1 });
+          openTopSlots.push({ ...slot2, bottomPallet: p2Candidate });
+        }
+        idx += 2;
+        cursorX += Math.max(o1.lengthX, o2.lengthX) + colGapX;
+      } else {
+        // 마지막 단독 파레트(홀수 파레트): 한쪽 구석에 치우치지 않도록 폭 중앙(Center-Lock)에 배치하여 앞열 좌·우 파레트를 동시에 지지!
+        const zCenter = Math.max(0, Math.round((cWidth - o1.widthZ) / 2));
+        const slot1 = {
+          pallet: p1,
+          slotIndex: slotCounter++,
+          tier: 1,
+          x: cursorX,
+          y: 0,
+          z: zCenter,
+          length: o1.lengthX,
+          width: o1.widthZ,
+          rotated: o1.rotated,
+        };
+        placedPallets.push(slot1);
+        currentWeight += p1.totalWeight;
+        if (allowDoubleStack) {
+          openTopSlots.push({ ...slot1, bottomPallet: p1 });
+        }
+        idx += 1;
+        cursorX += o1.lengthX + colGapX;
+      }
+    }
+
+    // =========================================================================
+    // PHASE 2: 1단 바닥을 모두 채운 뒤에도 남은 파레트가 있고 2단 적재가 허용된 경우에만 2단(Tier 2) 배치
+    // =========================================================================
+    if (allowDoubleStack && idx < workingList.length && openTopSlots.length > 0) {
+      // 무게중심(CoG) 안정을 위해 컨테이너 중앙부 슬롯부터 2단 적재
+      const midX = cursorX / 2;
+      openTopSlots.sort(
+        (a, b) => Math.abs(a.x + a.length / 2 - midX) - Math.abs(b.x + b.length / 2 - midX)
+      );
+
+      for (let k = idx; k < workingList.length; k++) {
+        const cand = workingList[k];
+        const sIdx = openTopSlots.findIndex(
           (s) =>
-            s.bottomPallet.totalHeight + p.totalHeight <= cHeight &&
-            s.bottomPallet.width === p.width &&
-            s.bottomPallet.length === p.length
+            !s.bottomPallet.isPartial &&
+            s.bottomPallet.totalHeight + cand.totalHeight <= cHeight &&
+            currentWeight + cand.totalWeight <= cMaxWeight &&
+            cand.totalWeight <= s.bottomPallet.totalWeight * 1.15
         );
-        if (compatibleSlotIdx !== -1) {
-          const targetSlot = openTopSlots.splice(compatibleSlotIdx, 1)[0];
+        if (sIdx !== -1) {
+          const targetSlot = openTopSlots.splice(sIdx, 1)[0];
           placedPallets.push({
-            pallet: p,
+            pallet: cand,
             slotIndex: targetSlot.slotIndex,
             tier: 2,
             x: targetSlot.x,
@@ -1135,122 +1253,27 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
             width: targetSlot.width,
             rotated: targetSlot.rotated,
           });
-          currentWeight += p.totalWeight;
-          idx++;
-          continue;
-        }
-      }
-
-      // Otherwise, open a new floor column at cursorX (takes up to 2 pallets side by side: Left & Right)
-      const p1 = workingList[idx];
-      const o1 = orientPalletFor2Rows(p1);
-
-      if (cursorX + o1.lengthX > cLength) {
-        // No more floor length in this container
-        // Before overflowing, check if remaining pallets can go onto any openTopSlots
-        if (allowDoubleStack && openTopSlots.length > 0) {
-          let anyPlacedOnTop = false;
-          const stillUnplaced = [];
-          for (let k = idx; k < workingList.length; k++) {
-            const cand = workingList[k];
-            const sIdx = openTopSlots.findIndex(
-              (s) =>
-                s.bottomPallet.totalHeight + cand.totalHeight <= cHeight &&
-                currentWeight + cand.totalWeight <= cMaxWeight
-            );
-            if (sIdx !== -1) {
-              const targetSlot = openTopSlots.splice(sIdx, 1)[0];
-              placedPallets.push({
-                pallet: cand,
-                slotIndex: targetSlot.slotIndex,
-                tier: 2,
-                x: targetSlot.x,
-                y: targetSlot.bottomPallet.totalHeight,
-                z: targetSlot.z,
-                length: targetSlot.length,
-                width: targetSlot.width,
-                rotated: targetSlot.rotated,
-              });
-              currentWeight += cand.totalWeight;
-              anyPlacedOnTop = true;
-            } else {
-              stillUnplaced.push(cand);
-            }
-          }
-          overflowPallets.push(...stillUnplaced);
-          break;
+          currentWeight += cand.totalWeight;
         } else {
-          overflowPallets.push(...workingList.slice(idx));
-          break;
+          overflowPallets.push(cand);
         }
       }
-
-      // Place Left Row (Row 0)
-      const zGap = Math.max(10, Math.floor((cWidth - o1.widthZ * 2) / 3));
-      const zLeft = Math.max(0, zGap);
-      const slot1 = {
-        pallet: p1,
-        slotIndex: slotCounter++,
-        tier: 1,
-        x: cursorX,
-        y: 0,
-        z: zLeft,
-        length: o1.lengthX,
-        width: o1.widthZ,
-        rotated: o1.rotated,
-      };
-      placedPallets.push(slot1);
-      currentWeight += p1.totalWeight;
-      if (allowDoubleStack) {
-        openTopSlots.push({ ...slot1, bottomPallet: p1 });
-      }
-      idx++;
-
-      let colMaxLenX = o1.lengthX;
-
-      // Try placing Right Row (Row 1) in the same column if there is a next pallet that fits in width & weight
-      if (idx < workingList.length) {
-        const p2 = workingList[idx];
-        const o2 = orientPalletFor2Rows(p2);
-        if (
-          o1.widthZ + o2.widthZ <= cWidth &&
-          cursorX + o2.lengthX <= cLength &&
-          currentWeight + p2.totalWeight <= cMaxWeight
-        ) {
-          const zRight = cWidth - o2.widthZ - Math.max(0, zGap);
-          const slot2 = {
-            pallet: p2,
-            slotIndex: slotCounter++,
-            tier: 1,
-            x: cursorX,
-            y: 0,
-            z: zRight,
-            length: o2.lengthX,
-            width: o2.widthZ,
-            rotated: o2.rotated,
-          };
-          placedPallets.push(slot2);
-          currentWeight += p2.totalWeight;
-          if (allowDoubleStack) {
-            openTopSlots.push({ ...slot2, bottomPallet: p2 });
-          }
-          colMaxLenX = Math.max(colMaxLenX, o2.lengthX);
-          idx++;
-        }
-      }
-
-      cursorX += colMaxLenX + 15; // 15mm clearance between columns
+    } else if (idx < workingList.length) {
+      overflowPallets.push(...workingList.slice(idx));
     }
 
-    // Center the entire packed block slightly or keep from front wall (x=0)
     return { placedPallets, overflowPallets };
   };
 
-  // Check if balanced multi-container split should be applied (e.g. 38 pallets across 2 containers -> 19 + 19)
+  // ===========================================================================
+  // 다수 컨테이너(2대 이상: 2대, 3대, 4대 등 모든 경우) 생성 시 전 호기 바닥 균등 배분
+  // - 1호기만 가득 채우고 나머지 호기에 잔여 화물을 싣는 현상을 원천 방지
+  // - 2단 적재 모드일 때도 모든 호기의 1단 바닥을 먼저 균등하게 채운 뒤 2단에 배분
+  // ===========================================================================
   const containers = [];
 
-  if (balanceContainers && !allowDoubleStack && validPallets.length > 0) {
-    // First do a sequential pass to see how many containers are needed
+  if (balanceContainers && validPallets.length > 0) {
+    // 1. 먼저 최소 몇 대의 컨테이너(neededCount)가 필요한지 시뮬레이션
     let testRem = [...validPallets];
     let neededCount = 0;
     while (testRem.length > 0 && neededCount < 50) {
@@ -1260,13 +1283,12 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       testRem = res.overflowPallets;
     }
 
-    if (neededCount === 2) {
-      // Balanced 2-container distribution by SKU (just like the report:
-      // Container 1 gets half of full Item 1 + half of Item 2; Container 2 gets the rest + partials)
-      const bucket1 = [];
-      const bucket2 = [];
+    if (neededCount >= 2) {
+      const buckets = Array.from({ length: neededCount }, () => []);
+      const bucketWeights = new Array(neededCount).fill(0);
+      const targetMaxPerBucket = Math.ceil(validPallets.length / neededCount);
 
-      // Group pallets by primaryCargoId
+      // 품목(SKU)별로 완파레트(full)와 부분파레트(partial)를 나누어 N개 컨테이너 버킷에 골고루 라운드로빈/중량균형 배분
       const byCargo = new Map();
       for (const p of validPallets) {
         const key = p.primaryCargoId || 'other';
@@ -1274,31 +1296,51 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         byCargo.get(key).push(p);
       }
 
-      const targetBucket1Size = Math.ceil(validPallets.length / 2);
-
+      const allFulls = [];
+      const allPartials = [];
       for (const [, group] of byCargo.entries()) {
-        const fulls = group.filter((p) => !p.isPartial);
-        const partials = group.filter((p) => p.isPartial);
-
-        const halfFull = Math.ceil(fulls.length / 2);
-        for (let i = 0; i < fulls.length; i++) {
-          if (i < halfFull && bucket1.length < targetBucket1Size) {
-            bucket1.push(fulls[i]);
-          } else {
-            bucket2.push(fulls[i]);
-          }
-        }
-        // Put partial pallets in bucket2 (or whichever bucket has fewer pallets)
-        for (const part of partials) {
-          if (bucket1.length < bucket2.length && bucket1.length < targetBucket1Size) {
-            bucket1.push(part);
-          } else {
-            bucket2.push(part);
-          }
+        for (const p of group) {
+          if (p.isPartial) allPartials.push(p);
+          else allFulls.push(p);
         }
       }
 
-      orderedContainerBuckets = [bucket1, bucket2];
+      // 완파레트들을 N개 컨테이너에 수량·중량 균등 배분
+      for (const p of allFulls) {
+        // 현재 파레트 수가 가장 적은 버킷(동률이면 총 중량이 가장 적은 버킷) 선택
+        let bestIdx = 0;
+        for (let bIdx = 1; bIdx < neededCount; bIdx++) {
+          if (buckets[bIdx].length < buckets[bestIdx].length) {
+            bestIdx = bIdx;
+          } else if (
+            buckets[bIdx].length === buckets[bestIdx].length &&
+            bucketWeights[bIdx] < bucketWeights[bestIdx]
+          ) {
+            bestIdx = bIdx;
+          }
+        }
+        buckets[bestIdx].push(p);
+        bucketWeights[bestIdx] += p.totalWeight;
+      }
+
+      // 부분/잔여 파레트들도 파레트 수가 적은 버킷부터 골고루 배분
+      for (const p of allPartials) {
+        let bestIdx = 0;
+        for (let bIdx = 1; bIdx < neededCount; bIdx++) {
+          if (buckets[bIdx].length < buckets[bestIdx].length) {
+            bestIdx = bIdx;
+          } else if (
+            buckets[bIdx].length === buckets[bestIdx].length &&
+            bucketWeights[bIdx] < bucketWeights[bestIdx]
+          ) {
+            bestIdx = bIdx;
+          }
+        }
+        buckets[bestIdx].push(p);
+        bucketWeights[bestIdx] += p.totalWeight;
+      }
+
+      orderedContainerBuckets = buckets;
     }
   }
 
@@ -1664,17 +1706,234 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
 }
 
 /**
+ * 컨테이너 바닥 빈 슬롯을 채우기 위해 고단 파레트의 상부 층(Layer)을 분할하여 바닥 전체에 고르게 펼치는 함수
+ * - 예: 40ft 2대(바닥 총 40슬롯)에 30~38파레트가 있을 때, 빈 바닥 공간으로 인해 운항 중 화물이 쏠리거나
+ *   추가 쇼링/고정장치 비용이 발생하지 않도록 5단 파레트 일부를 3단+2단으로 나누어 40슬롯(20+20)을 모두 채움
+ */
+export function spreadPalletsToFillFloorSlots(initialPallets, targetFloorSlots, cargos, palletConfig) {
+  if (!initialPallets || initialPallets.length === 0 || initialPallets.length >= targetFloorSlots) {
+    return null;
+  }
+
+  const baseH = Math.max(0, Number(palletConfig.baseHeight) ?? 150);
+  const maxTotalH = Math.max(baseH + 50, Number(palletConfig.maxTotalHeight) || 1700);
+  const maxLoadH = maxTotalH - baseH;
+  const tareWeight = Math.max(0, Number(palletConfig.tareWeight) ?? 17);
+
+  const rebuildPalletStats = (rawPallet, newBoxes, newIndex) => {
+    const layerMap = new Map();
+    let maxY = baseH;
+    let cargoW = 0;
+    let boxVolMm3 = 0;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minZ = Infinity,
+      maxZ = -Infinity;
+    const cargoCounts = {};
+
+    for (const b of newBoxes) {
+      const lIdx = b.layerIndex || 0;
+      if (!layerMap.has(lIdx)) {
+        layerMap.set(lIdx, {
+          layerIndex: lIdx,
+          cargoId: b.cargoId,
+          cargoName: b.name,
+          boxCount: 0,
+          y: b.y,
+          height: b.h,
+        });
+      }
+      layerMap.get(lIdx).boxCount += 1;
+      if (b.y + b.h > maxY) maxY = b.y + b.h;
+      cargoW += b.weight || 0;
+      boxVolMm3 += b.w * b.h * b.l;
+      if (b.x < minX) minX = b.x;
+      if (b.x + b.w > maxX) maxX = b.x + b.w;
+      if (b.z < minZ) minZ = b.z;
+      if (b.z + b.l > maxZ) maxZ = b.z + b.l;
+      cargoCounts[b.cargoId] = (cargoCounts[b.cargoId] || 0) + 1;
+    }
+
+    const layers = Array.from(layerMap.values()).sort((a, b) => a.layerIndex - b.layerIndex);
+    const totalHeight = Math.round(maxY);
+    const cargoHeight = Math.max(0, totalHeight - baseH);
+    const cargoWeight = Number(cargoW.toFixed(2));
+    const totalWeight = Number((tareWeight + cargoWeight).toFixed(2));
+    const cargoSpanW = newBoxes.length > 0 ? Math.round(maxX - minX) : 0;
+    const cargoSpanL = newBoxes.length > 0 ? Math.round(maxZ - minZ) : 0;
+    const maxAllowedCargoMm3 = rawPallet.width * rawPallet.length * maxLoadH;
+    const palletEnvelopeMm3 = rawPallet.width * rawPallet.length * totalHeight;
+
+    const updated = {
+      ...rawPallet,
+      id: `pallet-${newIndex}`,
+      index: newIndex,
+      boxes: newBoxes,
+      layers,
+      cargoCounts,
+      cargoHeight,
+      totalHeight,
+      cargoWeight,
+      totalWeight,
+      cargoSpanW,
+      cargoSpanL,
+      overhangW: Math.max(0, cargoSpanW - rawPallet.width),
+      overhangL: Math.max(0, cargoSpanL - rawPallet.length),
+      maxOverhangMm: Math.max(
+        0,
+        cargoSpanW - rawPallet.width,
+        cargoSpanL - rawPallet.length
+      ),
+      cargoCbm: Number((boxVolMm3 / 1e9).toFixed(3)),
+      totalCbm: Number((palletEnvelopeMm3 / 1e9).toFixed(3)),
+      volumeUtilization: Number(
+        Math.min(100, (boxVolMm3 / Math.max(1, maxAllowedCargoMm3)) * 100).toFixed(1)
+      ),
+      isPartial: true,
+    };
+    updated.localCoG = computePalletLocalCoG(updated);
+    return updated;
+  };
+
+  const working = initialPallets.map((p) => ({ ...p, boxes: [...p.boxes], layers: [...p.layers] }));
+
+  while (working.length < targetFloorSlots) {
+    // 가장 층수(단수)가 높고 무거운 파레트를 찾아 절반 층으로 분할
+    let bestIdx = -1;
+    let bestScore = -1;
+    for (let i = 0; i < working.length; i++) {
+      const p = working[i];
+      if (p.layers.length >= 2) {
+        const score = p.layers.length * 10000 + p.totalHeight + p.cargoWeight;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx === -1) break; // 더 이상 2단 이상인 파레트가 없으면 종료
+
+    const target = working[bestIdx];
+    const keepLayers = Math.ceil(target.layers.length / 2);
+    const boxesA = target.boxes
+      .filter((b) => (b.layerIndex || 0) < keepLayers)
+      .map((b) => ({ ...b }));
+    const rawBoxesB = target.boxes.filter((b) => (b.layerIndex || 0) >= keepLayers);
+    const minBY = rawBoxesB.reduce((min, b) => Math.min(min, b.y), Infinity);
+    const yShift = minBY - target.baseHeight;
+    const boxesB = rawBoxesB.map((b, bIdx) => ({
+      ...b,
+      id: `${b.id}-sp-${working.length}-${bIdx}`,
+      layerIndex: (b.layerIndex || 0) - keepLayers,
+      y: Math.round(b.y - yShift),
+    }));
+
+    const pA = rebuildPalletStats(target, boxesA, target.index);
+    const pB = rebuildPalletStats(target, boxesB, working.length + 1);
+    working.splice(bestIdx, 1, pA, pB);
+  }
+
+  // Re-index cleanly
+  working.forEach((p, idx) => {
+    p.index = idx + 1;
+    p.id = `pallet-${idx + 1}`;
+  });
+
+  // Rebuild palletWeightGroups
+  const groupMap = new Map();
+  working.forEach((p, pIdx) => {
+    const cargoDesc = Object.entries(p.cargoCounts)
+      .map(([cid, cnt]) => {
+        const cObj = cargos.find((c) => c.id === cid);
+        return `${cObj ? cObj.name : cid} · ${cnt}박스`;
+      })
+      .join(' + ');
+    const key = `${cargoDesc}|${p.width}x${p.length}|${p.totalWeight}`;
+    if (!groupMap.has(key)) {
+      const layer0Boxes = p.boxes.filter((b) => (b.layerIndex || 0) === 0);
+      const normalCnt = layer0Boxes.filter((b) => !b.rotated).length;
+      const rotCnt = layer0Boxes.filter((b) => b.rotated).length;
+      let orientDesc = '';
+      if (normalCnt > 0 && rotCnt > 0) {
+        orientDesc = `정방향 ${normalCnt}개 + 90°회전 ${rotCnt}개 (1단 ${layer0Boxes.length}박스)`;
+      } else if (rotCnt > 0) {
+        orientDesc = `90°회전 ${rotCnt}개 (1단 ${layer0Boxes.length}박스)`;
+      } else {
+        orientDesc = `정방향 ${normalCnt}개 (1단 ${layer0Boxes.length}박스)`;
+      }
+
+      groupMap.set(key, {
+        label: cargoDesc,
+        primaryCargoName: p.primaryCargoName,
+        palletSpecId: p.palletSpecId,
+        palletDim: `${p.width}×${p.length}mm`,
+        palletW: p.width,
+        palletL: p.length,
+        cargoSpanW: p.cargoSpanW,
+        cargoSpanL: p.cargoSpanL,
+        overhangW: p.overhangW,
+        overhangL: p.overhangL,
+        maxOverhangMm: p.maxOverhangMm,
+        palletCount: 0,
+        firstLayerBoxCount: layer0Boxes.length,
+        layerCount: p.layers.length,
+        boxesPerPallet: p.boxes.length,
+        totalHeight: p.totalHeight,
+        cargoHeight: p.cargoHeight,
+        unitPalletWeight: p.totalWeight,
+        totalGroupWeight: 0,
+        orientDesc,
+        samplePalletIndex: pIdx,
+        palletIndices: [],
+      });
+    }
+    const g = groupMap.get(key);
+    g.palletCount += 1;
+    g.totalGroupWeight = Number((g.palletCount * g.unitPalletWeight).toFixed(1));
+    g.palletIndices.push(p.index);
+  });
+
+  return {
+    pallets: working,
+    palletWeightGroups: Array.from(groupMap.values()),
+  };
+}
+
+/**
  * 전체 시뮬레이션 통합 실행 (파레트 규격별 비교 + 컨테이너 규격별 비교 포함)
  */
 export function runFullSimulation(cargos, palletConfig, selectedContainerId, options = {}) {
   const palletResult = packCargosIntoPallets(cargos, palletConfig, options);
-  const { pallets, palletWeightGroups, unpackedErrors } = palletResult;
+  let { pallets, palletWeightGroups } = palletResult;
+  const { unpackedErrors } = palletResult;
+  const basePalletCount = pallets.length;
   const overhangDiagnostics = analyzeOverhangDiagnostics(cargos, palletConfig, options);
 
   const selectedSpec =
     CONTAINER_SPECS[selectedContainerId] || CONTAINER_SPECS['40FT_HC'];
 
-  const containerResult = packPalletsIntoContainers(pallets, selectedSpec, options);
+  // 먼저 기본 파레트로 컨테이너 적재 시뮬레이션 실행
+  let containerResult = packPalletsIntoContainers(pallets, selectedSpec, options);
+
+  const floorSlotsPerUnit = selectedSpec.id === '20FT_DRY' ? 10 : 20;
+  const totalAvailableFloorSlots = containerResult.containers.length * floorSlotsPerUnit;
+  const emptyFloorSlotsBeforeSpread = Math.max(0, totalAvailableFloorSlots - basePalletCount);
+
+  // 만약 '컨테이너 바닥 전체 채움(단수 분산)' 옵션(fullFloorSpread)이 켜져 있고 빈 바닥 슬롯이 있다면,
+  // 고단 파레트의 상부 단을 분할하여 모든 컨테이너 바닥 슬롯을 골고루 채우도록 재적재!
+  if (options.fullFloorSpread && emptyFloorSlotsBeforeSpread > 0) {
+    const spreadRes = spreadPalletsToFillFloorSlots(
+      pallets,
+      totalAvailableFloorSlots,
+      cargos,
+      palletConfig
+    );
+    if (spreadRes) {
+      pallets = spreadRes.pallets;
+      palletWeightGroups = spreadRes.palletWeightGroups;
+      containerResult = packPalletsIntoContainers(pallets, selectedSpec, options);
+    }
+  }
 
   // 파레트 사이즈(종류)별 비교 시뮬레이션 (단일 규격 4종 + 품목별 최적 혼합 1종)
   const palletSpecComparison = Object.values(PALLET_PRESETS).map((preset) => {
@@ -1707,7 +1966,7 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
 
   // 모든 컨테이너 종류별 비교 시뮬레이션
   const containerComparison = Object.values(CONTAINER_SPECS).map((spec) => {
-    let palletsForSpec = pallets;
+    let palletsForSpec = palletResult.pallets;
     if (options.doubleStackAuto) {
       const autoMaxH = Math.floor((spec.height - 60) / 2);
       const specPalletRes = packCargosIntoPallets(
@@ -1717,7 +1976,20 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       );
       palletsForSpec = specPalletRes.pallets;
     }
-    const res = packPalletsIntoContainers(palletsForSpec, spec, options);
+    let res = packPalletsIntoContainers(palletsForSpec, spec, options);
+    const specFloorSlots = (spec.id === '20FT_DRY' ? 10 : 20) * res.containers.length;
+    if (options.fullFloorSpread && palletsForSpec.length < specFloorSlots) {
+      const spreadSpec = spreadPalletsToFillFloorSlots(
+        palletsForSpec,
+        specFloorSlots,
+        cargos,
+        palletConfig
+      );
+      if (spreadSpec) {
+        palletsForSpec = spreadSpec.pallets;
+        res = packPalletsIntoContainers(palletsForSpec, spec, options);
+      }
+    }
     return {
       spec,
       palletCount: palletsForSpec.length,
@@ -1770,8 +2042,10 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       const comboEmpty = comboSlots - totalPlt;
       fleetRecommendations.push({
         id: 'COMBO_40HC_20FT',
-        badge: '💰 운임·공간 최적 혼합 배차',
+        badge: '💰 운임·공간 최적 혼합 배차 추천',
         title: `40ft HC × ${full40Cnt}대 + 20ft Dry × 1대 (총 ${full40Cnt + 1}대)`,
+        detail: `40HC에 ${full40Cnt * cap40}PLT + 20ft에 ${remPlt}PLT 적재 (빈 바닥 슬롯 ${hcOnlyEmpty}칸 → ${comboEmpty}칸으로 축소)`,
+        note: '두 컨테이너 모두 바닥을 꽉 채워 쇼링(고정장치) 비용 절감',
         desc: `잔여 ${remPlt}파레트를 40HC 대신 20ft 1대에 적재하여 빈 바닥 슬롯을 ${hcOnlyEmpty}개 → ${comboEmpty}개로 줄이는 실무 추천 조합입니다.`,
         totalSlots: comboSlots,
         emptySlots: comboEmpty,
@@ -1779,10 +2053,19 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       });
     }
 
+    const perHcSplit = hcComp
+      ? hcComp.containers.map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`).join(' / ')
+      : `${totalPlt}PLT`;
+
     fleetRecommendations.push({
       id: 'SINGLE_40HC',
-      badge: hcOnlyEmpty <= 4 ? '⭐ 바닥 정원 최적 매칭' : '표준 단일 배차',
-      title: `40ft High Cube × ${hcOnlyCnt}대 단독 배차`,
+      badge: hcOnlyEmpty <= 2 ? '⭐ 바닥 공간 최적 매칭 추천' : '⚖️ 전 호기 균등 배분 배차',
+      title: `40ft High Cube × ${hcOnlyCnt}대 (${perHcSplit})`,
+      detail: `총 바닥 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트 균등 배치 (남는 바닥 슬롯 총 ${hcOnlyEmpty}칸)`,
+      note:
+        hcOnlyEmpty === 0
+          ? '전 컨테이너 바닥 100% 밀착 채움 완료 (쏠림·고정장치 불필요)'
+          : `호기별 균등 배분 적용됨 · '바닥 100% 풀채움(단수 분산)' 활성화 시 ${hcOnlySlots}칸 전량 채움 가능`,
       desc:
         hcOnlyEmpty <= 2
           ? `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트를 채워 바닥 공간 활용도가 매우 높습니다 (여유 ${hcOnlyEmpty}슬롯).`
@@ -1803,6 +2086,13 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
     containerResult,
     containerComparison,
     fleetRecommendations,
+    floorSpreadInfo: {
+      basePalletCount,
+      spreadPalletCount: pallets.length,
+      totalAvailableFloorSlots,
+      emptyFloorSlotsBeforeSpread,
+      isSpreadActive: Boolean(options.fullFloorSpread && pallets.length > basePalletCount),
+    },
     summary: {
       totalBoxesPacked,
       totalPallets: pallets.length,
