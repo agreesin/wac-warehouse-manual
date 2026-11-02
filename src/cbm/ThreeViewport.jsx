@@ -202,10 +202,29 @@ export function ThreeViewport({
     const contentGroup = contentGroupRef.current;
     if (!contentGroup) return;
 
-    // Clear previous meshes
+    // Clear previous meshes & dispose WebGL geometries/materials to prevent GPU memory leaks
+    const disposeObject3D = (obj) => {
+      if (obj.geometry) {
+        obj.geometry.dispose();
+      }
+      if (obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((m) => m?.dispose && m.dispose());
+        } else if (obj.material.dispose) {
+          obj.material.dispose();
+        }
+      }
+      if (obj.children && obj.children.length > 0) {
+        for (const child of obj.children) {
+          disposeObject3D(child);
+        }
+      }
+    };
+
     while (contentGroup.children.length > 0) {
       const child = contentGroup.children[0];
       contentGroup.remove(child);
+      disposeObject3D(child);
     }
     pickableMeshesRef.current = [];
 
