@@ -268,7 +268,7 @@ export function CbmSimulator() {
         return { ...c, [field]: num };
       })
     );
-    if (step2Unlocked && field !== 'palletSpecId') {
+    if (step2Unlocked && field !== 'palletSpecId' && field !== 'allowedOverhang') {
       setIsStep1Dirty(true);
     }
   };
@@ -1128,17 +1128,6 @@ export function CbmSimulator() {
                 />
               </label>
               <label className="cbm-input-group">
-                <span>돌출 허용(mm)</span>
-                <input
-                  type="number"
-                  value={overhang}
-                  min={0}
-                  max={150}
-                  step={10}
-                  onChange={(e) => setOverhang(Math.max(0, Number(e.target.value) || 0))}
-                />
-              </label>
-              <label className="cbm-input-group">
                 <span>파레트 최대하중(kg)</span>
                 <input
                   type="number"
@@ -1154,6 +1143,24 @@ export function CbmSimulator() {
                   }
                 />
               </label>
+            </div>
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.08)',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                fontSize: '0.78rem',
+                color: '#cbd5e1',
+              }}
+            >
+              💡 <strong>파레트 돌출(Overhang) 자동 진단 안내:</strong> 돌출 여부는 계산 전에 미리 알 수 없으므로,{' '}
+              <strong>[1단계 계산하기]</strong>를 누르면 먼저 파레트에 적재해 본 뒤{' '}
+              <strong style={{ color: '#38bdf8' }}>
+                Step 2에서 품목별로 몇 mm 돌출되는지(예: +60mm / 편측 30mm)와 파레트 절감 효과를 자동으로 보여주고 허용 여부를 선택
+              </strong>
+              할 수 있습니다.
             </div>
           </div>
         </div>
@@ -1275,9 +1282,13 @@ export function CbmSimulator() {
                 <div className="cbm-mix-assign-list">
                   {cargos.map((cargo) => {
                     const resolved = resolvePalletDimsForCargo(cargo, effectivePalletConfig);
+                    const itemOv =
+                      cargo.allowedOverhang !== undefined && cargo.allowedOverhang !== null
+                        ? Number(cargo.allowedOverhang) || 0
+                        : overhang;
                     const layerCnt = computeBest2DLayer(
-                      resolved.width + overhang,
-                      resolved.length + overhang,
+                      resolved.width + itemOv,
+                      resolved.length + itemOv,
                       cargo.width,
                       cargo.length,
                       cargo.allowRotate
@@ -1316,6 +1327,288 @@ export function CbmSimulator() {
               </div>
             )}
           </div>
+
+          {/* 2-A-2: 파레트 적재 후 돌출(Overhang) 자동 진단 & 허용 여부 선택 패널 */}
+          {simResult.overhangDiagnostics && simResult.overhangDiagnostics.length > 0 && (
+            <div
+              className="cbm-card"
+              style={{
+                border: '1px solid rgba(245, 158, 11, 0.45)',
+                background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.95))',
+              }}
+            >
+              <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h2 style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📏 파레트 적재 후 돌출(Overhang) 자동 감지 & 허용 여부 선택
+                  </h2>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                    파레트에 정사이즈(0mm)로 먼저 적재한 뒤, 각 품목별로 <strong>몇 mm 돌출되는지</strong>와{' '}
+                    <strong>돌출 허용 시 줄어드는 파레트 수</strong>를 자동 분석했습니다. 품목별로 허용 여부를 선택하세요.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="cbm-btn-xs"
+                    onClick={() => {
+                      setOverhang(0);
+                      setCargos((prev) =>
+                        prev.map((c) => ({ ...c, allowedOverhang: 0 }))
+                      );
+                    }}
+                  >
+                    🔒 전 품목 정사이즈 (돌출 0mm 초기화)
+                  </button>
+                  <button
+                    type="button"
+                    className="cbm-btn-xs primary"
+                    style={{ background: '#d97706', borderColor: '#f59e0b' }}
+                    onClick={() => {
+                      const oppMap = new Map(
+                        simResult.overhangDiagnostics.map((d) => [
+                          d.cargoId,
+                          d.opportunity ? d.opportunity.requiredOverhangMm : 0,
+                        ])
+                      );
+                      setCargos((prev) =>
+                        prev.map((c) => ({
+                          ...c,
+                          allowedOverhang: oppMap.get(c.id) || 0,
+                        }))
+                      );
+                    }}
+                  >
+                    ⚠️ 감지된 돌출 일괄 허용 적용
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+                {simResult.overhangDiagnostics.map((diag) => {
+                  const opp = diag.opportunity;
+                  const t12Alt = diag.t12Alternative;
+                  const isOvApplied = diag.appliedOverhang > 0 && diag.isOverhangActive;
+
+                  return (
+                    <div
+                      key={diag.cargoId}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        background: isOvApplied
+                          ? 'rgba(245, 158, 11, 0.12)'
+                          : 'rgba(15, 23, 42, 0.75)',
+                        border: isOvApplied
+                          ? '1px solid rgba(245, 158, 11, 0.55)'
+                          : '1px solid rgba(148, 163, 184, 0.22)',
+                      }}
+                    >
+                      <div style={{ flex: '1 1 420px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span
+                            className="cbm-color-dot"
+                            style={{ background: diag.color }}
+                          />
+                          <strong style={{ fontSize: '0.92rem', color: '#f8fafc' }}>
+                            {diag.cargoName}
+                          </strong>
+                          <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                            ({diag.boxW}×{diag.boxL}×{diag.boxH}mm · {diag.quantity.toLocaleString()}박스)
+                          </span>
+                          <span className="cbm-spec-chip t11" style={{ fontSize: '0.73rem' }}>
+                            현재 파레트: {diag.palletW}×{diag.palletL}mm
+                          </span>
+                          {isOvApplied ? (
+                            <span
+                              style={{
+                                fontSize: '0.73rem',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '999px',
+                                background: 'rgba(245, 158, 11, 0.25)',
+                                color: '#fcd34d',
+                                border: '1px solid rgba(245, 158, 11, 0.5)',
+                              }}
+                            >
+                              ⚠️ 현재 돌출 허용 적용 중: 총 +{diag.current.maxOverhangMm}mm (편측 {diag.current.eachSideMax}mm)
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: '0.73rem',
+                                fontWeight: 600,
+                                padding: '2px 8px',
+                                borderRadius: '999px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                color: '#6ee7b7',
+                              }}
+                            >
+                              ✅ 정사이즈 적재 중 (돌출 0mm)
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ marginTop: '6px', fontSize: '0.8rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                          <div>
+                            • <strong>정사이즈(돌출 0mm) 적재 시:</strong> 1단{' '}
+                            <strong>{diag.strict.layerCount}박스</strong> (적재외곽 {diag.strict.spanW}×
+                            {diag.strict.spanL}mm) → 파레트당 {diag.strict.boxesPerPallet}박스 · 총{' '}
+                            <strong style={{ color: '#93c5fd' }}>{diag.strict.totalPallets} 파레트</strong>
+                          </div>
+
+                          {opp ? (
+                            <div style={{ color: '#fde68a', marginTop: '2px' }}>
+                              • <strong>💡 돌출 감지 결과:</strong> 파레트 밖으로{' '}
+                              <strong style={{ color: '#fbbf24', textDecoration: 'underline' }}>
+                                총 +{opp.requiredOverhangMm}mm (양쪽 편측 {opp.eachSideMax}mm, 외곽{' '}
+                                {opp.spanW}×{opp.spanL}mm)
+                              </strong>{' '}
+                              돌출 허용 시 → 1단{' '}
+                              <strong>
+                                {diag.strict.layerCount}박스 → {opp.layerCount}박스
+                              </strong>
+                              로 증가 ({diag.strict.totalPallets}PLT →{' '}
+                              <strong style={{ color: '#34d399' }}>{opp.totalPallets}PLT</strong>
+                              {opp.savedPallets > 0 ? `, ${opp.savedPallets}파레트 절감!` : ''})
+                            </div>
+                          ) : (
+                            <div style={{ color: '#94a3b8', marginTop: '2px' }}>
+                              • 150mm 이내 돌출로는 추가 적재 가능한 박스 열이 없습니다 (현재 정사이즈가 최적).
+                            </div>
+                          )}
+
+                          {t12Alt && (
+                            <div style={{ color: '#6ee7b7', marginTop: '2px' }}>
+                              • <strong>🔄 무돌출 파레트 변경 대안:</strong> 이 품목만{' '}
+                              <strong>1200×1000mm 파레트</strong>로 변경하면{' '}
+                              <strong>돌출(0mm) 없이 정사이즈</strong>로 1단{' '}
+                              <strong>{t12Alt.layerCount}박스</strong> (적재외곽 {t12Alt.spanW}×
+                              {t12Alt.spanL}mm, 총 <strong>{t12Alt.totalPallets}PLT</strong>) 적재가 가능합니다!
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 우측 허용/비허용 선택 컨트롤 */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className={`cbm-btn-xs ${!isOvApplied ? 'primary' : ''}`}
+                          onClick={() => handleCargoChange(diag.cargoId, 'allowedOverhang', 0)}
+                        >
+                          🔒 돌출 불허 (0mm)
+                        </button>
+
+                        {opp && (
+                          <button
+                            type="button"
+                            className="cbm-btn-xs"
+                            style={{
+                              background:
+                                diag.appliedOverhang >= opp.requiredOverhangMm
+                                  ? '#d97706'
+                                  : 'rgba(245, 158, 11, 0.16)',
+                              borderColor: '#f59e0b',
+                              color:
+                                diag.appliedOverhang >= opp.requiredOverhangMm
+                                  ? '#ffffff'
+                                  : '#fcd34d',
+                              fontWeight: 700,
+                            }}
+                            onClick={() =>
+                              handleCargoChange(
+                                diag.cargoId,
+                                'allowedOverhang',
+                                opp.requiredOverhangMm
+                              )
+                            }
+                          >
+                            ⚠️ +{opp.requiredOverhangMm}mm (편측 {opp.eachSideMax}mm) 돌출 허용
+                          </button>
+                        )}
+
+                        {t12Alt && (
+                          <button
+                            type="button"
+                            className="cbm-btn-xs"
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.18)',
+                              borderColor: '#10b981',
+                              color: '#6ee7b7',
+                              fontWeight: 700,
+                            }}
+                            onClick={() => {
+                              setPalletSelectionMode('CUSTOM_MIX');
+                              setCargos((prev) =>
+                                prev.map((c) =>
+                                  c.id === diag.cargoId
+                                    ? { ...c, palletSpecId: 'T12', allowedOverhang: 0 }
+                                    : c
+                                )
+                              );
+                            }}
+                          >
+                            🔄 1200×1000 파레트 사용 (돌출 0mm)
+                          </button>
+                        )}
+
+                        <label
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.74rem',
+                            color: '#94a3b8',
+                            marginLeft: '4px',
+                          }}
+                        >
+                          <span>직접입력:</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={150}
+                            step={5}
+                            value={diag.appliedOverhang}
+                            onChange={(e) =>
+                              handleCargoChange(
+                                diag.cargoId,
+                                'allowedOverhang',
+                                Math.max(0, Number(e.target.value) || 0)
+                              )
+                            }
+                            style={{
+                              width: '54px',
+                              padding: '3px 5px',
+                              borderRadius: '5px',
+                              border: '1px solid #475569',
+                              background: '#0f172a',
+                              color: '#f8fafc',
+                              fontSize: '0.76rem',
+                              textAlign: 'right',
+                            }}
+                          />
+                          <span>mm</span>
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 2-B: Pallet Breakdown Table & Single Pallet 2D/3D Visualization */}
           <div className="cbm-card">
@@ -1366,6 +1659,22 @@ export function CbmSimulator() {
                           >
                             {g.palletDim}
                           </span>
+                          {g.maxOverhangMm > 0 && (
+                            <span
+                              style={{
+                                marginLeft: '6px',
+                                fontSize: '0.7rem',
+                                padding: '2px 6px',
+                                borderRadius: '999px',
+                                background: 'rgba(245, 158, 11, 0.22)',
+                                color: '#fcd34d',
+                                border: '1px solid rgba(245, 158, 11, 0.45)',
+                                fontWeight: 700,
+                              }}
+                            >
+                              ⚠️ 돌출 +{g.maxOverhangMm}mm
+                            </span>
+                          )}
                         </td>
                         <td>{g.orientDesc}</td>
                         <td>
@@ -1491,11 +1800,21 @@ export function CbmSimulator() {
                       <p className="cbm-blueprint-sub">
                         파레트 사이즈: <strong>{currentPallet.width} × {currentPallet.length} mm</strong> | 1층 적재:{' '}
                         <strong>{currentPallet.layers[0]?.boxCount || 0}박스</strong>
+                        {currentPallet.maxOverhangMm > 0 ? (
+                          <span style={{ color: '#fbbf24', marginLeft: '8px', fontWeight: 700 }}>
+                            (⚠️ 돌출 +{currentPallet.maxOverhangMm}mm / 적재외곽{' '}
+                            {currentPallet.cargoSpanW}×{currentPallet.cargoSpanL}mm)
+                          </span>
+                        ) : (
+                          <span style={{ color: '#34d399', marginLeft: '8px' }}>
+                            (정사이즈 · 돌출 0mm)
+                          </span>
+                        )}
                       </p>
                       <div className="cbm-blueprint-svg-wrap">
                         <svg
-                          viewBox={`-70 -70 ${currentPallet.width + 140} ${
-                            currentPallet.length + 140
+                          viewBox={`-100 -100 ${currentPallet.width + 200} ${
+                            currentPallet.length + 200
                           }`}
                           className="cbm-pallet-2d-svg"
                         >
@@ -1514,7 +1833,7 @@ export function CbmSimulator() {
                           {/* Dimension Labels */}
                           <text
                             x={currentPallet.width / 2}
-                            y={-22}
+                            y={-34}
                             textAnchor="middle"
                             fill="#94a3b8"
                             fontSize="42"
@@ -1565,6 +1884,20 @@ export function CbmSimulator() {
                                 )}
                               </g>
                             ))}
+                          {/* Dashed Pallet Boundary Overlay when Overhang is Active */}
+                          {currentPallet.maxOverhangMm > 0 && (
+                            <rect
+                              x={0}
+                              y={0}
+                              width={currentPallet.width}
+                              height={currentPallet.length}
+                              fill="none"
+                              stroke="#fbbf24"
+                              strokeWidth={12}
+                              strokeDasharray="28,18"
+                              rx={14}
+                            />
+                          )}
                         </svg>
                       </div>
                     </div>

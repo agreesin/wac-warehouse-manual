@@ -323,6 +323,10 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         remaining: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         weight: Math.max(0, Number(c.weight) || 0),
         maxLayers: Math.max(0, Math.floor(Number(c.maxLayers) || 0)), // 품목별 최대 적재 단수 제한 (0 = 자동)
+        allowedOverhang:
+          c.allowedOverhang !== undefined && c.allowedOverhang !== null
+            ? Math.max(0, Number(c.allowedOverhang) || 0)
+            : overhang,
         color: c.color || CARGO_COLORS[idx % CARGO_COLORS.length],
         allowRotate: c.allowRotate !== false,
         palletSpecId: resolvedPallet.specId,
@@ -338,8 +342,9 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
   const unpackedErrors = [];
 
   for (const item of queue) {
-    const effW = item.palletW + overhang;
-    const effL = item.palletL + overhang;
+    const itemOv = item.allowedOverhang;
+    const effW = item.palletW + itemOv;
+    const effL = item.palletL + itemOv;
     const template = computeBest2DLayer(effW, effL, item.width, item.length, item.allowRotate);
     if (template.length === 0 || item.height > maxLoadH) {
       unpackedErrors.push({
@@ -770,12 +775,28 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     });
   }
 
-  // Compute CBM, Volume Utilization, and Local CoG per pallet
+  // Compute CBM, Volume Utilization, Overhang, and Local CoG per pallet
   for (const p of pallets) {
     let boxVolumeMm3 = 0;
+    let minBoxX = Infinity,
+      maxBoxX = -Infinity,
+      minBoxZ = Infinity,
+      maxBoxZ = -Infinity;
     for (const b of p.boxes) {
       boxVolumeMm3 += b.w * b.h * b.l;
+      if (b.x < minBoxX) minBoxX = b.x;
+      if (b.x + b.w > maxBoxX) maxBoxX = b.x + b.w;
+      if (b.z < minBoxZ) minBoxZ = b.z;
+      if (b.z + b.l > maxBoxZ) maxBoxZ = b.z + b.l;
     }
+    const cargoSpanW = p.boxes.length > 0 ? Math.round(maxBoxX - minBoxX) : 0;
+    const cargoSpanL = p.boxes.length > 0 ? Math.round(maxBoxZ - minBoxZ) : 0;
+    p.cargoSpanW = cargoSpanW;
+    p.cargoSpanL = cargoSpanL;
+    p.overhangW = Math.max(0, cargoSpanW - p.width);
+    p.overhangL = Math.max(0, cargoSpanL - p.length);
+    p.maxOverhangMm = Math.max(p.overhangW, p.overhangL);
+
     const palletEnvelopeMm3 = p.width * p.length * p.totalHeight;
     const maxAllowedCargoMm3 = p.width * p.length * maxLoadH;
     p.cargoCbm = Number((boxVolumeMm3 / 1e9).toFixed(3));
@@ -821,6 +842,11 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         palletDim: `${p.width}×${p.length}mm`,
         palletW: p.width,
         palletL: p.length,
+        cargoSpanW: p.cargoSpanW,
+        cargoSpanL: p.cargoSpanL,
+        overhangW: p.overhangW,
+        overhangL: p.overhangL,
+        maxOverhangMm: p.maxOverhangMm,
         palletCount: 0,
         firstLayerBoxCount: layer0Boxes.length,
         layerCount: p.layers.length,
@@ -1468,11 +1494,182 @@ export function autoRecommendPalletSpecs(cargos, overhang = 0) {
 }
 
 /**
+ * 사후 파레트 돌출(Overhang) 자동 감지 및 품목별 돌출 허용 시 적재 효율 분석
+ * - 정사이즈(0mm) 적재 결과와 소폭 돌출(1~150mm) 허용 시의 단당 적재 수량·파레트 절감 효과를 비교
+ * - 또한 1200×1000 파레트로 전환 시 돌출(0mm) 없이 적재 가능한지도 함께 진단
+ */
+export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
+  const baseH = Math.max(0, Number(palletConfig.baseHeight) ?? 150);
+  const maxTotalH = Math.max(baseH + 50, Number(palletConfig.maxTotalHeight) || 1700);
+  const maxLoadH = maxTotalH - baseH;
+  const maxCargoWeight = Math.max(1, Number(palletConfig.maxWeight) || 1000);
+  const defaultOv = Math.max(0, Number(options.overhang) || 0);
+
+  const measureBounds = (tpl) => {
+    if (!tpl || tpl.length === 0) return { count: 0, spanW: 0, spanL: 0 };
+    let minX = Infinity,
+      maxX = -Infinity,
+      minZ = Infinity,
+      maxZ = -Infinity;
+    for (const b of tpl) {
+      if (b.x < minX) minX = b.x;
+      if (b.x + b.w > maxX) maxX = b.x + b.w;
+      if (b.z < minZ) minZ = b.z;
+      if (b.z + b.l > maxZ) maxZ = b.z + b.l;
+    }
+    return {
+      count: tpl.length,
+      spanW: Math.round(maxX - minX),
+      spanL: Math.round(maxZ - minZ),
+    };
+  };
+
+  const calcPalletNeed = (perLayerCount, item) => {
+    if (perLayerCount <= 0) {
+      return { maxLayers: 0, boxesPerPallet: 0, totalPallets: 0 };
+    }
+    const maxLayersByH = Math.max(1, Math.floor(maxLoadH / Math.max(1, Number(item.height) || 1)));
+    const layerWeight = perLayerCount * Math.max(0, Number(item.weight) || 0);
+    const maxLayersByW =
+      layerWeight > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerWeight)) : maxLayersByH;
+    const customMaxL = Number(item.maxLayers) > 0 ? Math.floor(Number(item.maxLayers)) : 999;
+    const maxLayers = Math.max(1, Math.min(maxLayersByH, maxLayersByW, customMaxL));
+    const boxesPerPallet = perLayerCount * maxLayers;
+    const qty = Math.max(0, Math.floor(Number(item.quantity) || 0));
+    return {
+      maxLayers,
+      boxesPerPallet,
+      totalPallets: Math.ceil(qty / boxesPerPallet),
+    };
+  };
+
+  return cargos
+    .filter((c) => Number(c.quantity) > 0 && Number(c.width) > 0 && Number(c.length) > 0)
+    .map((c, idx) => {
+      const resolved = resolvePalletDimsForCargo(c, palletConfig);
+      const pW = resolved.width;
+      const pL = resolved.length;
+      const allowRot = c.allowRotate !== false;
+      const appliedOverhang =
+        c.allowedOverhang !== undefined && c.allowedOverhang !== null
+          ? Math.max(0, Number(c.allowedOverhang) || 0)
+          : defaultOv;
+
+      // 1. 정사이즈(0mm 돌출) 적재 기준
+      const strictTpl = computeBest2DLayer(pW, pL, c.width, c.length, allowRot);
+      const strictBounds = measureBounds(strictTpl);
+      const strictStats = calcPalletNeed(strictBounds.count, c);
+
+      // 2. 현재 적용된 돌출 기준
+      const curTpl = computeBest2DLayer(
+        pW + appliedOverhang,
+        pL + appliedOverhang,
+        c.width,
+        c.length,
+        allowRot
+      );
+      const curBounds = measureBounds(curTpl);
+      const curStats = calcPalletNeed(curBounds.count, c);
+      const curOverhangW = Math.max(0, curBounds.spanW - pW);
+      const curOverhangL = Math.max(0, curBounds.spanL - pL);
+      const curMaxOverhangMm = Math.max(curOverhangW, curOverhangL);
+
+      // 3. 소폭 돌출(1~150mm) 허용 시 적재 수량이 증가하는 최소 돌출 구간 탐색
+      let opportunity = null;
+      for (let testOv = 2; testOv <= 150; testOv += 2) {
+        const candTpl = computeBest2DLayer(
+          pW + testOv,
+          pL + testOv,
+          c.width,
+          c.length,
+          allowRot
+        );
+        if (candTpl.length > strictBounds.count) {
+          const candBounds = measureBounds(candTpl);
+          const ovW = Math.max(0, candBounds.spanW - pW);
+          const ovL = Math.max(0, candBounds.spanL - pL);
+          const exactOvMm = Math.max(ovW, ovL);
+          const candStats = calcPalletNeed(candBounds.count, c);
+          opportunity = {
+            requiredOverhangMm: exactOvMm,
+            overhangW: ovW,
+            overhangL: ovL,
+            eachSideW: Number((ovW / 2).toFixed(1)),
+            eachSideL: Number((ovL / 2).toFixed(1)),
+            eachSideMax: Number((exactOvMm / 2).toFixed(1)),
+            spanW: candBounds.spanW,
+            spanL: candBounds.spanL,
+            layerCount: candBounds.count,
+            boxesPerPallet: candStats.boxesPerPallet,
+            totalPallets: candStats.totalPallets,
+            savedPallets: Math.max(0, strictStats.totalPallets - candStats.totalPallets),
+            needsOverhangToFitAtAll: strictBounds.count === 0,
+          };
+          break;
+        }
+      }
+
+      // 4. 1200×1000 (T12) 파레트 사용 시 돌출(0mm) 없이 적재 수량이 늘어나는지 확인
+      const t12Tpl = computeBest2DLayer(1200, 1000, c.width, c.length, allowRot);
+      const t12Bounds = measureBounds(t12Tpl);
+      const t12Stats = calcPalletNeed(t12Bounds.count, c);
+      const canSolveWithT12NoOverhang =
+        (pW !== 1200 || pL !== 1000) && t12Bounds.count > strictBounds.count;
+
+      return {
+        cargoId: c.id || `cargo-${idx + 1}`,
+        cargoName: c.name || `화물 ${idx + 1}`,
+        color: c.color || CARGO_COLORS[idx % CARGO_COLORS.length],
+        boxW: Number(c.width),
+        boxL: Number(c.length),
+        boxH: Number(c.height),
+        quantity: Number(c.quantity),
+        palletSpecId: resolved.specId,
+        palletSpecName: resolved.specName,
+        palletW: pW,
+        palletL: pL,
+        appliedOverhang,
+        isOverhangActive: curMaxOverhangMm > 0,
+        strict: {
+          layerCount: strictBounds.count,
+          spanW: strictBounds.spanW,
+          spanL: strictBounds.spanL,
+          boxesPerPallet: strictStats.boxesPerPallet,
+          totalPallets: strictStats.totalPallets,
+        },
+        current: {
+          layerCount: curBounds.count,
+          spanW: curBounds.spanW,
+          spanL: curBounds.spanL,
+          overhangW: curOverhangW,
+          overhangL: curOverhangL,
+          maxOverhangMm: curMaxOverhangMm,
+          eachSideMax: Number((curMaxOverhangMm / 2).toFixed(1)),
+          boxesPerPallet: curStats.boxesPerPallet,
+          totalPallets: curStats.totalPallets,
+        },
+        opportunity,
+        t12Alternative: canSolveWithT12NoOverhang
+          ? {
+              layerCount: t12Bounds.count,
+              spanW: t12Bounds.spanW,
+              spanL: t12Bounds.spanL,
+              boxesPerPallet: t12Stats.boxesPerPallet,
+              totalPallets: t12Stats.totalPallets,
+              savedPallets: Math.max(0, strictStats.totalPallets - t12Stats.totalPallets),
+            }
+          : null,
+      };
+    });
+}
+
+/**
  * 전체 시뮬레이션 통합 실행 (파레트 규격별 비교 + 컨테이너 규격별 비교 포함)
  */
 export function runFullSimulation(cargos, palletConfig, selectedContainerId, options = {}) {
   const palletResult = packCargosIntoPallets(cargos, palletConfig, options);
   const { pallets, palletWeightGroups, unpackedErrors } = palletResult;
+  const overhangDiagnostics = analyzeOverhangDiagnostics(cargos, palletConfig, options);
 
   const selectedSpec =
     CONTAINER_SPECS[selectedContainerId] || CONTAINER_SPECS['40FT_HC'];
@@ -1600,6 +1797,7 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
     pallets,
     palletWeightGroups,
     palletSpecComparison,
+    overhangDiagnostics,
     unpackedErrors,
     selectedSpec,
     containerResult,
