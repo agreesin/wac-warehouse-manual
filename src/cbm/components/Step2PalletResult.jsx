@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   computeBest2DLayer,
   resolvePalletDimsForCargo,
@@ -31,6 +31,9 @@ export function Step2PalletResult({
   setExplodePalletLayers,
   handleRunStep2ToStep3,
 }) {
+  // 상자 적재 패턴 및 자세 미세 조정 접이식 아코디언 상태
+  const [showStackingDetails, setShowStackingDetails] = useState(false);
+
   // 현재 선택된 파레트 규격에 대한 40HC 컨테이너 바닥 완적 기준 소요 대수 실시간 계산
   const { currentModePallets, currentModeLabel, currentModeHcEst } = useMemo(() => {
     if (palletSelectionMode === 'CUSTOM_MIX') {
@@ -59,9 +62,9 @@ export function Step2PalletResult({
         <div className="cbm-section-banner-left">
           <span className="cbm-step-badge badge-amber">STEP 2</span>
           <div>
-            <h2>파레트 종류(사이즈)별 필요 수량 및 한 파레트 적재 시각화</h2>
+            <h2>파레트 규격 선택 및 한 파레트 적재 시뮬레이션</h2>
             <p>
-              파레트 사이즈(단일 규격 통일 또는 품목별 여러 사이즈 섞어 쓰기)를 선택하면 총 몇 파레트가 나오는지, 그리고 한 파레트에 박스를 어떻게 쌓으면 되는지 보여줍니다.
+              파레트 규격을 선택하면 총 파레트 수와 40HC 컨테이너 소요 대수, 그리고 한 파레트에 박스가 어떻게 쌓이는지 2D/3D로 즉시 시각화합니다.
             </p>
           </div>
         </div>
@@ -107,7 +110,6 @@ export function Step2PalletResult({
             <div className="cbm-pm-sub">
               화물 치수에 맞춰 1100×1100과 1200×1000 등을 품목별로 조합 ({customMixComparison?.usedSpecs})
             </div>
-            {/* 40HC 컨테이너 바닥 완적 기준 소요 대수 표시 */}
             <div className="cbm-pm-hc-badge-row">
               <span className="cbm-pm-hc-badge">
                 🚢 40HC 바닥 완적: 약 <strong>{mixHcEst.containerCount}대</strong>
@@ -136,7 +138,6 @@ export function Step2PalletResult({
                   모든 화물을 {specItem.width}×{specItem.length}mm 파레트로 통일 | 평균 공간효율{' '}
                   {specItem.avgUtilization}%
                 </div>
-                {/* 40HC 컨테이너 바닥 완적 기준 소요 대수 표시 */}
                 <div className="cbm-pm-hc-badge-row">
                   <span className="cbm-pm-hc-badge">
                     🚢 40HC 바닥 완적: 약 <strong>{specHcEst.containerCount}대</strong>
@@ -239,403 +240,16 @@ export function Step2PalletResult({
         )}
       </div>
 
-      {/* 2-A-2: 파레트 적재 후 돌출(Overhang) 자동 진단 & 허용 여부 선택 패널 */}
-      {simResult.overhangDiagnostics && simResult.overhangDiagnostics.length > 0 && (
-        <div
-          className="cbm-card"
-          style={{
-            border: '1px solid rgba(245, 158, 11, 0.45)',
-            background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.95))',
-          }}
-        >
-          <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
-            <div>
-              <h2 style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                📏 파레트 적재 후 돌출(Overhang) 자동 감지 & 허용 여부 선택
-              </h2>
-              <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                파레트에 정사이즈(0mm)로 먼저 적재한 뒤, 각 품목별로 <strong>몇 mm 돌출되는지</strong>와{' '}
-                <strong>돌출 허용 시 줄어드는 파레트 수</strong>를 자동 분석했습니다. 품목별로 허용 여부를 선택하세요.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="cbm-btn-xs"
-                onClick={() => {
-                  setOverhang(0);
-                  setCargos((prev) =>
-                    prev.map((c) => ({ ...c, allowedOverhang: 0 }))
-                  );
-                }}
-              >
-                🔒 전 품목 정사이즈 (돌출 0mm 초기화)
-              </button>
-              <button
-                type="button"
-                className="cbm-btn-xs primary"
-                style={{ background: '#d97706', borderColor: '#f59e0b' }}
-                onClick={() => {
-                  const oppMap = new Map(
-                    simResult.overhangDiagnostics.map((d) => [
-                      d.cargoId,
-                      d.opportunity ? d.opportunity.requiredOverhangMm : 0,
-                    ])
-                  );
-                  setCargos((prev) =>
-                    prev.map((c) => ({
-                      ...c,
-                      allowedOverhang: oppMap.get(c.id) || 0,
-                    }))
-                  );
-                }}
-              >
-                ⚠️ 감지된 돌출 일괄 허용 적용
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
-            {simResult.overhangDiagnostics.map((diag) => {
-              const opp = diag.opportunity;
-              const t12Alt = diag.t12Alternative;
-              const isOvApplied = diag.appliedOverhang > 0 && diag.isOverhangActive;
-
-              return (
-                <div
-                  key={diag.cargoId}
-                  className="cbm-overhang-diag-card"
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                    padding: '12px 14px',
-                    borderRadius: '10px',
-                    background: isOvApplied
-                      ? 'rgba(245, 158, 11, 0.12)'
-                      : 'rgba(15, 23, 42, 0.75)',
-                    border: isOvApplied
-                      ? '1px solid rgba(245, 158, 11, 0.55)'
-                      : '1px solid rgba(148, 163, 184, 0.22)',
-                  }}
-                >
-                  <div className="cbm-overhang-item-info">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span
-                        className="cbm-color-dot"
-                        style={{ background: diag.color }}
-                      />
-                      <strong style={{ fontSize: '0.92rem', color: '#f8fafc' }}>
-                        {diag.cargoName}
-                      </strong>
-                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                        ({diag.boxW}×{diag.boxL}×{diag.boxH}mm · {diag.quantity.toLocaleString()}박스)
-                      </span>
-                      <span className="cbm-spec-chip t11" style={{ fontSize: '0.73rem' }}>
-                        현재 파레트: {diag.palletW}×{diag.palletL}mm
-                      </span>
-                      {isOvApplied ? (
-                        <span
-                          style={{
-                            fontSize: '0.73rem',
-                            fontWeight: 700,
-                            padding: '2px 8px',
-                            borderRadius: '999px',
-                            background: 'rgba(245, 158, 11, 0.25)',
-                            color: '#fcd34d',
-                            border: '1px solid rgba(245, 158, 11, 0.5)',
-                          }}
-                        >
-                          ⚠️ 현재 돌출 허용 적용 중: 총 +{diag.current.maxOverhangMm}mm (편측 {diag.current.eachSideMax}mm)
-                        </span>
-                      ) : (
-                        <span
-                          style={{
-                            fontSize: '0.73rem',
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: '999px',
-                            background: 'rgba(16, 185, 129, 0.15)',
-                            color: '#6ee7b7',
-                          }}
-                        >
-                          ✅ 정사이즈 적재 중 (돌출 0mm)
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ marginTop: '6px', fontSize: '0.8rem', color: '#cbd5e1', lineHeight: 1.5 }}>
-                      <div>
-                        • <strong>정사이즈(돌출 0mm) 적재 시:</strong> 1단{' '}
-                        <strong>{diag.strict.layerCount}박스</strong> (적재외곽 {diag.strict.spanW}×
-                        {diag.strict.spanL}mm) → 파레트당 {diag.strict.boxesPerPallet}박스 · 총{' '}
-                        <strong style={{ color: '#93c5fd' }}>{diag.strict.totalPallets} 파레트</strong>
-                      </div>
-
-                      {opp ? (
-                        <div style={{ color: '#fde68a', marginTop: '2px' }}>
-                          • <strong>💡 돌출 감지 결과:</strong> 파레트 밖으로{' '}
-                          <strong style={{ color: '#fbbf24', textDecoration: 'underline' }}>
-                            총 +{opp.requiredOverhangMm}mm (양쪽 편측 {opp.eachSideMax}mm, 외곽{' '}
-                            {opp.spanW}×{opp.spanL}mm)
-                          </strong>{' '}
-                          돌출 허용 시 → 1단{' '}
-                          <strong>
-                            {diag.strict.layerCount}박스 → {opp.layerCount}박스
-                          </strong>
-                          로 증가 ({diag.strict.totalPallets}PLT →{' '}
-                          <strong style={{ color: '#34d399' }}>{opp.totalPallets}PLT</strong>
-                          {opp.savedPallets > 0 ? `, ${opp.savedPallets}파레트 절감!` : ''})
-                        </div>
-                      ) : (
-                        <div style={{ color: '#94a3b8', marginTop: '2px' }}>
-                          • 150mm 이내 돌출로는 추가 적재 가능한 박스 열이 없습니다 (현재 정사이즈가 최적).
-                        </div>
-                      )}
-
-                      {t12Alt && (
-                        <div style={{ color: '#6ee7b7', marginTop: '2px' }}>
-                          • <strong>🔄 무돌출 파레트 변경 대안:</strong> 이 품목만{' '}
-                          <strong>1200×1000mm 파레트</strong>로 변경하면{' '}
-                          <strong>돌출(0mm) 없이 정사이즈</strong>로 1단{' '}
-                          <strong>{t12Alt.layerCount}박스</strong> (적재외곽 {t12Alt.spanW}×
-                          {t12Alt.spanL}mm, 총 <strong>{t12Alt.totalPallets}PLT</strong>) 적재가 가능합니다!
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 우측 허용/비허용 선택 컨트롤 */}
-                  <div className="cbm-overhang-item-actions">
-                    <button
-                      type="button"
-                      className={`cbm-btn-xs ${!isOvApplied ? 'primary' : ''}`}
-                      onClick={() => handleCargoChange(diag.cargoId, 'allowedOverhang', 0)}
-                    >
-                      🔒 돌출 불허 (0mm)
-                    </button>
-
-                    {opp && (
-                      <button
-                        type="button"
-                        className="cbm-btn-xs"
-                        style={{
-                          background:
-                            diag.appliedOverhang >= opp.requiredOverhangMm
-                              ? '#d97706'
-                              : 'rgba(245, 158, 11, 0.16)',
-                          borderColor: '#f59e0b',
-                          color:
-                            diag.appliedOverhang >= opp.requiredOverhangMm
-                              ? '#ffffff'
-                              : '#fcd34d',
-                          fontWeight: 700,
-                        }}
-                        onClick={() =>
-                          handleCargoChange(
-                            diag.cargoId,
-                            'allowedOverhang',
-                            opp.requiredOverhangMm
-                          )
-                        }
-                      >
-                        ⚠️ +{opp.requiredOverhangMm}mm (편측 {opp.eachSideMax}mm) 돌출 허용
-                      </button>
-                    )}
-
-                    {t12Alt && (
-                      <button
-                        type="button"
-                        className="cbm-btn-xs"
-                        style={{
-                          background: 'rgba(16, 185, 129, 0.18)',
-                          borderColor: '#10b981',
-                          color: '#6ee7b7',
-                          fontWeight: 700,
-                        }}
-                        onClick={() => {
-                          setPalletSelectionMode('CUSTOM_MIX');
-                          setCargos((prev) =>
-                            prev.map((c) =>
-                              c.id === diag.cargoId
-                                ? { ...c, palletSpecId: 'T12', allowedOverhang: 0 }
-                                : c
-                            )
-                          );
-                        }}
-                      >
-                        🔄 1200×1000 파레트 사용 (돌출 0mm)
-                      </button>
-                    )}
-
-                    <label
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '0.74rem',
-                        color: '#94a3b8',
-                        marginLeft: '4px',
-                      }}
-                    >
-                      <span>직접입력:</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={150}
-                        step={5}
-                        value={diag.appliedOverhang}
-                        onChange={(e) =>
-                          handleCargoChange(
-                            diag.cargoId,
-                            'allowedOverhang',
-                            Math.max(0, Number(e.target.value) || 0)
-                          )
-                        }
-                        style={{
-                          width: '54px',
-                          padding: '3px 5px',
-                          borderRadius: '5px',
-                          border: '1px solid #475569',
-                          background: '#0f172a',
-                          color: '#f8fafc',
-                          fontSize: '0.76rem',
-                          textAlign: 'right',
-                        }}
-                      />
-                      <span>mm</span>
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 2-B: Pallet Breakdown Table & Single Pallet 2D/3D Visualization */}
+      {/* 2-B: 파레트 적재 도면 (2D) 및 3D 시뮬레이션 (위쪽으로 이동!) */}
       <div className="cbm-card">
         <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
           <div>
-            <h2>
-              2-B. 품목별 산출 파레트 내역 및 「한 파레트에 어떻게 적재하면 되는지」 시각화
-            </h2>
-            <span className="cbm-badge" style={{ display: 'inline-block', marginTop: '4px' }}>
-              표의 행을 클릭하면 아래 적재 도면과 3D가 전환됩니다
-            </span>
+            <h2>2-B. 파레트 적재 도면 (2D) 및 3D 시뮬레이션</h2>
+            <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#cbd5e1' }}>
+              선택한 파레트에 화물이 실제로 어떻게 적재되는지 2D 평면 도면과 3D 뷰어로 실시간 확인합니다.
+            </p>
           </div>
-        </div>
-
-        {/* Summary Table by Pallet Group */}
-        <div className="cbm-weight-table-wrap" style={{ marginBottom: '18px' }}>
-          <table className="cbm-weight-summary-table">
-            <thead>
-              <tr>
-                <th>품목 및 파레트당 박스 수</th>
-                <th>사용 파레트 규격</th>
-                <th>한 파레트 1층 배열 방식</th>
-                <th>적재 단수 (높이)</th>
-                <th>파레트 수</th>
-                <th>파레트당 중량</th>
-                <th>합계 중량</th>
-                <th>적재 방법 시각화</th>
-              </tr>
-            </thead>
-            <tbody>
-              {simResult.palletWeightGroups.map((g, idx) => {
-                const isSelectedGroup =
-                  currentPallet && g.palletIndices.includes(currentPallet.index);
-                return (
-                  <tr
-                    key={idx}
-                    className={isSelectedGroup ? 'selected-group-row' : ''}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      setSelectedPalletIdx(g.samplePalletIndex);
-                      setPalletVisibleStep(100);
-                    }}
-                  >
-                    <td>
-                      <strong>{g.label}</strong>
-                    </td>
-                    <td>
-                      <span
-                        className={`cbm-spec-chip ${
-                          g.palletDim.includes('1200×1000') ? 't12' : 't11'
-                        }`}
-                      >
-                        {g.palletDim}
-                      </span>
-                      {g.maxOverhangMm > 0 && (
-                        <span
-                          style={{
-                            marginLeft: '6px',
-                            fontSize: '0.7rem',
-                            padding: '2px 6px',
-                            borderRadius: '999px',
-                            background: 'rgba(245, 158, 11, 0.22)',
-                            color: '#fcd34d',
-                            border: '1px solid rgba(245, 158, 11, 0.45)',
-                            fontWeight: 700,
-                          }}
-                        >
-                          ⚠️ 돌출 +{g.maxOverhangMm}mm
-                        </span>
-                      )}
-                    </td>
-                    <td>{g.orientDesc}</td>
-                    <td>
-                      <strong>{g.layerCount}단</strong> ({g.totalHeight}mm)
-                    </td>
-                    <td>
-                      <strong style={{ color: '#38bdf8' }}>{g.palletCount}개</strong>
-                    </td>
-                    <td>약 {g.unitPalletWeight.toFixed(1)}kg</td>
-                    <td>
-                      <strong>{g.totalGroupWeight.toLocaleString()}kg</strong>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className={`cbm-btn-xs ${isSelectedGroup ? 'primary' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPalletIdx(g.samplePalletIndex);
-                          setPalletVisibleStep(100);
-                        }}
-                      >
-                        🔍 이 파레트 보기
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>
-                  <strong>총합</strong>
-                </td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>
-                  <strong style={{ color: '#38bdf8', fontSize: '14.5px' }}>
-                    총 {simResult.summary.totalPallets}개 파레트
-                  </strong>
-                </td>
-                <td>-</td>
-                <td>
-                  <strong style={{ color: '#fbbf24', fontSize: '14.5px' }}>
-                    {simResult.summary.totalWeight.toLocaleString()}kg
-                  </strong>
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+          <span className="cbm-badge">🖱️ 3D 드래그로 회전 · 휠로 확대/축소</span>
         </div>
 
         {/* Single Pallet Selector & 2D/3D Split Visualizer */}
@@ -643,7 +257,7 @@ export function Step2PalletResult({
           <div className="cbm-single-pallet-visualizer">
             <div className="cbm-vis-subheader">
               <div className="cbm-pallet-selector-bar">
-                <label>📦 현재 보고 있는 파레트:</label>
+                <label>📦 보고 있는 파레트:</label>
                 <select
                   value={selectedPalletIdx}
                   onChange={(e) => {
@@ -675,7 +289,7 @@ export function Step2PalletResult({
                     disabled={selectedPalletIdx <= 0}
                     onClick={() => setSelectedPalletIdx((i) => Math.max(0, i - 1))}
                   >
-                    ◀ 이전 파레트
+                    ◀ 이전
                   </button>
                   <button
                     type="button"
@@ -686,7 +300,7 @@ export function Step2PalletResult({
                       )
                     }
                   >
-                    다음 파레트 ▶
+                    다음 ▶
                   </button>
                 </div>
               </div>
@@ -697,330 +311,9 @@ export function Step2PalletResult({
                   checked={explodePalletLayers}
                   onChange={(e) => setExplodePalletLayers(e.target.checked)}
                 />
-                <span>층간 분리뷰(Explode) 켜기</span>
+                <span>층간 분리뷰(Explode)</span>
               </label>
             </div>
-
-            {/* 🧱 상자를 어떻게 쌓을지 선택 (1층 평면 배열 패턴 · 층간 교차 방식 · 상자 세움/눕힘 자세) */}
-            {simResult.stackingDiagnostics &&
-              simResult.stackingDiagnostics.length > 0 &&
-              (() => {
-                const activeCargoDiag =
-                  simResult.stackingDiagnostics.find(
-                    (d) => d.cargoId === currentPallet.primaryCargoId
-                  ) || simResult.stackingDiagnostics[0];
-                if (!activeCargoDiag) return null;
-
-                return (
-                  <div
-                    style={{
-                      marginBottom: '14px',
-                      padding: '14px 16px',
-                      borderRadius: '11px',
-                      background: 'rgba(15, 23, 42, 0.85)',
-                      border: '1px solid rgba(56, 189, 248, 0.35)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: '10px',
-                        marginBottom: '10px',
-                        paddingBottom: '8px',
-                        borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#38bdf8' }}>
-                          🧱 상자를 어떻게 쌓을지 선택 (적재 패턴 · 층간 방식 · 세움/눕힘 자세)
-                        </span>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '3px 10px',
-                            borderRadius: '999px',
-                            background: 'rgba(30, 41, 59, 0.9)',
-                            border: '1px solid rgba(148, 163, 184, 0.3)',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            color: '#f8fafc',
-                          }}
-                        >
-                          <span
-                            className="cbm-color-dot"
-                            style={{ background: activeCargoDiag.color }}
-                          />
-                          현재 설정 품목: {activeCargoDiag.cargoName}
-                        </span>
-                      </div>
-
-                      {/* 품목 빠른 전환 탭 */}
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {simResult.stackingDiagnostics.map((d) => {
-                          const isCurrent = d.cargoId === activeCargoDiag.cargoId;
-                          return (
-                            <button
-                              key={d.cargoId}
-                              type="button"
-                              className="cbm-btn-xs"
-                              style={{
-                                background: isCurrent ? '#2563eb' : 'rgba(30, 41, 59, 0.7)',
-                                borderColor: isCurrent ? '#3b82f6' : '#475569',
-                                color: isCurrent ? '#ffffff' : '#cbd5e1',
-                                fontWeight: isCurrent ? 700 : 500,
-                              }}
-                              onClick={() => {
-                                const sampleIdx = simResult.pallets.findIndex(
-                                  (p) => p.primaryCargoId === d.cargoId
-                                );
-                                if (sampleIdx !== -1) setSelectedPalletIdx(sampleIdx);
-                              }}
-                            >
-                              {d.cargoName} 설정 보기
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="cbm-stacking-options-grid">
-                      {/* ① 1층 평면 배열 모양 (5종) */}
-                      <div
-                        style={{
-                          background: 'rgba(30, 41, 59, 0.55)',
-                          border: '1px solid rgba(148, 163, 184, 0.2)',
-                          borderRadius: '9px',
-                          padding: '10px 12px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.8rem',
-                            fontWeight: 700,
-                            color: '#93c5fd',
-                            marginBottom: '6px',
-                          }}
-                        >
-                          ① 한 층(1단) 평면 배열 모양 선택
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                          {activeCargoDiag.patternOptions.map((opt) => {
-                            const isSel = activeCargoDiag.currentPattern === opt.id;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() =>
-                                  handleCargoChange(
-                                    activeCargoDiag.cargoId,
-                                    'layerPattern',
-                                    opt.id
-                                  )
-                                }
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'center',
-                                  padding: '6px 9px',
-                                  borderRadius: '7px',
-                                  border: isSel
-                                    ? '1px solid #38bdf8'
-                                    : '1px solid rgba(148, 163, 184, 0.18)',
-                                  background: isSel
-                                    ? 'rgba(56, 189, 248, 0.18)'
-                                    : 'rgba(15, 23, 42, 0.65)',
-                                  color: '#f8fafc',
-                                  cursor: 'pointer',
-                                  textAlign: 'left',
-                                  fontSize: '0.77rem',
-                                }}
-                              >
-                                <div>
-                                  <strong style={{ color: isSel ? '#38bdf8' : '#e2e8f0' }}>
-                                    {opt.label}
-                                  </strong>
-                                  <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                                    {opt.shortDesc}
-                                  </div>
-                                </div>
-                                <span
-                                  style={{
-                                    fontSize: '0.73rem',
-                                    fontWeight: 700,
-                                    color: isSel ? '#fde047' : '#cbd5e1',
-                                    whiteSpace: 'nowrap',
-                                    marginLeft: '8px',
-                                  }}
-                                >
-                                  1단 {opt.layerBoxCount}박스 · {opt.totalPallets}PLT
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* ② 위로 단을 올릴 때 층간 쌓기 방식 (3종) & ③ 상자 세움/눕힘 자세 (3종) */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <div
-                          style={{
-                            background: 'rgba(30, 41, 59, 0.55)',
-                            border: '1px solid rgba(148, 163, 184, 0.2)',
-                            borderRadius: '9px',
-                            padding: '10px 12px',
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              color: '#fcd34d',
-                              marginBottom: '6px',
-                            }}
-                          >
-                            ② 위로 단을 쌓아 올리는 방식 (층간 교차 vs 수직 기둥)
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                            {activeCargoDiag.stackStyleOptions.map((stOpt) => {
-                              const isSel = activeCargoDiag.currentStackStyle === stOpt.id;
-                              return (
-                                <button
-                                  key={stOpt.id}
-                                  type="button"
-                                  onClick={() =>
-                                    handleCargoChange(
-                                      activeCargoDiag.cargoId,
-                                      'stackingStyle',
-                                      stOpt.id
-                                    )
-                                  }
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '6px 9px',
-                                    borderRadius: '7px',
-                                    border: isSel
-                                      ? '1px solid #f59e0b'
-                                      : '1px solid rgba(148, 163, 184, 0.18)',
-                                    background: isSel
-                                      ? 'rgba(245, 158, 11, 0.18)'
-                                      : 'rgba(15, 23, 42, 0.65)',
-                                    color: '#f8fafc',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                    fontSize: '0.77rem',
-                                  }}
-                                >
-                                  <div>
-                                    <strong style={{ color: isSel ? '#fbbf24' : '#e2e8f0' }}>
-                                      {stOpt.label}
-                                    </strong>
-                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                                      {stOpt.shortDesc}
-                                    </div>
-                                  </div>
-                                  <span
-                                    style={{
-                                      fontSize: '0.72rem',
-                                      fontWeight: 700,
-                                      color: isSel ? '#fbbf24' : '#64748b',
-                                      marginLeft: '8px',
-                                    }}
-                                  >
-                                    {isSel ? '적용 중' : '선택'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            background: 'rgba(30, 41, 59, 0.55)',
-                            border: '1px solid rgba(148, 163, 184, 0.2)',
-                            borderRadius: '9px',
-                            padding: '10px 12px',
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              color: '#6ee7b7',
-                              marginBottom: '6px',
-                            }}
-                          >
-                            ③ 상자 놓는 자세 (세워 쌓기 vs 옆/앞으로 눕혀 쌓기)
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                            {activeCargoDiag.postureOptions.map((posOpt) => {
-                              const isSel = activeCargoDiag.currentPosture === posOpt.id;
-                              return (
-                                <button
-                                  key={posOpt.id}
-                                  type="button"
-                                  onClick={() =>
-                                    handleCargoChange(
-                                      activeCargoDiag.cargoId,
-                                      'boxPosture',
-                                      posOpt.id
-                                    )
-                                  }
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '6px 9px',
-                                    borderRadius: '7px',
-                                    border: isSel
-                                      ? '1px solid #10b981'
-                                      : '1px solid rgba(148, 163, 184, 0.18)',
-                                    background: isSel
-                                      ? 'rgba(16, 185, 129, 0.18)'
-                                      : 'rgba(15, 23, 42, 0.65)',
-                                    color: '#f8fafc',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                    fontSize: '0.77rem',
-                                  }}
-                                >
-                                  <div>
-                                    <strong style={{ color: isSel ? '#34d399' : '#e2e8f0' }}>
-                                      {posOpt.label}
-                                    </strong>
-                                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                                      {posOpt.dimText}
-                                    </div>
-                                  </div>
-                                  <span
-                                    style={{
-                                      fontSize: '0.73rem',
-                                      fontWeight: 700,
-                                      color: isSel ? '#6ee7b7' : '#cbd5e1',
-                                      whiteSpace: 'nowrap',
-                                      marginLeft: '8px',
-                                    }}
-                                  >
-                                    1단 {posOpt.layerBoxCount}박스 · {posOpt.maxLayers}단 (
-                                    {posOpt.totalPallets}PLT)
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
 
             <div className="cbm-pallet-split-view">
               {/* Left: 2D Top-Down Layer Blueprint & Loading Guide */}
@@ -1028,12 +321,11 @@ export function Step2PalletResult({
                 <div className="cbm-blueprint-box">
                   <h3>📐 한 파레트 1층 평면 적재 도면 (위에서 본 모습)</h3>
                   <p className="cbm-blueprint-sub">
-                    파레트 사이즈: <strong>{currentPallet.width} × {currentPallet.length} mm</strong> | 1층 적재:{' '}
+                    파레트: <strong>{currentPallet.width} × {currentPallet.length} mm</strong> | 1층:{' '}
                     <strong>{currentPallet.layers[0]?.boxCount || 0}박스</strong>
                     {currentPallet.maxOverhangMm > 0 ? (
                       <span style={{ color: '#fbbf24', marginLeft: '8px', fontWeight: 700 }}>
-                        (⚠️ 돌출 +{currentPallet.maxOverhangMm}mm / 적재외곽{' '}
-                        {currentPallet.cargoSpanW}×{currentPallet.cargoSpanL}mm)
+                        (⚠️ 돌출 +{currentPallet.maxOverhangMm}mm / 외곽 {currentPallet.cargoSpanW}×{currentPallet.cargoSpanL}mm)
                       </span>
                     ) : (
                       <span style={{ color: '#34d399', marginLeft: '8px' }}>
@@ -1134,7 +426,7 @@ export function Step2PalletResult({
 
                 {/* Worker Loading Guide Box */}
                 <div className="cbm-pallet-info-list">
-                  <h4>📋 Pallet #{currentPallet.index} 적재 작업 가이드</h4>
+                  <h4>📋 Pallet #{currentPallet.index} 적재 가이드</h4>
                   <div className="cbm-info-row">
                     <span>파레트 규격:</span>
                     <strong>
@@ -1142,28 +434,27 @@ export function Step2PalletResult({
                     </strong>
                   </div>
                   <div className="cbm-info-row">
-                    <span>1층(단) 적재 수량:</span>
+                    <span>1층 적재 수량:</span>
                     <strong>{currentPallet.layers[0]?.boxCount || 0} 박스 / 층</strong>
                   </div>
                   <div className="cbm-info-row">
-                    <span>총 적재 단수 / 박스수:</span>
+                    <span>적재 단수 / 박스수:</span>
                     <strong>
                       {currentPallet.layers.length}단 적재 / 총{' '}
                       {currentPallet.boxes.length.toLocaleString()} 박스
                     </strong>
                   </div>
                   <div className="cbm-info-row">
-                    <span>총 높이 (파레트 포함):</span>
+                    <span>총 높이:</span>
                     <strong>
                       {currentPallet.totalHeight} mm (파레트 {currentPallet.baseHeight}mm + 화물{' '}
                       {currentPallet.cargoHeight}mm)
                     </strong>
                   </div>
                   <div className="cbm-info-row">
-                    <span>파레트당 총 중량:</span>
+                    <span>파레트 총 중량:</span>
                     <strong style={{ color: '#fbbf24' }}>
-                      약 {currentPallet.totalWeight.toFixed(1)} kg (화물 {currentPallet.cargoHeight > 0 ? currentPallet.cargoWeight : 0}kg + 자중{' '}
-                      {currentPallet.tareWeight}kg)
+                      약 {currentPallet.totalWeight.toFixed(1)} kg
                     </strong>
                   </div>
                 </div>
@@ -1186,10 +477,10 @@ export function Step2PalletResult({
                       setIsPalletPlaying((p) => !p);
                     }}
                   >
-                    {isPalletPlaying ? '⏸ 일시정지' : '▶ 박스 적재 순서 재생'}
+                    {isPalletPlaying ? '⏸ 일시정지' : '▶ 적재 순서 재생'}
                   </button>
                   <div className="cbm-slider-wrap">
-                    <span>적재 순서 ({palletVisibleStep}%)</span>
+                    <span>순서 ({palletVisibleStep}%)</span>
                     <input
                       type="range"
                       min={1}
@@ -1206,7 +497,632 @@ export function Step2PalletResult({
             </div>
           </div>
         )}
+
+        {/* Summary Table by Pallet Group */}
+        <div className="cbm-weight-table-wrap" style={{ marginTop: '16px' }}>
+          <table className="cbm-weight-summary-table">
+            <thead>
+              <tr>
+                <th>품목 및 파레트당 박스 수</th>
+                <th>사용 규격</th>
+                <th>1층 배열 방식</th>
+                <th>적재 단수</th>
+                <th>파레트 수</th>
+                <th>파레트당 중량</th>
+                <th>합계 중량</th>
+                <th>도면/3D 확인</th>
+              </tr>
+            </thead>
+            <tbody>
+              {simResult.palletWeightGroups.map((g, idx) => {
+                const isSelectedGroup =
+                  currentPallet && g.palletIndices.includes(currentPallet.index);
+                return (
+                  <tr
+                    key={idx}
+                    className={isSelectedGroup ? 'selected-group-row' : ''}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setSelectedPalletIdx(g.samplePalletIndex);
+                      setPalletVisibleStep(100);
+                    }}
+                  >
+                    <td>
+                      <strong>{g.label}</strong>
+                    </td>
+                    <td>
+                      <span
+                        className={`cbm-spec-chip ${
+                          g.palletDim.includes('1200×1000') ? 't12' : 't11'
+                        }`}
+                      >
+                        {g.palletDim}
+                      </span>
+                      {g.maxOverhangMm > 0 && (
+                        <span
+                          style={{
+                            marginLeft: '6px',
+                            fontSize: '0.7rem',
+                            padding: '2px 6px',
+                            borderRadius: '999px',
+                            background: 'rgba(245, 158, 11, 0.22)',
+                            color: '#fcd34d',
+                            border: '1px solid rgba(245, 158, 11, 0.45)',
+                            fontWeight: 700,
+                          }}
+                        >
+                          ⚠️ 돌출 +{g.maxOverhangMm}mm
+                        </span>
+                      )}
+                    </td>
+                    <td>{g.orientDesc}</td>
+                    <td>
+                      <strong>{g.layerCount}단</strong> ({g.totalHeight}mm)
+                    </td>
+                    <td>
+                      <strong style={{ color: '#38bdf8' }}>{g.palletCount}개</strong>
+                    </td>
+                    <td>약 {g.unitPalletWeight.toFixed(1)}kg</td>
+                    <td>
+                      <strong>{g.totalGroupWeight.toLocaleString()}kg</strong>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className={`cbm-btn-xs ${isSelectedGroup ? 'primary' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPalletIdx(g.samplePalletIndex);
+                          setPalletVisibleStep(100);
+                        }}
+                      >
+                        {isSelectedGroup ? '✓ 현재 보는 중' : '🔍 보기'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>
+                  <strong>총합</strong>
+                </td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>
+                  <strong style={{ color: '#38bdf8', fontSize: '14.5px' }}>
+                    총 {simResult.summary.totalPallets}개 파레트
+                  </strong>
+                </td>
+                <td>-</td>
+                <td>
+                  <strong style={{ color: '#fbbf24', fontSize: '14.5px' }}>
+                    {simResult.summary.totalWeight.toLocaleString()}kg
+                  </strong>
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {/* 🧱 상자 쌓기 패턴/자세 미세 변경 접이식 서랍 (선택 시에만 확장) */}
+        {simResult.stackingDiagnostics && simResult.stackingDiagnostics.length > 0 && (
+          <div className="cbm-stacking-accordion-wrap">
+            <button
+              type="button"
+              className="cbm-stacking-toggle-btn"
+              onClick={() => setShowStackingDetails((prev) => !prev)}
+            >
+              <span>
+                🧱 <strong>상자 쌓기 패턴 및 자세 설정</strong> (현재 AI 추천 최적 배열 적용 중)
+              </span>
+              <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>
+                {showStackingDetails ? '▲ 설정 닫기' : '▼ 펼쳐서 배열/자세 변경하기'}
+              </span>
+            </button>
+
+            {showStackingDetails && (
+              <div style={{ marginTop: '10px' }}>
+                {(() => {
+                  const activeCargoDiag =
+                    simResult.stackingDiagnostics.find(
+                      (d) => d.cargoId === currentPallet?.primaryCargoId
+                    ) || simResult.stackingDiagnostics[0];
+                  if (!activeCargoDiag) return null;
+
+                  return (
+                    <div
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '9px',
+                        background: 'rgba(15, 23, 42, 0.8)',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '8px',
+                          marginBottom: '10px',
+                          paddingBottom: '8px',
+                          borderBottom: '1px solid rgba(148, 163, 184, 0.18)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            className="cbm-color-dot"
+                            style={{ background: activeCargoDiag.color }}
+                          />
+                          <strong style={{ fontSize: '0.86rem', color: '#f8fafc' }}>
+                            설정 품목: {activeCargoDiag.cargoName}
+                          </strong>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {simResult.stackingDiagnostics.map((d) => {
+                            const isCurrent = d.cargoId === activeCargoDiag.cargoId;
+                            return (
+                              <button
+                                key={d.cargoId}
+                                type="button"
+                                className="cbm-btn-xs"
+                                style={{
+                                  background: isCurrent ? '#2563eb' : 'rgba(30, 41, 59, 0.7)',
+                                  borderColor: isCurrent ? '#3b82f6' : '#475569',
+                                  color: isCurrent ? '#ffffff' : '#cbd5e1',
+                                  fontWeight: isCurrent ? 700 : 500,
+                                }}
+                                onClick={() => {
+                                  const sampleIdx = simResult.pallets.findIndex(
+                                    (p) => p.primaryCargoId === d.cargoId
+                                  );
+                                  if (sampleIdx !== -1) setSelectedPalletIdx(sampleIdx);
+                                }}
+                              >
+                                {d.cargoName} 보기
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="cbm-stacking-options-grid">
+                        {/* ① 1층 평면 배열 모양 (5종) */}
+                        <div
+                          style={{
+                            background: 'rgba(30, 41, 59, 0.55)',
+                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                            borderRadius: '8px',
+                            padding: '9px 11px',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              color: '#93c5fd',
+                              marginBottom: '6px',
+                            }}
+                          >
+                            ① 한 층(1단) 평면 배열 모양 선택
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            {activeCargoDiag.patternOptions.map((opt) => {
+                              const isSel = activeCargoDiag.currentPattern === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() =>
+                                    handleCargoChange(
+                                      activeCargoDiag.cargoId,
+                                      'layerPattern',
+                                      opt.id
+                                    )
+                                  }
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '5px 8px',
+                                    borderRadius: '6px',
+                                    border: isSel
+                                      ? '1px solid #38bdf8'
+                                      : '1px solid rgba(148, 163, 184, 0.16)',
+                                    background: isSel
+                                      ? 'rgba(56, 189, 248, 0.18)'
+                                      : 'rgba(15, 23, 42, 0.65)',
+                                    color: '#f8fafc',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    fontSize: '0.75rem',
+                                  }}
+                                >
+                                  <div>
+                                    <strong style={{ color: isSel ? '#38bdf8' : '#e2e8f0' }}>
+                                      {opt.label}
+                                    </strong>
+                                    <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                                      {opt.shortDesc}
+                                    </div>
+                                  </div>
+                                  <span
+                                    style={{
+                                      fontSize: '0.71rem',
+                                      fontWeight: 700,
+                                      color: isSel ? '#fde047' : '#cbd5e1',
+                                      whiteSpace: 'nowrap',
+                                      marginLeft: '6px',
+                                    }}
+                                  >
+                                    1단 {opt.layerBoxCount}박스 · {opt.totalPallets}PLT
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* ② 층간 교차 & ③ 상자 세움/눕힘 자세 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div
+                            style={{
+                              background: 'rgba(30, 41, 59, 0.55)',
+                              border: '1px solid rgba(148, 163, 184, 0.2)',
+                              borderRadius: '8px',
+                              padding: '9px 11px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                color: '#fcd34d',
+                                marginBottom: '6px',
+                              }}
+                            >
+                              ② 층간 쌓기 방식 (교차 vs 기둥)
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {activeCargoDiag.stackStyleOptions.map((stOpt) => {
+                                const isSel = activeCargoDiag.currentStackStyle === stOpt.id;
+                                return (
+                                  <button
+                                    key={stOpt.id}
+                                    type="button"
+                                    onClick={() =>
+                                      handleCargoChange(
+                                        activeCargoDiag.cargoId,
+                                        'stackingStyle',
+                                        stOpt.id
+                                      )
+                                    }
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      padding: '5px 8px',
+                                      borderRadius: '6px',
+                                      border: isSel
+                                        ? '1px solid #f59e0b'
+                                        : '1px solid rgba(148, 163, 184, 0.16)',
+                                      background: isSel
+                                        ? 'rgba(245, 158, 11, 0.18)'
+                                        : 'rgba(15, 23, 42, 0.65)',
+                                      color: '#f8fafc',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      fontSize: '0.75rem',
+                                    }}
+                                  >
+                                    <div>
+                                      <strong style={{ color: isSel ? '#fbbf24' : '#e2e8f0' }}>
+                                        {stOpt.label}
+                                      </strong>
+                                      <span style={{ fontSize: '0.68rem', color: '#94a3b8', marginLeft: '6px' }}>
+                                        {stOpt.shortDesc}
+                                      </span>
+                                    </div>
+                                    <span
+                                      style={{
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        color: isSel ? '#fbbf24' : '#64748b',
+                                      }}
+                                    >
+                                      {isSel ? '적용 중' : '선택'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              background: 'rgba(30, 41, 59, 0.55)',
+                              border: '1px solid rgba(148, 163, 184, 0.2)',
+                              borderRadius: '8px',
+                              padding: '9px 11px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                color: '#6ee7b7',
+                                marginBottom: '6px',
+                              }}
+                            >
+                              ③ 상자 놓는 자세 (세움 vs 눕힘)
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {activeCargoDiag.postureOptions.map((posOpt) => {
+                                const isSel = activeCargoDiag.currentPosture === posOpt.id;
+                                return (
+                                  <button
+                                    key={posOpt.id}
+                                    type="button"
+                                    onClick={() =>
+                                      handleCargoChange(
+                                        activeCargoDiag.cargoId,
+                                        'boxPosture',
+                                        posOpt.id
+                                      )
+                                    }
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      padding: '5px 8px',
+                                      borderRadius: '6px',
+                                      border: isSel
+                                        ? '1px solid #10b981'
+                                        : '1px solid rgba(148, 163, 184, 0.16)',
+                                      background: isSel
+                                        ? 'rgba(16, 185, 129, 0.18)'
+                                        : 'rgba(15, 23, 42, 0.65)',
+                                      color: '#f8fafc',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      fontSize: '0.75rem',
+                                    }}
+                                  >
+                                    <div>
+                                      <strong style={{ color: isSel ? '#34d399' : '#e2e8f0' }}>
+                                        {posOpt.label}
+                                      </strong>
+                                      <span style={{ fontSize: '0.68rem', color: '#94a3b8', marginLeft: '6px' }}>
+                                        ({posOpt.dimText})
+                                      </span>
+                                    </div>
+                                    <span
+                                      style={{
+                                        fontSize: '0.71rem',
+                                        fontWeight: 700,
+                                        color: isSel ? '#6ee7b7' : '#cbd5e1',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      1단 {posOpt.layerBoxCount}박스 · {posOpt.totalPallets}PLT
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* 2-C: 파레트 외곽 돌출(Overhang) 허용 설정 (간략화된 컴팩트 패널!) */}
+      {simResult.overhangDiagnostics && simResult.overhangDiagnostics.length > 0 && (
+        <div className="cbm-card cbm-overhang-compact-card">
+          <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '8px', paddingBottom: '6px' }}>
+            <div>
+              <h2 style={{ color: '#fbbf24', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📏 파레트 외곽 돌출(Overhang) 허용 설정
+              </h2>
+              <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
+                파레트 외곽으로 약간 돌출 적재하여 <strong>파레트 수(40HC 소요 대수)를 줄일지</strong> 선택합니다.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="cbm-btn-xs"
+                onClick={() => {
+                  setOverhang(0);
+                  setCargos((prev) =>
+                    prev.map((c) => ({ ...c, allowedOverhang: 0 }))
+                  );
+                }}
+              >
+                🔒 전 품목 0mm (정사이즈)
+              </button>
+              <button
+                type="button"
+                className="cbm-btn-xs primary"
+                style={{ background: '#d97706', borderColor: '#f59e0b' }}
+                onClick={() => {
+                  const oppMap = new Map(
+                    simResult.overhangDiagnostics.map((d) => [
+                      d.cargoId,
+                      d.opportunity ? d.opportunity.requiredOverhangMm : 0,
+                    ])
+                  );
+                  setCargos((prev) =>
+                    prev.map((c) => ({
+                      ...c,
+                      allowedOverhang: oppMap.get(c.id) || 0,
+                    }))
+                  );
+                }}
+              >
+                ⚠️ 감지된 돌출 일괄 허용
+              </button>
+            </div>
+          </div>
+
+          <div className="cbm-overhang-list">
+            {simResult.overhangDiagnostics.map((diag) => {
+              const opp = diag.opportunity;
+              const t12Alt = diag.t12Alternative;
+              const isOvApplied = diag.appliedOverhang > 0 && diag.isOverhangActive;
+
+              return (
+                <div
+                  key={diag.cargoId}
+                  className={`cbm-overhang-row ${isOvApplied ? 'active-overhang' : ''}`}
+                >
+                  {/* 좌측 품목 기본 정보 */}
+                  <div className="cbm-overhang-row-left">
+                    <span
+                      className="cbm-color-dot"
+                      style={{ background: diag.color }}
+                    />
+                    <strong style={{ color: '#f8fafc', fontSize: '0.84rem' }}>
+                      {diag.cargoName}
+                    </strong>
+                    <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                      ({diag.boxW}×{diag.boxL}×{diag.boxH}mm · {diag.quantity.toLocaleString()}박스)
+                    </span>
+                    <span className="cbm-spec-chip t11" style={{ fontSize: '0.71rem' }}>
+                      {diag.palletW}×{diag.palletL}
+                    </span>
+                  </div>
+
+                  {/* 중앙 돌출 진단 및 절감 요약 메시지 */}
+                  <div className="cbm-overhang-row-mid">
+                    {opp ? (
+                      isOvApplied ? (
+                        <span style={{ color: '#fbbf24', fontWeight: 700 }}>
+                          ⚠️ +{diag.current.maxOverhangMm}mm 허용 적용 중 ({diag.current.totalPallets || opp.totalPallets}PLT)
+                        </span>
+                      ) : (
+                        <span style={{ color: '#fde68a' }}>
+                          💡 +{opp.requiredOverhangMm}mm 돌출 시 <strong>{opp.savedPallets}PLT 절감!</strong> ({diag.strict.totalPallets} ➔ {opp.totalPallets}PLT)
+                        </span>
+                      )
+                    ) : (
+                      <span style={{ color: '#94a3b8' }}>
+                        정사이즈(0mm) 최적 적재 중 (돌출 여지 없음)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 우측 빠른 토글 버튼 그룹 */}
+                  <div className="cbm-overhang-row-actions">
+                    <button
+                      type="button"
+                      className={`cbm-btn-xs ${!isOvApplied ? 'primary' : ''}`}
+                      onClick={() => handleCargoChange(diag.cargoId, 'allowedOverhang', 0)}
+                    >
+                      🔒 0mm 불허
+                    </button>
+
+                    {opp && (
+                      <button
+                        type="button"
+                        className="cbm-btn-xs"
+                        style={{
+                          background: isOvApplied ? '#d97706' : 'rgba(245, 158, 11, 0.16)',
+                          borderColor: '#f59e0b',
+                          color: isOvApplied ? '#ffffff' : '#fcd34d',
+                          fontWeight: 700,
+                        }}
+                        onClick={() =>
+                          handleCargoChange(
+                            diag.cargoId,
+                            'allowedOverhang',
+                            opp.requiredOverhangMm
+                          )
+                        }
+                      >
+                        ⚠️ +{opp.requiredOverhangMm}mm 허용 ({opp.savedPallets}개↓)
+                      </button>
+                    )}
+
+                    {t12Alt && (
+                      <button
+                        type="button"
+                        className="cbm-btn-xs"
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.18)',
+                          borderColor: '#10b981',
+                          color: '#6ee7b7',
+                        }}
+                        onClick={() => {
+                          setPalletSelectionMode('CUSTOM_MIX');
+                          setCargos((prev) =>
+                            prev.map((c) =>
+                              c.id === diag.cargoId
+                                ? { ...c, palletSpecId: 'T12', allowedOverhang: 0 }
+                                : c
+                            )
+                          );
+                        }}
+                      >
+                        🔄 1200×1000 변경
+                      </button>
+                    )}
+
+                    <label
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        fontSize: '0.72rem',
+                        color: '#94a3b8',
+                        marginLeft: '3px',
+                      }}
+                    >
+                      <span>직접:</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={150}
+                        step={5}
+                        value={diag.appliedOverhang}
+                        onChange={(e) =>
+                          handleCargoChange(
+                            diag.cargoId,
+                            'allowedOverhang',
+                            Math.max(0, Number(e.target.value) || 0)
+                          )
+                        }
+                        style={{
+                          width: '46px',
+                          padding: '2px 4px',
+                          borderRadius: '4px',
+                          border: '1px solid #475569',
+                          background: '#0f172a',
+                          color: '#f8fafc',
+                          fontSize: '0.74rem',
+                          textAlign: 'right',
+                        }}
+                      />
+                      <span>mm</span>
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Step 2 -> Step 3 Action Button Bar */}
       <div className="cbm-step-action-bar">

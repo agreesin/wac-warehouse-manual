@@ -2474,6 +2474,93 @@
   }
 }
 
+/* =========================================================================
+   Step 2 Overhang Compact Card & Stacking Accordion
+   ========================================================================= */
+.cbm-overhang-compact-card {
+  border: 1px solid rgba(245, 158, 11, 0.38) !important;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.94)) !important;
+  padding: 14px 18px !important;
+}
+
+.cbm-overhang-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cbm-overhang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  font-size: 0.81rem;
+  transition: all 0.2s ease;
+}
+
+.cbm-overhang-row.active-overhang {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.cbm-overhang-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 240px;
+}
+
+.cbm-overhang-row-mid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.79rem;
+  color: #cbd5e1;
+  flex: 1 1 280px;
+}
+
+.cbm-overhang-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cbm-stacking-accordion-wrap {
+  margin-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  padding-top: 12px;
+}
+
+.cbm-stacking-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: #cbd5e1;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cbm-stacking-toggle-btn:hover {
+  background: rgba(51, 65, 85, 0.85);
+  color: #f8fafc;
+  border-color: #38bdf8;
+}
+
 @media print {
   body,
   .cbm-page {
