@@ -55,7 +55,10 @@ export function CbmSimulator() {
   // STEP 3 STATE: 컨테이너 종류 선택 및 컨테이너 적재 시각화
   // =========================================================================
   const [selectedContainerId, setSelectedContainerId] = useState('40FT_HC');
-  const [balanceContainers, setBalanceContainers] = useState(true);
+  // stuffingStrategy: 'convenience' (작업 편의성 우선 - 품목별 몰아넣기 · 단일 품목 전용 완적)
+  //                   'balance' (균등 밸런스 우선 - 전 호기 품목·무게 균등 배분)
+  const [stuffingStrategy, setStuffingStrategy] = useState('convenience');
+  const [balanceContainers, setBalanceContainers] = useState(false);
   const [fullFloorSpread, setFullFloorSpread] = useState(true); // 기본값: 컨테이너 빈 바닥 100% 풀채움 (1단 바닥 전체 균등 배치)
   const [optimizeCoG, setOptimizeCoG] = useState(true);
   const [selectedContainerIdx, setSelectedContainerIdx] = useState(0);
@@ -144,7 +147,8 @@ export function CbmSimulator() {
       mixCargos,
       interlockLayers,
       overhang,
-      balanceContainers,
+      stuffingStrategy,
+      balanceContainers: stuffingStrategy === 'balance',
       fullFloorSpread,
       optimizeCoG,
     });
@@ -157,7 +161,7 @@ export function CbmSimulator() {
     mixCargos,
     interlockLayers,
     overhang,
-    balanceContainers,
+    stuffingStrategy,
     fullFloorSpread,
     optimizeCoG,
   ]);
@@ -640,8 +644,10 @@ export function CbmSimulator() {
           setSelectedContainerId={setSelectedContainerId}
           selectedContainerIdx={selectedContainerIdx}
           setSelectedContainerIdx={setSelectedContainerIdx}
-          balanceContainers={balanceContainers}
-          setBalanceContainers={setBalanceContainers}
+          stuffingStrategy={stuffingStrategy}
+          setStuffingStrategy={setStuffingStrategy}
+          balanceContainers={stuffingStrategy === 'balance'}
+          setBalanceContainers={(val) => setStuffingStrategy(val ? 'balance' : 'convenience')}
           fullFloorSpread={fullFloorSpread}
           setFullFloorSpread={setFullFloorSpread}
           optimizeCoG={optimizeCoG}

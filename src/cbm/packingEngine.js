@@ -134,6 +134,16 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
   // 산출된 파레트 수(예: 38 PLT)를 그대로 유지하여 컨테이너 적재 시뮬레이션 실행
   const containerResult = packPalletsIntoContainers(pallets, selectedSpec, options);
 
+  // '작업 편의성 우선' vs '균등 밸런스 우선' 비교 데이터 산출
+  const convenienceCompare = packPalletsIntoContainers(pallets, selectedSpec, {
+    ...options,
+    stuffingStrategy: 'convenience',
+  });
+  const balanceCompare = packPalletsIntoContainers(pallets, selectedSpec, {
+    ...options,
+    stuffingStrategy: 'balance',
+  });
+
   // '빈 바닥 채움(기본값)' vs '최대한 높게 쌓아 바닥 공간 만들기(선택사항)' 비교 지표 산출
   const spreadCompare = packPalletsIntoContainers(pallets, selectedSpec, {
     ...options,
@@ -332,6 +342,23 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       avgCompactUsedLenMm,
       avgCompactRearClearanceMm,
       compactTier2Count,
+    },
+    stuffingStrategyInfo: {
+      strategy: options.stuffingStrategy || 'convenience',
+      isConvenience: (options.stuffingStrategy || 'convenience') === 'convenience',
+      convenienceContainers: convenienceCompare.containers,
+      balanceContainers: balanceCompare.containers,
+      convenienceSplitText: convenienceCompare.containers
+        .map(
+          (c) =>
+            `${c.index}호기 ${c.placedPallets.length}PLT${
+              c.stuffingBadge?.type === 'dedicated_full' ? ' (단일 완적)' : ''
+            }`
+        )
+        .join(' / '),
+      balanceSplitText: balanceCompare.containers
+        .map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`)
+        .join(' / '),
     },
     summary: {
       totalBoxesPacked,

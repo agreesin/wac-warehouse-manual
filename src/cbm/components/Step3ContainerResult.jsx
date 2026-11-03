@@ -10,6 +10,8 @@ export function Step3ContainerResult({
   setSelectedContainerId,
   selectedContainerIdx,
   setSelectedContainerIdx,
+  stuffingStrategy = 'convenience',
+  setStuffingStrategy,
   balanceContainers,
   setBalanceContainers,
   fullFloorSpread,
@@ -46,11 +48,12 @@ export function Step3ContainerResult({
             </strong>
           </div>
           <div className="cbm-mini-stat">
-            <span>호기별 파레트 배분</span>
+            <span>적재 전략 & 호기별 배분</span>
             <strong>
-              {simResult.containerResult.containers
-                .map((c) => `${c.index}호기: ${c.placedPallets.length}PLT`)
-                .join(' / ')}
+              {stuffingStrategy === 'convenience' ? '🚜 작업 편의성 우선' : '⚖️ 균등 밸런스'}{' '}
+              ({simResult.containerResult.containers
+                .map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`)
+                .join(' / ')})
             </strong>
           </div>
           <div className="cbm-mini-stat">
@@ -67,14 +70,34 @@ export function Step3ContainerResult({
         <div className="cbm-card-header">
           <h2>3-A. 컨테이너 종류별 적재 가능 파레트 수 & 필요 대수 비교</h2>
           <div className="cbm-vis-filters">
-            <label className="cbm-mini-check">
-              <input
-                type="checkbox"
-                checked={balanceContainers}
-                onChange={(e) => setBalanceContainers(e.target.checked)}
-              />
-              <span>⚖️ 전 컨테이너 호기별 균등 배분</span>
-            </label>
+            <div className="cbm-segmented-filter" style={{ marginRight: '6px' }}>
+              <button
+                type="button"
+                className={stuffingStrategy === 'convenience' ? 'active' : ''}
+                style={{
+                  padding: '4px 10px',
+                  fontWeight: stuffingStrategy === 'convenience' ? 700 : 500,
+                  color: stuffingStrategy === 'convenience' ? '#fbbf24' : '#94a3b8',
+                }}
+                onClick={() => setStuffingStrategy && setStuffingStrategy('convenience')}
+                title="단일 품목으로 채울 수 있는 호기는 100% 전용 완적하여 지게차 동선 단순화"
+              >
+                🚜 작업 편의성 우선 (품목별 전용 완적)
+              </button>
+              <button
+                type="button"
+                className={stuffingStrategy === 'balance' ? 'active' : ''}
+                style={{
+                  padding: '4px 10px',
+                  fontWeight: stuffingStrategy === 'balance' ? 700 : 500,
+                  color: stuffingStrategy === 'balance' ? '#a5b4fc' : '#94a3b8',
+                }}
+                onClick={() => setStuffingStrategy && setStuffingStrategy('balance')}
+                title="모든 호기에 품목과 무게를 골고루 분산"
+              >
+                ⚖️ 균등 밸런스 우선 (전 호기 균등 배분)
+              </button>
+            </div>
             <label className="cbm-mini-check">
               <input
                 type="checkbox"
@@ -93,6 +116,96 @@ export function Step3ContainerResult({
               />
               <span>🎯 무게중심(CoG) 밸런싱 배치</span>
             </label>
+          </div>
+        </div>
+
+        {/* 적재 전략: 작업 편의성 우선(기본값) vs 균등 밸런스 우선(선택) 배너 */}
+        <div
+          style={{
+            marginBottom: '12px',
+            padding: '12px 14px',
+            borderRadius: '10px',
+            background:
+              stuffingStrategy === 'convenience'
+                ? 'rgba(245, 158, 11, 0.12)'
+                : 'rgba(99, 102, 241, 0.12)',
+            border:
+              stuffingStrategy === 'convenience'
+                ? '1px solid rgba(245, 158, 11, 0.45)'
+                : '1px solid rgba(99, 102, 241, 0.45)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div className="cbm-floor-banner-text">
+            {stuffingStrategy === 'convenience' ? (
+              <>
+                <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: '0.88rem' }}>
+                  🚜 [작업 편의성 우선 적용 중] 품목별 전용 컨테이너 몰아넣기 & 지게차 동선 단순화
+                </div>
+                <div style={{ color: '#e2e8f0', marginTop: '3px' }}>
+                  단일 품목(SKU)으로 1대를 꽉 채울 수 있는 물량은 다른 품목을 섞지 않고{' '}
+                  <strong style={{ color: '#fde047' }}>
+                    {simResult.containerResult.containers
+                      .filter((c) => c.stuffingBadge?.type === 'dedicated_full')
+                      .map(
+                        (c) =>
+                          `#${c.index}호기 ${c.placedPallets.length}PLT (100% 전용 완적)`
+                      )
+                      .join(', ') || '전용 완적 호기'}
+                  </strong>
+                  로 우선 완적 적재합니다. 지게차가 품목별 보관 랙을 번갈아 오가지 않고 연속 인입할 수 있으며, 도착지에서도 소팅(분류) 없이 즉시 입고/생산 라인 투입이 가능합니다. (잔여 자투리 파레트는 후속 호기에 모음 적재)
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, color: '#a5b4fc', fontSize: '0.88rem' }}>
+                  ⚖️ [균등 밸런스 우선 적용 중] 전 컨테이너 호기별 품목 & 중량 균등 분산
+                </div>
+                <div style={{ color: '#e2e8f0', marginTop: '3px' }}>
+                  모든 컨테이너 호기에 각 품목과 총중량을 균일하게 분산(
+                  {simResult.containerResult.containers
+                    .map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`)
+                    .join(' / ')}
+                  )하여 적재합니다. 여러 목적지로 컨테이너가 분할 납품되거나 호기간 중량/부피 편차를 최소화해야 할 때 유리합니다.
+                </div>
+              </>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="cbm-btn-xs"
+              style={{
+                background:
+                  stuffingStrategy === 'convenience' ? '#d97706' : 'rgba(15, 23, 42, 0.8)',
+                borderColor: stuffingStrategy === 'convenience' ? '#f59e0b' : '#475569',
+                color: stuffingStrategy === 'convenience' ? '#ffffff' : '#cbd5e1',
+                padding: '7px 12px',
+                fontWeight: 700,
+              }}
+              onClick={() => setStuffingStrategy && setStuffingStrategy('convenience')}
+            >
+              🚜 작업 편의성 우선 (품목별 전용 완적)
+            </button>
+            <button
+              type="button"
+              className="cbm-btn-xs"
+              style={{
+                background:
+                  stuffingStrategy === 'balance' ? '#4f46e5' : 'rgba(15, 23, 42, 0.8)',
+                borderColor: stuffingStrategy === 'balance' ? '#6366f1' : '#475569',
+                color: stuffingStrategy === 'balance' ? '#ffffff' : '#cbd5e1',
+                padding: '7px 12px',
+                fontWeight: 700,
+              }}
+              onClick={() => setStuffingStrategy && setStuffingStrategy('balance')}
+            >
+              ⚖️ 균등 밸런스 우선 (전 호기 균등 배분)
+            </button>
           </div>
         </div>
 
@@ -340,15 +453,35 @@ export function Step3ContainerResult({
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
+                      alignItems: 'center',
                       fontWeight: 700,
                       color: '#f8fafc',
-                      marginBottom: '3px',
+                      marginBottom: '4px',
+                      flexWrap: 'wrap',
+                      gap: '6px',
                     }}
                   >
-                    <span>
-                      #{c.index}호기 (총 {c.placedPallets.length} PLT /{' '}
-                      {c.boxCount.toLocaleString()} 박스)
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span>
+                        #{c.index}호기 (총 {c.placedPallets.length} PLT /{' '}
+                        {c.boxCount.toLocaleString()} 박스)
+                      </span>
+                      {c.stuffingBadge && (
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: c.stuffingBadge.bg,
+                            border: c.stuffingBadge.border,
+                            color: c.stuffingBadge.color,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {c.stuffingBadge.label}
+                        </span>
+                      )}
+                    </div>
                     <span style={{ color: '#6ee7b7' }}>
                       총 {c.totalWeight.toLocaleString()} kg
                     </span>
@@ -384,9 +517,35 @@ export function Step3ContainerResult({
                   setContainerVisibleStep(100);
                 }}
               >
-                <strong>
-                  {c.spec.name} #{c.index}호기
-                </strong>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '6px',
+                    width: '100%',
+                  }}
+                >
+                  <strong>
+                    {c.spec.name} #{c.index}호기
+                  </strong>
+                  {c.stuffingBadge && (
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        padding: '1px 6px',
+                        borderRadius: '999px',
+                        background: c.stuffingBadge.bg,
+                        border: c.stuffingBadge.border,
+                        color: c.stuffingBadge.color,
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {c.stuffingBadge.tagText}
+                    </span>
+                  )}
+                </div>
                 <span>
                   {c.placedPallets.length} 파레트 · {c.boxCount.toLocaleString()}박스 ·{' '}
                   {c.totalWeight.toLocaleString()}kg ({c.volumeUtilization}%)

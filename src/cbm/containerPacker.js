@@ -119,8 +119,16 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
   const allowDoubleStack = Boolean(options.doubleStack);
   const fullFloorSpread = options.fullFloorSpread !== false; // 기본값(true): 빈 바닥 채움(1단 바닥 전체 균등 배치) / false: 최대한 높게 쌓아 바닥 공간 만들기
   const effectiveDoubleStack = allowDoubleStack || !fullFloorSpread;
-  const balanceContainers = options.balanceContainers !== false;
   const optimizeCoG = options.optimizeCoG !== false;
+
+  // stuffingStrategy: 'convenience' (작업 편의성 우선 - 품목별 몰아넣기 · 단일 품목 전용 완적)
+  //                   'balance' (균등 밸런스 우선 - 전 호기 품목·무게 균등 배분)
+  const stuffingStrategy =
+    options.stuffingStrategy ||
+    (options.balanceContainers === true && options.stuffingStrategy === undefined
+      ? 'balance'
+      : 'convenience');
+  const isConvenienceMode = stuffingStrategy === 'convenience';
 
   if (!pallets || pallets.length === 0) {
     return {
@@ -187,26 +195,47 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     let workingList = [...palletList];
 
     if (optimizeCoG && workingList.length > 2) {
-      workingList.sort((a, b) => {
-        if (a.isPartial !== b.isPartial) return a.isPartial ? 1 : -1;
-        return b.totalWeight - a.totalWeight;
-      });
-
-      const fullHeavy = workingList.filter((p) => !p.isPartial);
-      const partials = workingList.filter((p) => p.isPartial);
-      if (fullHeavy.length >= 6) {
-        const reordered = new Array(fullHeavy.length);
-        let leftPtr = 0;
-        let rightPtr = fullHeavy.length - 1;
-        const asc = [...fullHeavy].sort((a, b) => a.totalWeight - b.totalWeight);
-        asc.forEach((item, idx) => {
-          if (idx % 2 === 0) {
-            reordered[leftPtr++] = item;
-          } else {
-            reordered[rightPtr--] = item;
-          }
+      if (isConvenienceMode) {
+        // 작업 편의성 모드: SKU별 블록을 해체하지 않고, 각 SKU 블록 내부에서만 안정 정렬 + 자투리(부분 파레트)는 도어 쪽(끝)으로 유지
+        const byCargoInCont = new Map();
+        for (const p of workingList) {
+          const k = p.primaryCargoId || 'other';
+          if (!byCargoInCont.has(k)) byCargoInCont.set(k, []);
+          byCargoInCont.get(k).push(p);
+        }
+        const rebuilt = [];
+        const trailingPartials = [];
+        for (const [, list] of byCargoInCont.entries()) {
+          const fulls = list.filter((p) => !p.isPartial);
+          const parts = list.filter((p) => p.isPartial);
+          fulls.sort((a, b) => b.totalWeight - a.totalWeight);
+          rebuilt.push(...fulls);
+          trailingPartials.push(...parts);
+        }
+        workingList = [...rebuilt, ...trailingPartials];
+      } else {
+        // 균등 밸런스 모드: 전 파레트 중량 기반 전후/좌우 밸런싱 재배치
+        workingList.sort((a, b) => {
+          if (a.isPartial !== b.isPartial) return a.isPartial ? 1 : -1;
+          return b.totalWeight - a.totalWeight;
         });
-        workingList = [...reordered, ...partials];
+
+        const fullHeavy = workingList.filter((p) => !p.isPartial);
+        const partials = workingList.filter((p) => p.isPartial);
+        if (fullHeavy.length >= 6) {
+          const reordered = new Array(fullHeavy.length);
+          let leftPtr = 0;
+          let rightPtr = fullHeavy.length - 1;
+          const asc = [...fullHeavy].sort((a, b) => a.totalWeight - b.totalWeight);
+          asc.forEach((item, idx) => {
+            if (idx % 2 === 0) {
+              reordered[leftPtr++] = item;
+            } else {
+              reordered[rightPtr--] = item;
+            }
+          });
+          workingList = [...reordered, ...partials];
+        }
       }
     }
 
@@ -428,10 +457,12 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     return { placedPallets, overflowPallets };
   };
 
-  // 다수 컨테이너(2대 이상) 생성 시 전 호기 바닥 균등 배분
+  // 다수 컨테이너(2대 이상) 생성 시 적재 전략 분기:
+  // 1) 'convenience' (작업 편의성 우선): 단일 품목 완적 호기 우선 생성 & 호기별 품목 블록화
+  // 2) 'balance' (균등 밸런스 우선): 전 호기에 품목·중량 균등 분산
   const containers = [];
 
-  if (balanceContainers && validPallets.length > 0) {
+  if (validPallets.length > 0) {
     let testRem = [...validPallets];
     let neededCount = 0;
     while (testRem.length > 0 && neededCount < 50) {
@@ -442,45 +473,138 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     }
 
     if (neededCount >= 2) {
-      const buckets = Array.from({ length: neededCount }, () => []);
-      const bucketWeights = new Array(neededCount).fill(0);
-
-      const byCargo = new Map();
-      for (const p of validPallets) {
-        const key = p.primaryCargoId || 'other';
-        if (!byCargo.has(key)) byCargo.set(key, []);
-        byCargo.get(key).push(p);
-      }
-
-      const allFulls = [];
-      const allPartials = [];
-      for (const [, group] of byCargo.entries()) {
-        for (const p of group) {
-          if (p.isPartial) allPartials.push(p);
-          else allFulls.push(p);
+      if (isConvenienceMode) {
+        // [작업 편의성 우선]:
+        // 단일 품목(SKU)으로 1대 이상 채울 수 있으면 타 품목을 섞지 않고 100% 전용 컨테이너로 완적!
+        const byCargo = new Map();
+        for (const p of validPallets) {
+          const key = p.primaryCargoId || 'other';
+          if (!byCargo.has(key)) byCargo.set(key, []);
+          byCargo.get(key).push(p);
         }
-      }
 
-      const assignToLightestBucket = (p) => {
-        let bestIdx = 0;
-        for (let bIdx = 1; bIdx < neededCount; bIdx++) {
-          if (buckets[bIdx].length < buckets[bestIdx].length) {
-            bestIdx = bIdx;
-          } else if (
-            buckets[bIdx].length === buckets[bestIdx].length &&
-            bucketWeights[bIdx] < bucketWeights[bestIdx]
-          ) {
-            bestIdx = bIdx;
+        // 완적 파레트 먼저, 부분 파레트(자투리)는 뒤쪽
+        for (const [, list] of byCargo.entries()) {
+          list.sort((a, b) => {
+            if (a.isPartial !== b.isPartial) return a.isPartial ? 1 : -1;
+            return b.totalWeight - a.totalWeight;
+          });
+        }
+
+        // 파레트 수량이 많은 주력 SKU부터 정렬 (예: 박스A 23PLT -> 박스B 14PLT -> 박스C 1PLT)
+        const sortedGroups = Array.from(byCargo.values()).sort(
+          (a, b) => b.length - a.length
+        );
+
+        const buckets = Array.from({ length: neededCount }, () => []);
+        const bucketWeights = new Array(neededCount).fill(0);
+        const contCap = effectiveDoubleStack ? floorSlotsPerContainer * 2 : floorSlotsPerContainer;
+
+        let curBIdx = 0;
+        for (const grp of sortedGroups) {
+          let remInGrp = [...grp];
+          while (remInGrp.length > 0 && curBIdx < neededCount) {
+            const curBucket = buckets[curBIdx];
+            const curWeight = bucketWeights[curBIdx];
+            const spaceLeft = contCap - curBucket.length;
+
+            if (spaceLeft <= 0 || curWeight >= cMaxWeight - 300) {
+              curBIdx++;
+              continue;
+            }
+
+            let take = 0;
+            let weightToAdd = 0;
+            while (take < remInGrp.length && take < spaceLeft) {
+              const nextP = remInGrp[take];
+              if (curWeight + weightToAdd + nextP.totalWeight > cMaxWeight) {
+                break;
+              }
+              weightToAdd += nextP.totalWeight;
+              take++;
+            }
+
+            if (take === 0) {
+              curBIdx++;
+              continue;
+            }
+
+            const picked = remInGrp.splice(0, take);
+            curBucket.push(...picked);
+            bucketWeights[curBIdx] += weightToAdd;
+
+            if (curBucket.length >= contCap) {
+              curBIdx++;
+            }
+          }
+
+          if (remInGrp.length > 0) {
+            buckets[neededCount - 1].push(...remInGrp);
           }
         }
-        buckets[bestIdx].push(p);
-        bucketWeights[bestIdx] += p.totalWeight;
-      };
 
-      allFulls.forEach(assignToLightestBucket);
-      allPartials.forEach(assignToLightestBucket);
+        // 각 호기 내부 SKU 블록 정렬:
+        // 해당 호기에 가장 많이 실린 SKU 블록을 앞쪽(안쪽 벽)에 두고, 자투리/소량 품목은 도어 쪽에 배치
+        buckets.forEach((b) => {
+          const skuCountsInBucket = new Map();
+          for (const p of b) {
+            const k = p.primaryCargoId || 'other';
+            skuCountsInBucket.set(k, (skuCountsInBucket.get(k) || 0) + 1);
+          }
+          b.sort((p1, p2) => {
+            if (p1.isPartial !== p2.isPartial) return p1.isPartial ? 1 : -1;
+            const k1 = p1.primaryCargoId || 'other';
+            const k2 = p2.primaryCargoId || 'other';
+            const c1 = skuCountsInBucket.get(k1) || 0;
+            const c2 = skuCountsInBucket.get(k2) || 0;
+            if (c1 !== c2) return c2 - c1;
+            return 0;
+          });
+        });
 
-      orderedContainerBuckets = buckets;
+        orderedContainerBuckets = buckets;
+      } else {
+        // [균등 밸런스 우선]: 전 호기에 품목·중량을 고르게 쪼개어 분산
+        const buckets = Array.from({ length: neededCount }, () => []);
+        const bucketWeights = new Array(neededCount).fill(0);
+
+        const byCargo = new Map();
+        for (const p of validPallets) {
+          const key = p.primaryCargoId || 'other';
+          if (!byCargo.has(key)) byCargo.set(key, []);
+          byCargo.get(key).push(p);
+        }
+
+        const allFulls = [];
+        const allPartials = [];
+        for (const [, group] of byCargo.entries()) {
+          for (const p of group) {
+            if (p.isPartial) allPartials.push(p);
+            else allFulls.push(p);
+          }
+        }
+
+        const assignToLightestBucket = (p) => {
+          let bestIdx = 0;
+          for (let bIdx = 1; bIdx < neededCount; bIdx++) {
+            if (buckets[bIdx].length < buckets[bestIdx].length) {
+              bestIdx = bIdx;
+            } else if (
+              buckets[bIdx].length === buckets[bestIdx].length &&
+              bucketWeights[bIdx] < bucketWeights[bestIdx]
+            ) {
+              bestIdx = bIdx;
+            }
+          }
+          buckets[bestIdx].push(p);
+          bucketWeights[bestIdx] += p.totalWeight;
+        };
+
+        allFulls.forEach(assignToLightestBucket);
+        allPartials.forEach(assignToLightestBucket);
+
+        orderedContainerBuckets = buckets;
+      }
     }
   }
 
@@ -574,6 +698,54 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     c.tier1Count = c.placedPallets.filter((p) => p.tier === 1).length;
     c.tier2Count = c.placedPallets.filter((p) => p.tier === 2).length;
     c.cog = analyzeContainerCoG(c);
+    c.stuffingStrategy = stuffingStrategy;
+
+    // 실무 적재 유형 뱃지 (단일 SKU 전용 완적 / 단일 적재 / 잔여 혼적 / 균등 분산)
+    const floorSlots = cLength < 7000 ? 10 : 20;
+    const isSingleSku = c.skuBreakdown.length === 1;
+    const singleSkuName = isSingleSku ? c.skuBreakdown[0].name.split(' (')[0] : '';
+
+    if (isSingleSku && c.placedPallets.length >= floorSlots) {
+      c.stuffingBadge = {
+        type: 'dedicated_full',
+        label: `📦 [${singleSkuName}] 단일 품목 전용 완적 (FCL)`,
+        shortLabel: `${singleSkuName} 전용 완적 (${c.placedPallets.length}PLT)`,
+        tagText: '단일 품목 전용 완적',
+        color: '#34d399',
+        bg: 'rgba(16, 185, 129, 0.16)',
+        border: '1px solid rgba(16, 185, 129, 0.45)',
+      };
+    } else if (isSingleSku) {
+      c.stuffingBadge = {
+        type: 'dedicated_partial',
+        label: `📦 [${singleSkuName}] 단일 품목 전용 적재`,
+        shortLabel: `${singleSkuName} 전용 (${c.placedPallets.length}PLT)`,
+        tagText: '단일 품목 전용',
+        color: '#38bdf8',
+        bg: 'rgba(56, 189, 248, 0.16)',
+        border: '1px solid rgba(56, 189, 248, 0.45)',
+      };
+    } else if (isConvenienceMode) {
+      c.stuffingBadge = {
+        type: 'convenience_mixed',
+        label: `🔀 잔여 품목 모음 적재 (${c.skuBreakdown.length}개 품목)`,
+        shortLabel: `잔여 품목 모음 (${c.placedPallets.length}PLT)`,
+        tagText: '잔여 품목 모음',
+        color: '#fbbf24',
+        bg: 'rgba(245, 158, 11, 0.16)',
+        border: '1px solid rgba(245, 158, 11, 0.45)',
+      };
+    } else {
+      c.stuffingBadge = {
+        type: 'balanced',
+        label: `⚖️ 균등 분산 적재 (${c.skuBreakdown.length}개 품목)`,
+        shortLabel: `균등 분산 (${c.placedPallets.length}PLT)`,
+        tagText: '균등 분산',
+        color: '#a5b4fc',
+        bg: 'rgba(129, 140, 248, 0.16)',
+        border: '1px solid rgba(129, 140, 248, 0.45)',
+      };
+    }
 
     const maxStackH = c.placedPallets.reduce(
       (max, pp) => Math.max(max, pp.y + pp.pallet.totalHeight),
