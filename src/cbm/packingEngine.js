@@ -62,6 +62,63 @@ export {
 };
 
 /**
+ * 40ft High Cube 컨테이너 바닥 완적(Floor 1단 가득 채움) 기준 소요 대수 및 배분 예측
+ * - T11 (1100×1100), T12 (1200×1000), EXPORT_1200 (1200×1200), CUSTOM_MIX: 20 PLT / 대
+ * - EUR (1200×800): 24 PLT / 대
+ */
+export function estimate40HcContainerNeeds(palletCount, palletSpecId = 'T11') {
+  const floorCapacity = palletSpecId === 'EUR' ? 24 : 20;
+  if (!palletCount || palletCount <= 0) {
+    return {
+      containerCount: 0,
+      floorCapacity,
+      totalSlots: 0,
+      emptySlots: 0,
+      utilizationPct: 0,
+      splitText: '0대',
+      summaryText: '0대',
+      badgeText: '40HC 0대',
+      detailText: '화물이 없습니다.',
+      floorNote: '적재 화물 없음',
+    };
+  }
+  const containerCount = Math.max(1, Math.ceil(palletCount / floorCapacity));
+  const totalSlots = containerCount * floorCapacity;
+  const emptySlots = Math.max(0, totalSlots - palletCount);
+  const utilizationPct = Math.round((palletCount / totalSlots) * 100);
+
+  // 컨테이너별 균등 배분 (예: 38개 ➔ 19개 + 19개)
+  const perContainerPlts = [];
+  const basePerCont = Math.floor(palletCount / containerCount);
+  let remainder = palletCount % containerCount;
+  for (let i = 0; i < containerCount; i++) {
+    perContainerPlts.push(basePerCont + (remainder > 0 ? 1 : 0));
+    if (remainder > 0) remainder--;
+  }
+  const splitText = perContainerPlts.map((cnt, i) => `${i + 1}호기 ${cnt}PLT`).join(' / ');
+
+  const floorNote =
+    emptySlots === 0
+      ? '바닥 100% 완적 (빈 공간 없음 · 쇼링 불필요)'
+      : emptySlots <= containerCount * 2
+      ? `바닥 ${totalSlots}슬롯 중 ${palletCount}PLT 채움 (바닥 충진률 ${utilizationPct}% · 전도 방지)`
+      : `바닥 ${totalSlots}슬롯 중 ${palletCount}PLT 채움 (잔여 바닥 슬롯 ${emptySlots}개)`;
+
+  return {
+    containerCount,
+    floorCapacity,
+    totalSlots,
+    emptySlots,
+    utilizationPct,
+    splitText,
+    summaryText: `40HC 약 ${containerCount}대`,
+    badgeText: `40HC 약 ${containerCount}대`,
+    detailText: `바닥 완적(${floorCapacity}PLT/대) 기준 ${containerCount}대 (${splitText})`,
+    floorNote,
+  };
+}
+
+/**
  * 전체 시뮬레이션 통합 실행 (파레트 규격별 비교 + 컨테이너 규격별 비교 포함)
  */
 export function runFullSimulation(cargos, palletConfig, selectedContainerId, options = {}) {
@@ -149,6 +206,7 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       totalPallets: res.pallets.length,
       avgUtilization: avgUtil,
       unpackedCount: res.unpackedErrors.length,
+      hcEstimate: estimate40HcContainerNeeds(res.pallets.length, preset.id),
     };
   });
 

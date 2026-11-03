@@ -819,6 +819,105 @@
   line-height: 1.35;
 }
 
+/* Card 40HC Estimate Badge Row */
+.cbm-pm-hc-badge-row {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cbm-pm-hc-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #38bdf8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cbm-pallet-mode-card.mix-mode-card .cbm-pm-hc-badge {
+  color: #f59e0b;
+}
+
+.cbm-pm-hc-note {
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+/* 40HC Floor Estimate Banner */
+.cbm-hc-floor-est-banner {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.35) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.cbm-hc-est-left {
+  flex: 1 1 500px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cbm-hc-est-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cbm-hc-est-tag {
+  font-size: 11.5px;
+  font-weight: 800;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.cbm-hc-est-rule {
+  font-size: 11px;
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.cbm-hc-est-main {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 2px;
+}
+
+.cbm-hc-est-target {
+  color: #fbbf24;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.cbm-hc-est-desc {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+.cbm-hc-est-right {
+  display: flex;
+  align-items: center;
+}
+
 /* Multi-Pallet Mix Assignment Box */
 .cbm-mix-assign-box {
   margin-top: 14px;
@@ -1982,6 +2081,47 @@
 
   .cbm-pm-sub {
     font-size: 11px;
+  }
+
+  .cbm-pm-hc-badge-row {
+    padding-top: 6px;
+  }
+
+  .cbm-pm-hc-badge {
+    font-size: 10.5px;
+  }
+
+  .cbm-pm-hc-note {
+    font-size: 9.5px;
+  }
+
+  .cbm-hc-floor-est-banner {
+    padding: 12px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cbm-hc-est-left {
+    flex: 1 1 100%;
+  }
+
+  .cbm-hc-est-main {
+    font-size: 13px;
+  }
+
+  .cbm-hc-est-target {
+    font-size: 13.5px;
+  }
+
+  .cbm-hc-est-desc {
+    font-size: 11px;
+  }
+
+  .cbm-hc-est-right button {
+    width: 100%;
+    text-align: center;
+    padding: 8px 12px;
   }
 
   .cbm-mix-assign-head {

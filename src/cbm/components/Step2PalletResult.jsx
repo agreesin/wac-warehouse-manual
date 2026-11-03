@@ -1,5 +1,9 @@
-import React from 'react';
-import { computeBest2DLayer, resolvePalletDimsForCargo } from '../packingEngine';
+import React, { useMemo } from 'react';
+import {
+  computeBest2DLayer,
+  resolvePalletDimsForCargo,
+  estimate40HcContainerNeeds,
+} from '../packingEngine';
 import { ThreeViewport } from '../ThreeViewport';
 
 export function Step2PalletResult({
@@ -27,6 +31,28 @@ export function Step2PalletResult({
   setExplodePalletLayers,
   handleRunStep2ToStep3,
 }) {
+  // 현재 선택된 파레트 규격에 대한 40HC 컨테이너 바닥 완적 기준 소요 대수 실시간 계산
+  const { currentModePallets, currentModeLabel, currentModeHcEst } = useMemo(() => {
+    if (palletSelectionMode === 'CUSTOM_MIX') {
+      const pCount = customMixComparison?.totalPallets || simResult.summary.totalPallets;
+      return {
+        currentModePallets: pCount,
+        currentModeLabel: '품목별 복합 파레트 섞어 쓰기',
+        currentModeHcEst: estimate40HcContainerNeeds(pCount, 'CUSTOM_MIX'),
+      };
+    }
+    const spec = simResult.palletSpecComparison?.find((s) => s.id === palletSelectionMode);
+    const pCount = spec ? spec.totalPallets : simResult.summary.totalPallets;
+    return {
+      currentModePallets: pCount,
+      currentModeLabel: spec ? `${spec.name} (${spec.width}×${spec.length}mm)` : palletSelectionMode,
+      currentModeHcEst: estimate40HcContainerNeeds(pCount, palletSelectionMode),
+    };
+  }, [palletSelectionMode, customMixComparison, simResult]);
+
+  const mixPalletCount = customMixComparison?.totalPallets || simResult.summary.totalPallets;
+  const mixHcEst = estimate40HcContainerNeeds(mixPalletCount, 'CUSTOM_MIX');
+
   return (
     <section ref={step2Ref} className="cbm-step-section">
       <div className="cbm-section-banner step2-banner">
@@ -74,18 +100,26 @@ export function Step2PalletResult({
             <div className="cbm-pm-top">
               <span className="cbm-pm-tag mix-tag">여러 사이즈 혼합 (추천)</span>
               <strong className="cbm-pm-count">
-                총 {customMixComparison?.totalPallets || simResult.summary.totalPallets} PLT
+                총 {mixPalletCount} PLT
               </strong>
             </div>
             <div className="cbm-pm-title">🔀 품목별 파레트 섞어 쓰기</div>
             <div className="cbm-pm-sub">
               화물 치수에 맞춰 1100×1100과 1200×1000 등을 품목별로 조합 ({customMixComparison?.usedSpecs})
             </div>
+            {/* 40HC 컨테이너 바닥 완적 기준 소요 대수 표시 */}
+            <div className="cbm-pm-hc-badge-row">
+              <span className="cbm-pm-hc-badge">
+                🚢 40HC 바닥 완적: 약 <strong>{mixHcEst.containerCount}대</strong>
+              </span>
+              <small className="cbm-pm-hc-note">({mixHcEst.floorCapacity}PLT/대 · {mixHcEst.splitText})</small>
+            </div>
           </button>
 
           {/* Cards 1~4: Uniform Pallet Presets */}
           {simResult.palletSpecComparison.map((specItem) => {
             const isSelected = palletSelectionMode === specItem.id;
+            const specHcEst = specItem.hcEstimate || estimate40HcContainerNeeds(specItem.totalPallets, specItem.id);
             return (
               <button
                 key={specItem.id}
@@ -102,10 +136,48 @@ export function Step2PalletResult({
                   모든 화물을 {specItem.width}×{specItem.length}mm 파레트로 통일 | 평균 공간효율{' '}
                   {specItem.avgUtilization}%
                 </div>
+                {/* 40HC 컨테이너 바닥 완적 기준 소요 대수 표시 */}
+                <div className="cbm-pm-hc-badge-row">
+                  <span className="cbm-pm-hc-badge">
+                    🚢 40HC 바닥 완적: 약 <strong>{specHcEst.containerCount}대</strong>
+                  </span>
+                  <small className="cbm-pm-hc-note">({specHcEst.floorCapacity}PLT/대 · {specHcEst.splitText})</small>
+                </div>
               </button>
             );
           })}
         </div>
+
+        {/* 40HC 컨테이너 바닥 완적 기준 소요 대수 실시간 예측 안내 배너 */}
+        {currentModeHcEst && (
+          <div className="cbm-hc-floor-est-banner">
+            <div className="cbm-hc-est-left">
+              <div className="cbm-hc-est-head">
+                <span className="cbm-hc-est-tag">🚢 40ft High Cube 컨테이너 소요 대수 예측</span>
+                <span className="cbm-hc-est-rule">바닥 가득 채움(1단 바닥 균등 배치) 기준</span>
+              </div>
+              <div className="cbm-hc-est-main">
+                선택 규격: <strong>{currentModeLabel}</strong> (총 <strong style={{ color: '#38bdf8' }}>{currentModePallets} PLT</strong>) ➔{' '}
+                <span className="cbm-hc-est-target">40ft HC × {currentModeHcEst.containerCount}대 필요</span>
+              </div>
+              <div className="cbm-hc-est-desc">
+                • <strong>호기별 바닥 배분:</strong> 40HC 1대당 바닥 1단 {currentModeHcEst.floorCapacity}파레트 기준 ➔{' '}
+                <strong style={{ color: '#6ee7b7' }}>{currentModeHcEst.splitText}</strong> 균등 배치
+                <br />
+                • <strong>바닥 공간 활용도:</strong> {currentModeHcEst.floorNote}
+              </div>
+            </div>
+            <div className="cbm-hc-est-right">
+              <button
+                type="button"
+                className="cbm-btn-xs primary"
+                onClick={handleRunStep2ToStep3}
+              >
+                🚢 3D 컨테이너 적재 보러가기 ▶
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Per-Cargo Pallet Spec Selector Bar when CUSTOM_MIX is active */}
         {palletSelectionMode === 'CUSTOM_MIX' && (
