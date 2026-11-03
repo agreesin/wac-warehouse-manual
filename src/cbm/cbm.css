@@ -1368,6 +1368,14 @@
   border-bottom: 1px solid #334155;
 }
 
+.cbm-tier-badge {
+  font-size: 10.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #2563eb;
+  color: #fff;
+}
+
 .cbm-tooltip-close-btn {
   background: transparent;
   border: none;
@@ -1413,8 +1421,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 12px;
-}
-  color: #fff;
 }
 
 .cbm-tier-badge.tier-2 {
@@ -1651,6 +1657,534 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* =========================================================================
+   RESPONSIVE MOBILE & TABLET OPTIMIZATION
+========================================================================= */
+
+/* Tablet & Medium Screen (<= 1024px) */
+@media (max-width: 1024px) {
+  .cbm-app {
+    padding: 14px 18px 50px;
+  }
+  .cbm-header {
+    padding: 12px 16px;
+    top: 0;
+  }
+  .cbm-pallet-mode-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cbm-pallet-mode-card.mix-mode-card {
+    grid-column: span 2;
+  }
+  .cbm-container-3col-grid {
+    grid-template-columns: 1fr;
+  }
+  .cbm-pallet-split-view {
+    grid-template-columns: 1fr;
+  }
+  .cbm-viewport-wrapper {
+    height: 420px;
+  }
+}
+
+/* Mobile & Small Screen (<= 768px) */
+@media (max-width: 768px) {
+  .cbm-app {
+    padding: 8px 10px 48px;
+  }
+
+  /* Compact Sticky Header */
+  .cbm-header {
+    position: sticky;
+    top: 0;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 0 0 14px 14px;
+    gap: 10px;
+    border-top: none;
+  }
+
+  .cbm-header-left {
+    gap: 10px;
+    width: 100%;
+  }
+
+  .cbm-logo-badge {
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .cbm-title {
+    font-size: 15px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .cbm-subtitle {
+    font-size: 11px;
+    line-height: 1.35;
+    color: #94a3b8;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Scrollable Step Navigation */
+  .cbm-step-nav {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+  }
+
+  .cbm-step-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cbm-step-pill {
+    padding: 6px 10px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .cbm-step-pill .step-num {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .step-arrow {
+    display: none;
+  }
+
+  /* Mobile Header Action Buttons Grid */
+  .cbm-header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .cbm-btn {
+    padding: 8px 4px;
+    font-size: 11.5px;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  .cbm-btn-label-desktop {
+    display: none;
+  }
+
+  .cbm-btn-label-mobile {
+    display: inline;
+    font-weight: 700;
+  }
+
+  /* Section Banners */
+  .cbm-section-banner {
+    padding: 14px 14px;
+    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    border-left-width: 4px;
+    border-radius: 12px;
+  }
+
+  .cbm-section-banner-left {
+    gap: 10px;
+  }
+
+  .cbm-section-banner-left h2 {
+    font-size: 15.5px;
+  }
+
+  .cbm-section-banner-left p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .cbm-section-summary-pills {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .cbm-mini-stat {
+    min-width: 0;
+    padding: 8px 10px;
+  }
+
+  .cbm-mini-stat:nth-child(3) {
+    grid-column: span 2;
+  }
+
+  .cbm-mini-stat strong {
+    font-size: 13.5px;
+  }
+
+  /* Cards & Forms */
+  .cbm-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+  }
+
+  .cbm-card-header {
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  .cbm-card-header h2 {
+    font-size: 14.5px;
+  }
+
+  /* Horizontal Scrollable Header Buttons in Step 1 */
+  .cbm-card-header-btns {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+  }
+
+  .cbm-card-header-btns > * {
+    flex-shrink: 0;
+  }
+
+  .cbm-dropzone {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .cbm-dropzone span {
+    font-size: 12px;
+  }
+
+  .cbm-dropzone small {
+    font-size: 10.5px;
+  }
+
+  /* Table Scroll Hint on Mobile */
+  .cbm-table-scroll-hint {
+    display: block;
+    font-size: 11px;
+    color: #38bdf8;
+    padding: 5px 8px;
+    margin-bottom: 6px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px dashed rgba(56, 189, 248, 0.3);
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .cbm-cargo-table-wrap {
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #334155;
+    border-radius: 8px;
+  }
+
+  .cbm-cargo-table th {
+    padding: 8px 6px;
+    font-size: 11.5px;
+  }
+
+  .cbm-cargo-table td {
+    padding: 6px 4px;
+  }
+
+  .cbm-table-input {
+    font-size: 13px;
+    padding: 6px 4px;
+    border-radius: 5px;
+  }
+
+  .cbm-table-input.name-input {
+    width: 95px;
+  }
+
+  .cbm-table-input.dim-input {
+    width: 56px;
+  }
+
+  .cbm-table-input.qty-input {
+    width: 60px;
+  }
+
+  .cbm-table-input.weight-input {
+    width: 56px;
+  }
+
+  /* Rule Controls on Mobile */
+  .cbm-radio-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .cbm-input-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .cbm-height-quick-bar {
+    padding: 10px 10px;
+  }
+
+  .cbm-height-chips {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .cbm-height-chip {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+
+  .cbm-calculate-btn.step-cta-btn {
+    width: 100%;
+    padding: 13px 14px;
+    font-size: 13.5px;
+    line-height: 1.35;
+    border-radius: 10px;
+  }
+
+  /* Step 2 Pallet Selection */
+  .cbm-pallet-mode-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .cbm-pallet-mode-card {
+    padding: 10px 10px;
+    border-radius: 9px;
+  }
+
+  .cbm-pallet-mode-card.mix-mode-card {
+    grid-column: span 2;
+  }
+
+  .cbm-pm-count {
+    font-size: 13.5px;
+  }
+
+  .cbm-pm-title {
+    font-size: 13px;
+  }
+
+  .cbm-pm-sub {
+    font-size: 11px;
+  }
+
+  .cbm-mix-assign-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .cbm-mix-assign-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .cbm-mix-assign-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .cbm-mix-item-control {
+    justify-content: space-between;
+  }
+
+  .cbm-mix-item-control select {
+    flex: 1;
+    max-width: 220px;
+  }
+
+  /* Overhang Cards on Mobile */
+  .cbm-overhang-item-info {
+    flex: 1 1 100%;
+  }
+
+  .cbm-overhang-item-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .cbm-overhang-item-actions button {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+    padding: 6px 8px;
+  }
+
+  /* Stacking Options on Mobile */
+  .cbm-stacking-options-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* 3D Viewport on Mobile */
+  .cbm-viewport-wrapper {
+    height: 340px;
+    border-radius: 10px;
+  }
+
+  .cbm-camera-toolbar {
+    top: 8px;
+    right: 8px;
+    gap: 4px;
+  }
+
+  .cbm-camera-toolbar button {
+    padding: 5px 8px;
+    font-size: 11px;
+    min-height: 32px;
+  }
+
+  .cbm-camera-toolbar .cam-label {
+    display: none;
+  }
+
+  .cbm-viewport-legend {
+    bottom: 6px;
+    left: 8px;
+    right: 8px;
+    font-size: 10px;
+    padding: 4px 8px;
+    line-height: 1.35;
+  }
+
+  .cbm-legend-desktop {
+    display: none;
+  }
+
+  .cbm-legend-mobile {
+    display: inline;
+  }
+
+  .cbm-hover-tooltip {
+    max-width: calc(100% - 24px);
+    left: 12px !important;
+    top: 48px !important;
+    font-size: 11px;
+    padding: 8px 10px;
+    pointer-events: auto;
+  }
+
+  /* Playback Bar on Mobile */
+  .cbm-playback-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .cbm-play-btn {
+    width: 100%;
+    text-align: center;
+    padding: 8px;
+  }
+
+  .cbm-slider-wrap {
+    width: 100%;
+  }
+
+  .cbm-slider-wrap span {
+    min-width: 100px;
+    font-size: 11px;
+  }
+
+  /* Step 3 Containers on Mobile */
+  .cbm-container-cmp-card {
+    padding: 12px;
+  }
+
+  .cbm-instance-pills {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .cbm-instance-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cbm-instance-pill {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .cbm-fleet-sku-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .cbm-cog-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .cbm-2d-floor-box {
+    padding: 10px;
+  }
+
+  .cbm-2d-floor-title {
+    font-size: 11px;
+  }
+
+  .cbm-container-floor-svg {
+    max-height: 115px;
+  }
+
+  /* Modal on Mobile */
+  .cbm-modal {
+    width: 95%;
+    max-height: 88vh;
+    padding: 14px;
+    border-radius: 12px;
+    overflow-y: auto;
+  }
+}
+
+/* Very Small Mobile (< 380px) */
+@media (max-width: 380px) {
+  .cbm-pallet-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cbm-pallet-mode-card.mix-mode-card {
+    grid-column: span 1;
+  }
+
+  .cbm-section-summary-pills {
+    grid-template-columns: 1fr;
+  }
+
+  .cbm-mini-stat:nth-child(3) {
+    grid-column: span 1;
+  }
+
+  .cbm-input-grid-4 {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media print {
