@@ -608,24 +608,6 @@ export function Step1CargoInput({
               />
             </label>
           </div>
-          <div
-            style={{
-              marginTop: '10px',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              background: 'rgba(56, 189, 248, 0.08)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
-              fontSize: '0.78rem',
-              color: '#cbd5e1',
-            }}
-          >
-            💡 <strong>파레트 돌출(Overhang) 자동 진단 안내:</strong> 돌출 여부는 계산 전에 미리 알 수 없으므로,{' '}
-            <strong>[1단계 계산하기]</strong>를 누르면 먼저 파레트에 적재해 본 뒤{' '}
-            <strong style={{ color: '#38bdf8' }}>
-              Step 2에서 품목별로 몇 mm 돌출되는지(예: +60mm / 편측 30mm)와 파레트 절감 효과를 자동으로 보여주고 허용 여부를 선택
-            </strong>
-            할 수 있습니다.
-          </div>
         </div>
       </div>
 
