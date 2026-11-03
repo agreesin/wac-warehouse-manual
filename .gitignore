@@ -12,3 +12,6 @@ scratch_*
 # Working raw media directories
 expressPicture/
 packaging/
+
+# Vercel
+.vercel/
