@@ -347,7 +347,7 @@ export function Step1CargoInput({
                 <strong>1단 적재 (Single Stack)</strong>
                 <span className="cbm-stack-tag">표준</span>
               </div>
-              <p>컨테이너 바닥에 파레트를 1층으로만 안전하게 적재합니다.</p>
+              <p>바닥 1층 안전 평적 (실무 권장)</p>
             </button>
 
             <button
@@ -356,13 +356,10 @@ export function Step1CargoInput({
               onClick={() => setStackMode('double_auto')}
             >
               <div className="cbm-stack-btn-top">
-                <strong>2단 적재 — 파레트 높이 자동 맞춤</strong>
+                <strong>2단 적재 — 높이 자동 맞춤</strong>
                 <span className="cbm-stack-tag highlight">2단 자동</span>
               </div>
-              <p>
-                컨테이너 내부 높이에 파레트 2층이 들어가도록 파레트 최대 높이를{' '}
-                <strong>{effectivePalletConfig.maxTotalHeight}mm</strong>로 자동 제한합니다.
-              </p>
+              <p>컨테이너 높이에 맞춰 최대 {effectivePalletConfig.maxTotalHeight}mm로 자동 분할</p>
             </button>
 
             <button
@@ -374,9 +371,7 @@ export function Step1CargoInput({
                 <strong>2단 적재 — 지정 높이 유지</strong>
                 <span className="cbm-stack-tag">2단 수동</span>
               </div>
-              <p>
-                지정한 파레트 최대 높이를 유지하되, 합산 높이가 컨테이너 안에 들어가는 파레트만 2단으로 올립니다.
-              </p>
+              <p>지정 높이 유지, 수용 가능한 파레트만 2단 적재</p>
             </button>
           </div>
 
@@ -403,7 +398,7 @@ export function Step1CargoInput({
                 checked={interlockLayers}
                 onChange={(e) => setInterlockLayers(e.target.checked)}
               />
-              <span>🧱 홀·짝수단 벽돌식 교차 적재(인터로킹)</span>
+              <span>🧱 홀·짝수단 교차 적재(인터로킹)</span>
             </label>
           </div>
           <div className="cbm-radio-pair">
@@ -412,16 +407,16 @@ export function Step1CargoInput({
               className={`cbm-radio-card ${!mixCargos ? 'active' : ''}`}
               onClick={() => setMixCargos(false)}
             >
-              <strong>품목별 단독 적재 (분리)</strong>
-              <span>품목마다 파레트를 섞지 않고 독립 산출 (권장)</span>
+              <strong>품목별 단독 적재 (권장)</strong>
+              <span>품목별 독립 파레트 구성 (오배송 방지)</span>
             </button>
             <button
               type="button"
               className={`cbm-radio-card ${mixCargos ? 'active' : ''}`}
               onClick={() => setMixCargos(true)}
             >
-              <strong>다품종 잔량 혼적 허용 (안전검증)</strong>
-              <span>완적 파레트 우선 확정 후, 지지면적·하중이 안전한 잔량만 합포장</span>
+              <strong>다품종 잔량 혼적 허용</strong>
+              <span>완적 후 안전한 자투리 파레트만 합포장</span>
             </button>
           </div>
 

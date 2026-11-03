@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ThreeViewport } from '../ThreeViewport';
 
 export function Step3ContainerResult({
@@ -28,480 +28,165 @@ export function Step3ContainerResult({
   setExplodeContainerLayers,
   setSelectedPalletIdx,
 }) {
+  const [showGuide, setShowGuide] = useState(false);
+
   return (
     <section ref={step3Ref} className="cbm-step-section">
+      {/* Step 3 Header & Executive KPI Summary Pills */}
       <div className="cbm-section-banner step3-banner">
         <div className="cbm-section-banner-left">
           <span className="cbm-step-badge badge-emerald">STEP 3</span>
           <div>
-            <h2>컨테이너 종류별 수용 파레트 수 및 컨테이너 전체 적재 시각화</h2>
+            <h2>컨테이너 3D 적재 시뮬레이션 & 필요 대수 산출</h2>
             <p>
-              컨테이너 종류(20ft / 40ft / 40ft HC)에 따라 1대당 몇 파레트를 넣을 수 있는지 비교하고, 파레트를 모두 넣었을 때의 3D 컨테이너 내부와 무게중심(CoG)을 확인하세요.
+              총 {simResult.summary.totalPallets}개 파레트의 컨테이너 3D 적재 배치와 무게중심(CoG), 규격별 필요 대수를 확인하세요.
             </p>
           </div>
         </div>
         <div className="cbm-section-summary-pills">
           <div className="cbm-mini-stat highlight-emerald">
-            <span>선택 컨테이너 및 필요 대수</span>
+            <span>선택 규격 & 필요 대수</span>
             <strong>
               {simResult.selectedSpec.name} × {simResult.summary.totalContainers}대
             </strong>
           </div>
           <div className="cbm-mini-stat">
-            <span>적재 전략 & 호기별 배분</span>
+            <span>호기별 파레트 배분</span>
             <strong>
-              {stuffingStrategy === 'convenience' ? '🚜 작업 편의성 우선' : '⚖️ 균등 밸런스'}{' '}
-              ({simResult.containerResult.containers
+              {simResult.containerResult.containers
                 .map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`)
-                .join(' / ')})
+                .join(' / ')}
             </strong>
           </div>
           <div className="cbm-mini-stat">
-            <span>무게중심(CoG) 안전도</span>
+            <span>무게중심(CoG) 상태</span>
             <strong style={{ color: '#6ee7b7' }}>
-              {currentContainer?.cog?.statusText || '정상'}
+              {currentContainer?.cog?.statusText || '정상 (균형)'}
             </strong>
           </div>
         </div>
       </div>
 
-      {/* 3-A: Container Type Comparison Cards (20ft Dry / 40ft Dry / 40ft HC) */}
-      <div className="cbm-card">
-        <div className="cbm-card-header">
-          <h2>3-A. 컨테이너 종류별 적재 가능 파레트 수 & 필요 대수 비교</h2>
-          <div className="cbm-vis-filters">
-            <div className="cbm-segmented-filter" style={{ marginRight: '6px' }}>
+      {/* 슬림 일원화 컨트롤 리본 (컨테이너 규격 · 적재 전략 · 바닥 방식 · CoG · 가이드) */}
+      <div className="cbm-control-ribbon">
+        <div className="cbm-ribbon-row">
+          {/* 1) 컨테이너 규격 선택 */}
+          <div className="cbm-ribbon-group">
+            <span className="cbm-ribbon-label">🚢 컨테이너:</span>
+            <div className="cbm-ribbon-btn-group">
+              {simResult.containerComparison.map((item) => {
+                const isSelected = item.spec.id === selectedContainerId;
+                return (
+                  <button
+                    key={item.spec.id}
+                    type="button"
+                    className={`cbm-ribbon-btn ${isSelected ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedContainerId(item.spec.id);
+                      setSelectedContainerIdx(0);
+                    }}
+                  >
+                    {item.spec.name} ({item.containerCount}대)
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2) 적재 전략 선택 */}
+          <div className="cbm-ribbon-group">
+            <span className="cbm-ribbon-label">🚜 적재 전략:</span>
+            <div className="cbm-ribbon-btn-group">
               <button
                 type="button"
-                className={stuffingStrategy === 'convenience' ? 'active' : ''}
-                style={{
-                  padding: '4px 10px',
-                  fontWeight: stuffingStrategy === 'convenience' ? 700 : 500,
-                  color: stuffingStrategy === 'convenience' ? '#fbbf24' : '#94a3b8',
-                }}
+                className={`cbm-ribbon-btn ${
+                  stuffingStrategy === 'convenience' ? 'active amber' : ''
+                }`}
                 onClick={() => setStuffingStrategy && setStuffingStrategy('convenience')}
                 title="단일 품목으로 채울 수 있는 호기는 100% 전용 완적하여 지게차 동선 단순화"
               >
-                🚜 작업 편의성 우선 (품목별 전용 완적)
+                🚜 작업 편의성 우선
               </button>
               <button
                 type="button"
-                className={stuffingStrategy === 'balance' ? 'active' : ''}
-                style={{
-                  padding: '4px 10px',
-                  fontWeight: stuffingStrategy === 'balance' ? 700 : 500,
-                  color: stuffingStrategy === 'balance' ? '#a5b4fc' : '#94a3b8',
-                }}
+                className={`cbm-ribbon-btn ${
+                  stuffingStrategy === 'balance' ? 'active indigo' : ''
+                }`}
                 onClick={() => setStuffingStrategy && setStuffingStrategy('balance')}
                 title="모든 호기에 품목과 무게를 골고루 분산"
               >
-                ⚖️ 균등 밸런스 우선 (전 호기 균등 배분)
+                ⚖️ 균등 밸런스 우선
               </button>
             </div>
-            <label className="cbm-mini-check">
-              <input
-                type="checkbox"
-                checked={fullFloorSpread}
-                onChange={(e) => setFullFloorSpread(e.target.checked)}
-              />
-              <span style={{ color: '#fbbf24', fontWeight: 700 }}>
-                🛡️ 빈 바닥 채움 (1단 바닥 전체 균등 배치)
-              </span>
-            </label>
-            <label className="cbm-mini-check">
+          </div>
+
+          {/* 3) 바닥 배치 선택 */}
+          <div className="cbm-ribbon-group">
+            <span className="cbm-ribbon-label">🛡️ 바닥 배치:</span>
+            <div className="cbm-ribbon-btn-group">
+              <button
+                type="button"
+                className={`cbm-ribbon-btn ${fullFloorSpread ? 'active emerald' : ''}`}
+                onClick={() => setFullFloorSpread(true)}
+                title="1단 바닥 전체에 파레트를 균등 간격으로 끝까지 배치하여 운송 중 쏠림 방지"
+              >
+                🛡️ 빈 바닥 채움 (1단 전체)
+              </button>
+              <button
+                type="button"
+                className={`cbm-ribbon-btn ${!fullFloorSpread ? 'active' : ''}`}
+                onClick={() => setFullFloorSpread(false)}
+                title="상단 적재 가능 파레트를 2단으로 높게 쌓아 도어 쪽에 넓은 바닥 여유 공간 확보"
+              >
+                📦 바닥 공간 확보 (2단 밀착)
+              </button>
+            </div>
+          </div>
+
+          {/* 4) CoG 체크박스 & 실무 가이드 토글 */}
+          <div className="cbm-ribbon-group" style={{ marginLeft: 'auto' }}>
+            <label className="cbm-mini-check" style={{ margin: 0 }}>
               <input
                 type="checkbox"
                 checked={optimizeCoG}
                 onChange={(e) => setOptimizeCoG(e.target.checked)}
               />
-              <span>🎯 무게중심(CoG) 밸런싱 배치</span>
+              <span style={{ fontSize: '0.78rem' }}>🎯 CoG 밸런싱</span>
             </label>
-          </div>
-        </div>
-
-        {/* 적재 전략: 작업 편의성 우선(기본값) vs 균등 밸런스 우선(선택) 배너 */}
-        <div
-          style={{
-            marginBottom: '12px',
-            padding: '12px 14px',
-            borderRadius: '10px',
-            background:
-              stuffingStrategy === 'convenience'
-                ? 'rgba(245, 158, 11, 0.12)'
-                : 'rgba(99, 102, 241, 0.12)',
-            border:
-              stuffingStrategy === 'convenience'
-                ? '1px solid rgba(245, 158, 11, 0.45)'
-                : '1px solid rgba(99, 102, 241, 0.45)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
-          <div className="cbm-floor-banner-text">
-            {stuffingStrategy === 'convenience' ? (
-              <>
-                <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: '0.88rem' }}>
-                  🚜 [작업 편의성 우선 적용 중] 품목별 전용 컨테이너 몰아넣기 & 지게차 동선 단순화
-                </div>
-                <div style={{ color: '#e2e8f0', marginTop: '3px' }}>
-                  단일 품목(SKU)으로 1대를 꽉 채울 수 있는 물량은 다른 품목을 섞지 않고{' '}
-                  <strong style={{ color: '#fde047' }}>
-                    {simResult.containerResult.containers
-                      .filter((c) => c.stuffingBadge?.type === 'dedicated_full')
-                      .map(
-                        (c) =>
-                          `#${c.index}호기 ${c.placedPallets.length}PLT (100% 전용 완적)`
-                      )
-                      .join(', ') || '전용 완적 호기'}
-                  </strong>
-                  로 우선 완적 적재합니다. 지게차가 품목별 보관 랙을 번갈아 오가지 않고 연속 인입할 수 있으며, 도착지에서도 소팅(분류) 없이 즉시 입고/생산 라인 투입이 가능합니다. (잔여 자투리 파레트는 후속 호기에 모음 적재)
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontWeight: 700, color: '#a5b4fc', fontSize: '0.88rem' }}>
-                  ⚖️ [균등 밸런스 우선 적용 중] 전 컨테이너 호기별 품목 & 중량 균등 분산
-                </div>
-                <div style={{ color: '#e2e8f0', marginTop: '3px' }}>
-                  모든 컨테이너 호기에 각 품목과 총중량을 균일하게 분산(
-                  {simResult.containerResult.containers
-                    .map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`)
-                    .join(' / ')}
-                  )하여 적재합니다. 여러 목적지로 컨테이너가 분할 납품되거나 호기간 중량/부피 편차를 최소화해야 할 때 유리합니다.
-                </div>
-              </>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
-              className="cbm-btn-xs"
-              style={{
-                background:
-                  stuffingStrategy === 'convenience' ? '#d97706' : 'rgba(15, 23, 42, 0.8)',
-                borderColor: stuffingStrategy === 'convenience' ? '#f59e0b' : '#475569',
-                color: stuffingStrategy === 'convenience' ? '#ffffff' : '#cbd5e1',
-                padding: '7px 12px',
-                fontWeight: 700,
-              }}
-              onClick={() => setStuffingStrategy && setStuffingStrategy('convenience')}
+              className="cbm-guide-toggle-btn"
+              onClick={() => setShowGuide((prev) => !prev)}
             >
-              🚜 작업 편의성 우선 (품목별 전용 완적)
-            </button>
-            <button
-              type="button"
-              className="cbm-btn-xs"
-              style={{
-                background:
-                  stuffingStrategy === 'balance' ? '#4f46e5' : 'rgba(15, 23, 42, 0.8)',
-                borderColor: stuffingStrategy === 'balance' ? '#6366f1' : '#475569',
-                color: stuffingStrategy === 'balance' ? '#ffffff' : '#cbd5e1',
-                padding: '7px 12px',
-                fontWeight: 700,
-              }}
-              onClick={() => setStuffingStrategy && setStuffingStrategy('balance')}
-            >
-              ⚖️ 균등 밸런스 우선 (전 호기 균등 배분)
+              ⓘ 실무 적재 가이드 {showGuide ? '▲ 닫기' : '▼ 자세히'}
             </button>
           </div>
         </div>
 
-        {/* 컨테이너 바닥 채움(기본값) vs 최대한 높게 쌓아 바닥 공간 만들기(선택사항) 전환 배너 */}
-        {simResult.floorSpreadInfo && (
-          <div
-            style={{
-              marginBottom: '14px',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              background: fullFloorSpread
-                ? 'rgba(16, 185, 129, 0.14)'
-                : 'rgba(37, 99, 235, 0.14)',
-              border: fullFloorSpread
-                ? '1px solid rgba(16, 185, 129, 0.5)'
-                : '1px solid rgba(59, 130, 246, 0.5)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
-            <div className="cbm-floor-banner-text">
-              {fullFloorSpread ? (
-                <>
-                  <div style={{ fontWeight: 700, color: '#34d399', fontSize: '0.88rem' }}>
-                    🛡️ [기본값] 빈 바닥 채움 (1단 바닥 전체 균등 배치 · 총 {simResult.summary.totalPallets}PLT) 적용 중
-                  </div>
-                  <div style={{ color: '#e2e8f0', marginTop: '3px' }}>
-                    산출된 총 <strong>{simResult.summary.totalPallets}개 파레트</strong>를{' '}
-                    <strong style={{ color: '#6ee7b7' }}>
-                      {simResult.containerResult.containers
-                        .map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`)
-                        .join(' / ')}
-                    </strong>
-                    로 골고루 나누고, 모든 파레트를 <strong>1단 바닥 전체(평균 적재 길이 약{' '}
-                    {((simResult.floorSpreadInfo.avgSpreadUsedLenMm || 0) / 1000).toFixed(2)}m /{' '}
-                    {(simResult.selectedSpec.length / 1000).toFixed(2)}m)</strong>에 끝까지 고르게 배치(+ 후미 홀수 파레트 중앙 잠금)하여 운항 중 쏠림·전도 및 추가 고정장치(쇼링) 비용을 방지합니다.
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontWeight: 700, color: '#60a5fa', fontSize: '0.88rem' }}>
-                    📦 [선택사항] 최대한 높게 쌓아 바닥 공간 만들기 (2단 적재 & 앞벽 밀착 · 총 {simResult.summary.totalPallets}PLT) 적용 중
-                  </div>
-                  <div style={{ color: '#e2e8f0', marginTop: '3px' }}>
-                    산출된 총 <strong>{simResult.summary.totalPallets}개 파레트</strong> 중 상단 적재가 가능한 파레트(
-                    <strong>총 {simResult.floorSpreadInfo.compactTier2Count || 0}PLT</strong>)를{' '}
-                    <strong style={{ color: '#93c5fd' }}>2단(Tier 2)으로 높게 쌓아 올리고</strong> 앞벽 쪽으로 촘촘하게 밀착 배치하여, 컨테이너 도어 쪽에{' '}
-                    <strong style={{ color: '#fde047' }}>
-                      호기당 평균 약 {((simResult.floorSpreadInfo.avgCompactRearClearanceMm || 0) / 1000).toFixed(2)}m ({simResult.floorSpreadInfo.avgCompactRearClearanceMm || 0}mm)의 넓은 바닥 여유 공간
-                    </strong>
-                    을 확보했습니다.
-                  </div>
-                </>
-              )}
+        {/* 접이식 실무 적재 가이드 드로어 (기본은 접힘, 클릭 시만 노출) */}
+        {showGuide && (
+          <div className="cbm-guide-drawer">
+            <div className="cbm-guide-card">
+              <h4>🚜 적재 전략 실무 가이드</h4>
+              <div>
+                • <strong>작업 편의성 우선 (권장):</strong> 단일 품목으로 1대를 채울 수 있는 물량은 1호기를 100% 전용 완적(FCL)하여 지게차 왕복 동선을 줄이고 도착지 소팅(분류) 작업을 생략합니다. (2단 적재 시에도 1호기에 2단을 집중 완적하고 2호기는 안전한 1단 평적으로 끝냅니다)
+                <br />
+                • <strong>균등 밸런스 우선:</strong> 전 호기에 각 품목과 중량을 균등하게 나누어 실어 호기간 중량/부피 편차를 최소화합니다.
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="cbm-btn-xs"
-                style={{
-                  background: fullFloorSpread ? '#059669' : 'rgba(15, 23, 42, 0.8)',
-                  borderColor: fullFloorSpread ? '#10b981' : '#475569',
-                  color: fullFloorSpread ? '#ffffff' : '#cbd5e1',
-                  padding: '7px 12px',
-                  fontWeight: 700,
-                }}
-                onClick={() => setFullFloorSpread(true)}
-              >
-                🛡️ 빈 바닥 채우기 (기본값 · 1단 바닥 전체 배치)
-              </button>
-              <button
-                type="button"
-                className="cbm-btn-xs"
-                style={{
-                  background: !fullFloorSpread ? '#2563eb' : 'rgba(15, 23, 42, 0.8)',
-                  borderColor: !fullFloorSpread ? '#3b82f6' : '#475569',
-                  color: !fullFloorSpread ? '#ffffff' : '#cbd5e1',
-                  padding: '7px 12px',
-                  fontWeight: 700,
-                }}
-                onClick={() => setFullFloorSpread(false)}
-              >
-                📦 최대한 높게 쌓아 바닥 공간 만들기 (선택 · 2단/밀착)
-              </button>
+            <div className="cbm-guide-card">
+              <h4>🛡️ 바닥 배치 방식 실무 가이드</h4>
+              <div>
+                • <strong>빈 바닥 채움 (기본값):</strong> 모든 파레트를 1단 바닥 전체에 고르게 펼쳐 배치하여 선박 롤링·피칭 시 전도를 원천 차단하고 추가 고정 쇼링목 비용을 절감합니다.
+                <br />
+                • <strong>바닥 공간 확보 (선택):</strong> 상단 적재 가능 파레트를 2단으로 높게 쌓고 앞벽 쪽으로 밀착하여 도어 쪽에 넓은 바닥 여유 공간을 만듭니다.
+              </div>
             </div>
           </div>
         )}
-
-        <div className="cbm-container-3col-grid">
-          {simResult.containerComparison.map((item) => {
-            const isSelected = item.spec.id === selectedContainerId;
-            return (
-              <button
-                key={item.spec.id}
-                type="button"
-                className={`cbm-container-cmp-card ${isSelected ? 'selected' : ''}`}
-                onClick={() => {
-                  setSelectedContainerId(item.spec.id);
-                  setSelectedContainerIdx(0);
-                }}
-              >
-                <div className="cbm-cc-top">
-                  <div>
-                    <h3>{item.spec.name}</h3>
-                    <span>{item.spec.subName}</span>
-                  </div>
-                  <div className="cbm-cc-needed-badge">{item.containerCount}대 필요</div>
-                </div>
-
-                <div className="cbm-cc-specs">
-                  <div>
-                    <span>내부 치수 (길이×폭×높이)</span>
-                    <strong>
-                      {(item.spec.length / 1000).toFixed(2)}m ×{' '}
-                      {(item.spec.width / 1000).toFixed(2)}m ×{' '}
-                      {(item.spec.height / 1000).toFixed(2)}m
-                    </strong>
-                  </div>
-                  <div>
-                    <span>1대당 최대 수용량</span>
-                    <strong>
-                      바닥 1단 {item.floorSlots}PLT (최대 {item.maxCapacity}PLT/대)
-                    </strong>
-                  </div>
-                  <div>
-                    <span>호기별 적재 내역 (총 {item.palletCount}PLT)</span>
-                    <strong>
-                      {item.containers
-                        .map((c) => `${c.index}호기: ${c.placedPallets.length}PLT`)
-                        .join(' / ')}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>평균 공간 활용률</span>
-                    <strong>{item.avgUtilization}% (공인 {item.spec.nominalCbm} CBM)</strong>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* 최적 혼합 배차 추천 & 컨테이너 호기별 품목(SKU) 적재 명세표 */}
-        <div className="cbm-fleet-sku-grid">
-          {simResult.fleetRecommendations && simResult.fleetRecommendations.length > 0 && (
-            <div
-              style={{
-                background: 'rgba(15, 23, 42, 0.75)',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
-                borderRadius: '10px',
-                padding: '12px 14px',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '0.84rem',
-                  fontWeight: 700,
-                  color: '#38bdf8',
-                  marginBottom: '8px',
-                }}
-              >
-                🚛 실무 최적 배차 조합 제안 (단독 배차 vs 혼합 배차 비교)
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {simResult.fleetRecommendations.map((rec) => (
-                  <div
-                    key={rec.id}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      background: rec.badge.includes('추천')
-                        ? 'rgba(16, 185, 129, 0.12)'
-                        : 'rgba(30, 41, 59, 0.65)',
-                      border: rec.badge.includes('추천')
-                        ? '1px solid rgba(16, 185, 129, 0.4)'
-                        : '1px solid rgba(148, 163, 184, 0.2)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        fontSize: '0.82rem',
-                        fontWeight: 700,
-                        color: '#f8fafc',
-                      }}
-                    >
-                      <span>{rec.title}</span>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          padding: '2px 7px',
-                          borderRadius: '999px',
-                          background: rec.badge.includes('추천') ? '#059669' : '#334155',
-                          color: '#fff',
-                        }}
-                      >
-                        {rec.badge}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.77rem', color: '#cbd5e1', marginTop: '3px' }}>
-                      {rec.detail} — <span style={{ color: '#94a3b8' }}>{rec.note}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div
-            style={{
-              background: 'rgba(15, 23, 42, 0.75)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '10px',
-              padding: '12px 14px',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '0.84rem',
-                fontWeight: 700,
-                color: '#34d399',
-                marginBottom: '8px',
-              }}
-            >
-              📋 컨테이너 호기별 적재 품목(SKU) 배분 명세표 ({simResult.selectedSpec.name})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {simResult.containerResult.containers.map((c) => (
-                <div
-                  key={`sku-bd-${c.id}`}
-                  style={{
-                    padding: '7px 10px',
-                    borderRadius: '8px',
-                    background: 'rgba(30, 41, 59, 0.65)',
-                    border: '1px solid rgba(148, 163, 184, 0.18)',
-                    fontSize: '0.78rem',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontWeight: 700,
-                      color: '#f8fafc',
-                      marginBottom: '4px',
-                      flexWrap: 'wrap',
-                      gap: '6px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span>
-                        #{c.index}호기 (총 {c.placedPallets.length} PLT /{' '}
-                        {c.boxCount.toLocaleString()} 박스)
-                      </span>
-                      {c.stuffingBadge && (
-                        <span
-                          style={{
-                            fontSize: '0.72rem',
-                            padding: '2px 8px',
-                            borderRadius: '999px',
-                            background: c.stuffingBadge.bg,
-                            border: c.stuffingBadge.border,
-                            color: c.stuffingBadge.color,
-                            fontWeight: 700,
-                          }}
-                        >
-                          {c.stuffingBadge.label}
-                        </span>
-                      )}
-                    </div>
-                    <span style={{ color: '#6ee7b7' }}>
-                      총 {c.totalWeight.toLocaleString()} kg
-                    </span>
-                  </div>
-                  <div style={{ color: '#cbd5e1', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {(c.skuBreakdown || []).map((s) => (
-                      <span key={s.name}>
-                        • <strong>{s.name}</strong>: {s.palletCount}PLT (
-                        {s.boxes.toLocaleString()}박스, {s.weightKg.toLocaleString()}kg)
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* 3-B: 3D Container Stuffing Visualization & 2D Floor Map with CoG */}
+      {/* 3-A: 3D 컨테이너 적재 시각화 & 2D 평면도 (Visual-First! 최상단 배치) */}
       <div className="cbm-visualizer-card">
         <div className="cbm-vis-subheader">
           <div className="cbm-instance-pills">
@@ -640,13 +325,13 @@ export function Step3ContainerResult({
               <div className="cbm-2d-floor-title">
                 <span>
                   📐 {currentContainer.spec.name} #{currentContainer.index}호기 평면 배치도 (총{' '}
-                  {currentContainer.placedPallets.length} 파레트 — 파레트 클릭 시 Step 2 상세 도면으로 이동)
+                  {currentContainer.placedPallets.length} 파레트 — 클릭 시 Step 2 이동)
                 </span>
                 <span>
                   <strong style={{ color: '#60a5fa' }}>■ 1100×1100</strong> |{' '}
                   <strong style={{ color: '#f59e0b' }}>■ 1200×1000</strong> |{' '}
-                  <strong style={{ color: '#10b981' }}>■ 잔여/부분 파레트</strong> |{' '}
-                  <strong style={{ color: '#facc15' }}>🎯 무게중심(CoG)</strong>
+                  <strong style={{ color: '#10b981' }}>■ 잔여/부분</strong> |{' '}
+                  <strong style={{ color: '#facc15' }}>🎯 CoG</strong>
                 </span>
               </div>
               <svg
@@ -749,104 +434,104 @@ export function Step3ContainerResult({
                         y={pp.z + pp.width / 2 + 220}
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        fill="#e2e8f0"
-                        fontSize="150"
+                        fill="#cbd5e1"
+                        fontSize="155"
                       >
-                        {pp.length}×{pp.width}
+                        {pp.pallet.width}×{pp.pallet.length}
                       </text>
                     </g>
                   );
                 })}
 
-                <g
-                  transform={`translate(${currentContainer.cog.cogX}, ${currentContainer.cog.cogZ})`}
+                <circle
+                  cx={currentContainer.cog.cogX}
+                  cy={currentContainer.cog.cogZ}
+                  r={140}
+                  fill="#facc15"
+                  stroke="#ffffff"
+                  strokeWidth={28}
+                />
+                <circle
+                  cx={currentContainer.cog.cogX}
+                  cy={currentContainer.cog.cogZ}
+                  r={220}
+                  fill="none"
+                  stroke="#facc15"
+                  strokeWidth={14}
+                  strokeDasharray="40,30"
+                />
+                <text
+                  x={currentContainer.cog.cogX}
+                  y={currentContainer.cog.cogZ - 200}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#facc15"
+                  fontSize="210"
+                  fontWeight="bold"
                 >
-                  <circle
-                    r={230}
-                    fill="#facc15"
-                    fillOpacity={0.28}
-                    stroke="#facc15"
-                    strokeWidth={35}
-                  />
-                  <circle r={85} fill="#ef4444" stroke="#ffffff" strokeWidth={25} />
-                  <text
-                    x={0}
-                    y={-310}
-                    textAnchor="middle"
-                    fill="#facc15"
-                    fontSize="195"
-                    fontWeight="bold"
-                  >
-                    🎯 CoG (무게중심)
-                  </text>
-                </g>
+                  CoG ({currentContainer.cog.lengthRatioPct}%, {currentContainer.cog.widthRatioPct}%)
+                </text>
               </svg>
             </div>
 
-            {/* Center of Gravity 4-Metric Dashboard */}
-            <div className="cbm-cog-panel">
-              <div className="cbm-cog-header">
-                <strong>
-                  🎯 {currentContainer.spec.name} #{currentContainer.index}호기 무게중심 (Center of Gravity) 및 중량 밸런스
-                </strong>
-                <span className="cbm-cog-status-badge">
-                  🟢 {currentContainer.cog.statusText}
-                </span>
+            {/* CoG Metric Cards */}
+            <div className="cbm-cog-stats-col">
+              <div
+                className={`cbm-cog-status-box ${
+                  currentContainer.cog.status === 'SAFE' ? 'status-safe' : 'status-warn'
+                }`}
+              >
+                <div className="cbm-cs-top">
+                  <span>무게중심(CoG) 평가</span>
+                  <strong>{currentContainer.cog.statusText}</strong>
+                </div>
+                <p>
+                  {currentContainer.cog.status === 'SAFE'
+                    ? '컨테이너 전후 및 좌우 대칭 하중이 안전 범위 내에 정밀하게 유지되어 있습니다.'
+                    : '전후 또는 좌우 중량 편차가 감지되었습니다. 지게차 적입 시 하중 분산 상태를 확인하세요.'}
+                </p>
               </div>
 
               <div className="cbm-cog-metrics-grid">
                 <div className="cbm-cog-metric">
-                  <span>전후(길이) 무게중심 (X축)</span>
+                  <span>좌우 밸런스 (Left vs Right)</span>
                   <strong>
-                    {(currentContainer.cog.cogX / 1000).toFixed(2)}m 지점 (전체 길이의{' '}
-                    {currentContainer.cog.lengthRatioPct}%)
+                    좌 {currentContainer.cog.leftRatio}% : 우 {currentContainer.cog.rightRatio}%
                   </strong>
-                  <small>
-                    안쪽 절반 {currentContainer.cog.frontRatio}% : 도어쪽 절반{' '}
+                  <small>이상 기준 50:50 (안전 범위 ±6% 이내)</small>
+                </div>
+                <div className="cbm-cog-metric">
+                  <span>전후 밸런스 (Front vs Rear)</span>
+                  <strong>
+                    앞(벽) {currentContainer.cog.frontRatio}% : 뒤(문){' '}
                     {currentContainer.cog.rearRatio}%
-                  </small>
-                </div>
-
-                <div className="cbm-cog-metric">
-                  <span>좌우(폭) 무게중심 (Z축)</span>
-                  <strong>
-                    중심 편차 {currentContainer.cog.offsetZFromCenter}mm (폭의{' '}
-                    {currentContainer.cog.widthRatioPct}%)
                   </strong>
                   <small>
-                    좌측열 {currentContainer.cog.leftRatio}% : 우측열{' '}
-                    {currentContainer.cog.rightRatio}% (대칭 균형)
+                    전방(헤드) 측 {currentContainer.cog.lengthRatioPct}% 지점 배치
                   </small>
                 </div>
-
                 <div className="cbm-cog-metric">
-                  <span>수직(높이) 무게중심 (Y축)</span>
+                  <span>적재층 분석</span>
                   <strong>
-                    바닥으로부터 {currentContainer.cog.cogY}mm (높이의{' '}
-                    {currentContainer.cog.heightRatioPct}%)
-                  </strong>
-                  <small>컨테이너 절반 이하 저중심 유지로 전도 위험 없음</small>
-                </div>
-
-                <div className="cbm-cog-metric">
-                  <span>컨테이너 호기 총 중량</span>
-                  <strong>
-                    {currentContainer.totalWeight.toLocaleString()} kg ({currentContainer.placedPallets.length} PLT)
+                    1단(바닥) {currentContainer.tier1Count}PLT / 2단(상단){' '}
+                    {currentContainer.tier2Count}PLT
                   </strong>
                   <small>
-                    최대 허용 중량({currentContainer.spec.maxWeight.toLocaleString()}kg) 대비{' '}
-                    {currentContainer.weightUtilization}%
+                    총 {currentContainer.placedPallets.length}개 파레트 (
+                    {currentContainer.boxCount.toLocaleString()} 박스)
                   </small>
                 </div>
               </div>
 
-              {/* 현장 지게차 도어 통과 · 쇼링(Shoring) · 에어백 정밀 진단 패널 */}
+              {/* Field Operations & Shoring Diagnostics */}
               {currentContainer.fieldDiagnostics && (
                 <div
                   style={{
-                    marginTop: '12px',
-                    paddingTop: '12px',
-                    borderTop: '1px solid rgba(148, 163, 184, 0.2)',
+                    marginTop: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    background: 'rgba(30, 41, 59, 0.65)',
+                    border: '1px solid rgba(148, 163, 184, 0.2)',
                   }}
                 >
                   <div
@@ -857,11 +542,11 @@ export function Step3ContainerResult({
                       marginBottom: '8px',
                     }}
                   >
-                    🚜 현장 컨테이너 적입(Stuffing) · 도어 통과 · 쇼링/에어백 작업성 정밀 진단
+                    🚜 현장 적입(Stuffing) · 도어 통과 · 쇼링/에어백 진단
                   </div>
                   <div className="cbm-cog-metrics-grid">
                     <div className="cbm-cog-metric">
-                      <span>🚪 컨테이너 도어 프레임 통과 여유 (유효고 {currentContainer.spec.doorHeight}mm)</span>
+                      <span>🚪 도어 프레임 통과 여유 (유효고 {currentContainer.spec.doorHeight}mm)</span>
                       <strong
                         style={{
                           color:
@@ -872,7 +557,7 @@ export function Step3ContainerResult({
                               : '#34d399',
                         }}
                       >
-                        최고 적재고 {currentContainer.fieldDiagnostics.maxStackHeightMm}mm (도어 여유{' '}
+                        최고고 {currentContainer.fieldDiagnostics.maxStackHeightMm}mm (여유{' '}
                         {currentContainer.fieldDiagnostics.doorClearanceMm >= 0 ? '+' : ''}
                         {currentContainer.fieldDiagnostics.doorClearanceMm}mm)
                       </strong>
@@ -880,18 +565,18 @@ export function Step3ContainerResult({
                     </div>
 
                     <div className="cbm-cog-metric">
-                      <span>⚓ 도어측 잔여 길이 & 쇼링(Shoring)/래싱 진단</span>
+                      <span>⚓ 도어측 잔여 길이 & 쇼링 진단</span>
                       <strong>
-                        적재 길이 {(currentContainer.fieldDiagnostics.usedLengthMm / 1000).toFixed(2)}m / 도어 여유{' '}
+                        적재길이 {(currentContainer.fieldDiagnostics.usedLengthMm / 1000).toFixed(2)}m / 잔여{' '}
                         {currentContainer.fieldDiagnostics.rearClearanceMm}mm
                       </strong>
                       <small>{currentContainer.fieldDiagnostics.shoringText}</small>
                     </div>
 
                     <div className="cbm-cog-metric">
-                      <span>🛡️ 좌우 측면 유격 & 에어백(Dunnage Bag) 규격</span>
+                      <span>🛡️ 측면 유격 & 에어백 규격</span>
                       <strong>
-                        2열 폭 유격 {currentContainer.fieldDiagnostics.lateralGapMm}mm (바닥 면적 활용률{' '}
+                        폭 유격 {currentContainer.fieldDiagnostics.lateralGapMm}mm (바닥 효율{' '}
                         {currentContainer.fieldDiagnostics.floorUtilizationPct}%)
                       </strong>
                       <small>{currentContainer.fieldDiagnostics.dunnageBagText}</small>
@@ -902,6 +587,226 @@ export function Step3ContainerResult({
             </div>
           </div>
         )}
+      </div>
+
+      {/* 3-B: 컨테이너 호기별 품목(SKU) 적재 명세표 & 최적 복합 배차 제안 */}
+      <div className="cbm-card" style={{ marginTop: '16px' }}>
+        <div className="cbm-card-header">
+          <h2>3-B. 컨테이너 호기별 적재 품목(SKU) 배분 명세표 & 실무 최적 배차 제안</h2>
+          <span className="cbm-badge">출고 및 선적 검수용</span>
+        </div>
+
+        <div className="cbm-fleet-sku-grid" style={{ marginTop: 0 }}>
+          {/* 호기별 SKU 배분 명세표 */}
+          <div
+            style={{
+              background: 'rgba(15, 23, 42, 0.75)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '10px',
+              padding: '12px 14px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                color: '#34d399',
+                marginBottom: '8px',
+              }}
+            >
+              📋 호기별 적재 품목(SKU) 명세표 ({simResult.selectedSpec.name})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {simResult.containerResult.containers.map((c) => (
+                <div
+                  key={`sku-bd-${c.id}`}
+                  style={{
+                    padding: '7px 10px',
+                    borderRadius: '8px',
+                    background: 'rgba(30, 41, 59, 0.65)',
+                    border: '1px solid rgba(148, 163, 184, 0.18)',
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontWeight: 700,
+                      color: '#f8fafc',
+                      marginBottom: '4px',
+                      flexWrap: 'wrap',
+                      gap: '6px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span>
+                        #{c.index}호기 (총 {c.placedPallets.length} PLT /{' '}
+                        {c.boxCount.toLocaleString()} 박스)
+                      </span>
+                      {c.stuffingBadge && (
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: c.stuffingBadge.bg,
+                            border: c.stuffingBadge.border,
+                            color: c.stuffingBadge.color,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {c.stuffingBadge.label}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ color: '#6ee7b7' }}>
+                      총 {c.totalWeight.toLocaleString()} kg
+                    </span>
+                  </div>
+                  <div style={{ color: '#cbd5e1', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {(c.skuBreakdown || []).map((s) => (
+                      <span key={s.name}>
+                        • <strong>{s.name}</strong>: {s.palletCount}PLT (
+                        {s.boxes.toLocaleString()}박스, {s.weightKg.toLocaleString()}kg)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 최적 복합 배차 조합 제안 */}
+          {simResult.fleetRecommendations && simResult.fleetRecommendations.length > 0 && (
+            <div
+              style={{
+                background: 'rgba(15, 23, 42, 0.75)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                borderRadius: '10px',
+                padding: '12px 14px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  color: '#38bdf8',
+                  marginBottom: '8px',
+                }}
+              >
+                🚛 실무 최적 배차 조합 제안 (단독 배차 vs 혼합 배차 비교)
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {simResult.fleetRecommendations.map((rec) => (
+                  <div
+                    key={rec.id}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      background: rec.badge.includes('추천')
+                        ? 'rgba(16, 185, 129, 0.12)'
+                        : 'rgba(30, 41, 59, 0.65)',
+                      border: rec.badge.includes('추천')
+                        ? '1px solid rgba(16, 185, 129, 0.4)'
+                        : '1px solid rgba(148, 163, 184, 0.2)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        color: '#f8fafc',
+                      }}
+                    >
+                      <span>{rec.title}</span>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '2px 7px',
+                          borderRadius: '999px',
+                          background: rec.badge.includes('추천') ? '#059669' : '#334155',
+                          color: '#fff',
+                        }}
+                      >
+                        {rec.badge}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.77rem', color: '#cbd5e1', marginTop: '3px' }}>
+                      {rec.detail} — <span style={{ color: '#94a3b8' }}>{rec.note}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3-C: 컨테이너 종류별 규격 및 적재 가능량 상세 비교 */}
+      <div className="cbm-card" style={{ marginTop: '16px' }}>
+        <div className="cbm-card-header">
+          <h2>3-C. 컨테이너 종류별 적재 가능 파레트 수 & 규격 상세 비교</h2>
+          <span className="cbm-badge">카드를 클릭하면 해당 규격으로 즉시 전환됩니다</span>
+        </div>
+
+        <div className="cbm-container-3col-grid">
+          {simResult.containerComparison.map((item) => {
+            const isSelected = item.spec.id === selectedContainerId;
+            return (
+              <button
+                key={item.spec.id}
+                type="button"
+                className={`cbm-container-cmp-card ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  setSelectedContainerId(item.spec.id);
+                  setSelectedContainerIdx(0);
+                }}
+              >
+                <div className="cbm-cc-top">
+                  <div>
+                    <h3>{item.spec.name}</h3>
+                    <span>{item.spec.subName}</span>
+                  </div>
+                  <div className="cbm-cc-needed-badge">{item.containerCount}대 필요</div>
+                </div>
+
+                <div className="cbm-cc-specs">
+                  <div>
+                    <span>내부 치수 (길이×폭×높이)</span>
+                    <strong>
+                      {(item.spec.length / 1000).toFixed(2)}m ×{' '}
+                      {(item.spec.width / 1000).toFixed(2)}m ×{' '}
+                      {(item.spec.height / 1000).toFixed(2)}m
+                    </strong>
+                  </div>
+                  <div>
+                    <span>1대당 최대 수용량</span>
+                    <strong>
+                      바닥 1단 {item.floorSlots}PLT (최대 {item.maxCapacity}PLT/대)
+                    </strong>
+                  </div>
+                  <div>
+                    <span>호기별 적재 내역 (총 {item.palletCount}PLT)</span>
+                    <strong>
+                      {item.containers
+                        .map((c) => `${c.index}호기: ${c.placedPallets.length}PLT`)
+                        .join(' / ')}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>평균 공간 활용률</span>
+                    <strong>{item.avgUtilization}% (공인 {item.spec.nominalCbm} CBM)</strong>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

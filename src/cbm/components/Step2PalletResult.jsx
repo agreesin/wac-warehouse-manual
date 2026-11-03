@@ -150,21 +150,13 @@ export function Step2PalletResult({
 
         {/* 40HC 컨테이너 바닥 완적 기준 소요 대수 실시간 예측 안내 배너 */}
         {currentModeHcEst && (
-          <div className="cbm-hc-floor-est-banner">
-            <div className="cbm-hc-est-left">
-              <div className="cbm-hc-est-head">
-                <span className="cbm-hc-est-tag">🚢 40ft High Cube 컨테이너 소요 대수 예측</span>
-                <span className="cbm-hc-est-rule">바닥 가득 채움(1단 바닥 균등 배치) 기준</span>
-              </div>
-              <div className="cbm-hc-est-main">
-                선택 규격: <strong>{currentModeLabel}</strong> (총 <strong style={{ color: '#38bdf8' }}>{currentModePallets} PLT</strong>) ➔{' '}
-                <span className="cbm-hc-est-target">40ft HC × {currentModeHcEst.containerCount}대 필요</span>
-              </div>
-              <div className="cbm-hc-est-desc">
-                • <strong>호기별 바닥 배분:</strong> 40HC 1대당 바닥 1단 {currentModeHcEst.floorCapacity}파레트 기준 ➔{' '}
-                <strong style={{ color: '#6ee7b7' }}>{currentModeHcEst.splitText}</strong> 균등 배치
-                <br />
-                • <strong>바닥 공간 활용도:</strong> {currentModeHcEst.floorNote}
+          <div className="cbm-hc-floor-est-banner" style={{ padding: '9px 14px' }}>
+            <div className="cbm-hc-est-left" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span className="cbm-hc-est-tag">🚢 40ft HC 필요 대수</span>
+              <div style={{ fontSize: '0.84rem', color: '#f8fafc' }}>
+                총 <strong style={{ color: '#38bdf8' }}>{currentModePallets} PLT</strong> ➔{' '}
+                <span className="cbm-hc-est-target">40ft HC × {currentModeHcEst.containerCount}대 필요</span>{' '}
+                <span style={{ color: '#6ee7b7', fontWeight: 600 }}>({currentModeHcEst.splitText} 균등 배치)</span>
               </div>
             </div>
             <div className="cbm-hc-est-right">
