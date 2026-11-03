@@ -508,8 +508,11 @@ export function CbmSimulator() {
             type="button"
             className="cbm-btn cbm-btn-outline"
             onClick={downloadSampleExcelTemplate}
+            title="화물 입력 엑셀 양식 다운로드"
           >
-            📥 엑셀 양식 다운로드
+            <span>📥</span>
+            <span className="cbm-btn-label-desktop">엑셀 양식 다운로드</span>
+            <span className="cbm-btn-label-mobile">양식</span>
           </button>
           {simResult && (
             <>
@@ -519,7 +522,9 @@ export function CbmSimulator() {
                 onClick={handleCopyReportText}
                 title="카톡이나 메일에 바로 붙여넣을 수 있는 요약 텍스트 복사"
               >
-                📋 견적 요약 복사
+                <span>📋</span>
+                <span className="cbm-btn-label-desktop">견적 요약 복사</span>
+                <span className="cbm-btn-label-mobile">복사</span>
               </button>
               <button
                 type="button"
@@ -527,7 +532,9 @@ export function CbmSimulator() {
                 onClick={() => window.print()}
                 title="현재 화면 리포트 인쇄 또는 PDF 저장"
               >
-                🖨️ 인쇄/PDF
+                <span>🖨️</span>
+                <span className="cbm-btn-label-desktop">인쇄/PDF</span>
+                <span className="cbm-btn-label-mobile">PDF</span>
               </button>
               <button
                 type="button"
@@ -537,8 +544,11 @@ export function CbmSimulator() {
                     doubleStack: stackMode !== 'single',
                   })
                 }
+                title="시뮬레이션 견적 결과 엑셀 파일 저장"
               >
-                📊 견적 리포트 엑셀 저장
+                <span>📊</span>
+                <span className="cbm-btn-label-desktop">견적 리포트 엑셀 저장</span>
+                <span className="cbm-btn-label-mobile">엑셀저장</span>
               </button>
             </>
           )}

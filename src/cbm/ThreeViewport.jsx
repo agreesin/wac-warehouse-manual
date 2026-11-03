@@ -557,52 +557,75 @@ export function ThreeViewport({
       {/* Camera Preset Toolbar Overlay */}
       <div className="cbm-camera-toolbar">
         <button type="button" onClick={() => setCameraView('iso')} title="기본 3D 등각 뷰">
-          🧊 3D 등각
+          <span className="cam-icon">🧊</span> <span className="cam-label">3D 등각</span>
         </button>
         <button type="button" onClick={() => setCameraView('front')} title="정면(문쪽) 뷰">
-          🚪 정면(도어)
+          <span className="cam-icon">🚪</span> <span className="cam-label">정면(도어)</span>
         </button>
         <button type="button" onClick={() => setCameraView('side')} title="측면 뷰">
-          📐 측면
+          <span className="cam-icon">📐</span> <span className="cam-label">측면</span>
         </button>
         <button type="button" onClick={() => setCameraView('top')} title="위에서 내려다본 평면 뷰">
-          🔼 평면(Top)
+          <span className="cam-icon">🔼</span> <span className="cam-label">평면(Top)</span>
         </button>
       </div>
 
       {/* Direction Legend Overlay */}
       <div className="cbm-viewport-legend">
         {mode === 'container' ? (
-          <span>
-            💡 마우스 드래그: 360° 회전 | 휠: 확대/축소 | 우클릭 드래그: 이동 |{' '}
-            <strong style={{ color: '#f59e0b' }}>주황색 테두리 = 컨테이너 문(Door) 방향</strong> | 파레트 클릭 시 상세 보기
-          </span>
+          <>
+            <span className="cbm-legend-desktop">
+              💡 마우스 드래그: 360° 회전 | 휠: 확대/축소 | 우클릭: 이동 |{' '}
+              <strong style={{ color: '#f59e0b' }}>주황색 테두리 = 컨테이너 문(Door) 방향</strong> | 파레트 클릭 시 상세 보기
+            </span>
+            <span className="cbm-legend-mobile">
+              💡 👆 1손가락: 3D 회전 · ✌️ 2손가락: 줌 · <strong style={{ color: '#f59e0b' }}>주황: 도어</strong> · 파레트 터치 시 상세
+            </span>
+          </>
         ) : (
-          <span>
-            💡 파레트 상세 뷰 — 회색 외곽선은 설정된 파레트 최대 허용 높이({palletInstance?.maxTotalHeight || 1800}mm) 가이드입니다.
-          </span>
+          <>
+            <span className="cbm-legend-desktop">
+              💡 파레트 상세 뷰 — 회색 외곽선은 설정된 파레트 최대 허용 높이({palletInstance?.maxTotalHeight || 1800}mm) 가이드입니다.
+            </span>
+            <span className="cbm-legend-mobile">
+              💡 파레트 3D 뷰 — 회색 외곽선: 최대 허용 높이({palletInstance?.maxTotalHeight || 1800}mm) 가이드
+            </span>
+          </>
         )}
       </div>
 
-      {/* Hover Tooltip HUD */}
+      {/* Hover/Touch Tooltip HUD */}
       {hoveredInfo && (
         <div
           className="cbm-hover-tooltip"
           style={{
-            left: Math.min(hoveredInfo.screenX + 16, 520),
+            left: Math.min(hoveredInfo.screenX + 16, window.innerWidth > 640 ? 520 : window.innerWidth - 240),
             top: Math.max(hoveredInfo.screenY - 10, 12),
           }}
         >
           <div className="cbm-hover-title">
             <span>Pallet #{hoveredInfo.palletIndex}</span>
-            {hoveredInfo.tier && (
-              <span className={`cbm-tier-badge tier-${hoveredInfo.tier}`}>
-                {hoveredInfo.tier}단 적재
-              </span>
-            )}
-            {hoveredInfo.layerIndex && (
-              <span className="cbm-tier-badge tier-1">{hoveredInfo.layerIndex}층(단)</span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {hoveredInfo.tier && (
+                <span className={`cbm-tier-badge tier-${hoveredInfo.tier}`}>
+                  {hoveredInfo.tier}단 적재
+                </span>
+              )}
+              {hoveredInfo.layerIndex && (
+                <span className="cbm-tier-badge tier-1">{hoveredInfo.layerIndex}층(단)</span>
+              )}
+              <button
+                type="button"
+                className="cbm-tooltip-close-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHoveredInfo(null);
+                }}
+                aria-label="툴팁 닫기"
+              >
+                ✕
+              </button>
+            </div>
           </div>
           <div className="cbm-hover-row">
             <span>화물명:</span>

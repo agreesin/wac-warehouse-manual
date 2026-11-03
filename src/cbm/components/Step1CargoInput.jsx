@@ -155,6 +155,9 @@ export function Step1CargoInput({
           </div>
 
           <div className="cbm-cargo-table-wrap">
+            <div className="cbm-table-scroll-hint">
+              <span>👉 표를 좌우로 밀어서(스크롤) 치수·단수·회전 설정을 확인하세요</span>
+            </div>
             <table className="cbm-cargo-table">
               <thead>
                 <tr>

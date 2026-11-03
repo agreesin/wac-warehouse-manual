@@ -144,6 +144,26 @@
   flex-wrap: wrap;
 }
 
+.cbm-btn-label-desktop {
+  display: inline;
+}
+
+.cbm-btn-label-mobile {
+  display: none;
+}
+
+.cbm-legend-desktop {
+  display: inline;
+}
+
+.cbm-legend-mobile {
+  display: none;
+}
+
+.cbm-table-scroll-hint {
+  display: none;
+}
+
 .cbm-btn {
   border: none;
   border-radius: 9px;
@@ -1348,11 +1368,52 @@
   border-bottom: 1px solid #334155;
 }
 
-.cbm-tier-badge {
-  font-size: 10.5px;
+.cbm-tooltip-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
   padding: 2px 6px;
-  border-radius: 4px;
-  background: #2563eb;
+  line-height: 1;
+}
+
+.cbm-tooltip-close-btn:hover {
+  color: #f8fafc;
+}
+
+/* Common Layout Helpers */
+.cbm-overhang-item-info {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.cbm-overhang-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cbm-stacking-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 12px;
+}
+
+.cbm-floor-banner-text {
+  flex: 1 1 500px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  min-width: 0;
+}
+
+.cbm-fleet-sku-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+}
   color: #fff;
 }
 

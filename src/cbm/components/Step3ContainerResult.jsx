@@ -116,7 +116,7 @@ export function Step3ContainerResult({
               gap: '12px',
             }}
           >
-            <div style={{ flex: '1 1 500px', fontSize: '0.82rem', lineHeight: 1.5 }}>
+            <div className="cbm-floor-banner-text">
               {fullFloorSpread ? (
                 <>
                   <div style={{ fontWeight: 700, color: '#34d399', fontSize: '0.88rem' }}>
@@ -239,14 +239,7 @@ export function Step3ContainerResult({
         </div>
 
         {/* 최적 혼합 배차 추천 & 컨테이너 호기별 품목(SKU) 적재 명세표 */}
-        <div
-          style={{
-            marginTop: '14px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: '12px',
-          }}
-        >
+        <div className="cbm-fleet-sku-grid">
           {simResult.fleetRecommendations && simResult.fleetRecommendations.length > 0 && (
             <div
               style={{

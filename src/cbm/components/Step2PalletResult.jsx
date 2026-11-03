@@ -240,6 +240,7 @@ export function Step2PalletResult({
               return (
                 <div
                   key={diag.cargoId}
+                  className="cbm-overhang-diag-card"
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -256,7 +257,7 @@ export function Step2PalletResult({
                       : '1px solid rgba(148, 163, 184, 0.22)',
                   }}
                 >
-                  <div style={{ flex: '1 1 420px' }}>
+                  <div className="cbm-overhang-item-info">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span
                         className="cbm-color-dot"
@@ -343,14 +344,7 @@ export function Step2PalletResult({
                   </div>
 
                   {/* 우측 허용/비허용 선택 컨트롤 */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
+                  <div className="cbm-overhang-item-actions">
                     <button
                       type="button"
                       className={`cbm-btn-xs ${!isOvApplied ? 'primary' : ''}`}
@@ -730,13 +724,7 @@ export function Step2PalletResult({
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                        gap: '12px',
-                      }}
-                    >
+                    <div className="cbm-stacking-options-grid">
                       {/* ① 1층 평면 배열 모양 (5종) */}
                       <div
                         style={{
