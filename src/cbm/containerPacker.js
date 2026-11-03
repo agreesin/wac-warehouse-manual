@@ -248,10 +248,14 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       );
       const usedBottomIds = new Set();
       const reservedTopIds = new Set();
+      const maxTier2Allowed = Math.min(
+        floorSlotsPerContainer,
+        Math.floor(workingList.length / 2)
+      );
 
       for (const topCand of ascendingByHeight) {
         if (reservedTopIds.has(topCand.id)) continue;
-        if (workingList.length - reservedTopIds.size <= 2) break;
+        if (reservedTopIds.size >= maxTier2Allowed) break;
 
         const bottomMatch = workingList.find(
           (b) =>
@@ -715,6 +719,26 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         bg: 'rgba(16, 185, 129, 0.16)',
         border: '1px solid rgba(16, 185, 129, 0.45)',
       };
+    } else if (effectiveDoubleStack && c.tier2Count === 0) {
+      c.stuffingBadge = {
+        type: 'tier1_pure',
+        label: `🛡️ 순수 1단 안전 평적 (총 ${c.placedPallets.length}PLT · 2단 0개)`,
+        shortLabel: `1단 안전 평적 (${c.placedPallets.length}PLT)`,
+        tagText: '1단 안전 평적 (전도 위험 0%)',
+        color: '#34d399',
+        bg: 'rgba(16, 185, 129, 0.16)',
+        border: '1px solid rgba(16, 185, 129, 0.45)',
+      };
+    } else if (effectiveDoubleStack && c.tier2Count >= floorSlots) {
+      c.stuffingBadge = {
+        type: 'tier2_full',
+        label: `📦 2단 집중 완적 (총 ${c.placedPallets.length}PLT · 40PLT 만적)`,
+        shortLabel: `2단 집중 완적 (${c.placedPallets.length}PLT)`,
+        tagText: '2단 집중 완적 (만적)',
+        color: '#38bdf8',
+        bg: 'rgba(56, 189, 248, 0.16)',
+        border: '1px solid rgba(56, 189, 248, 0.45)',
+      };
     } else if (isSingleSku) {
       c.stuffingBadge = {
         type: 'dedicated_partial',
@@ -728,9 +752,12 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     } else if (isConvenienceMode) {
       c.stuffingBadge = {
         type: 'convenience_mixed',
-        label: `🔀 잔여 품목 모음 적재 (${c.skuBreakdown.length}개 품목)`,
+        label:
+          c.tier2Count > 0
+            ? `📦 2단 블록 적재 (1단 ${c.tier1Count} + 2단 ${c.tier2Count}PLT)`
+            : `🔀 잔여 품목 모음 적재 (${c.skuBreakdown.length}개 품목)`,
         shortLabel: `잔여 품목 모음 (${c.placedPallets.length}PLT)`,
-        tagText: '잔여 품목 모음',
+        tagText: c.tier2Count > 0 ? `2단 블록 (${c.tier2Count}PLT)` : '잔여 품목 모음',
         color: '#fbbf24',
         bg: 'rgba(245, 158, 11, 0.16)',
         border: '1px solid rgba(245, 158, 11, 0.45)',
@@ -738,7 +765,10 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     } else {
       c.stuffingBadge = {
         type: 'balanced',
-        label: `⚖️ 균등 분산 적재 (${c.skuBreakdown.length}개 품목)`,
+        label:
+          c.tier2Count > 0
+            ? `⚖️ 2단 분산 적재 (1단 ${c.tier1Count} + 2단 ${c.tier2Count}PLT)`
+            : `⚖️ 균등 분산 적재 (${c.skuBreakdown.length}개 품목)`,
         shortLabel: `균등 분산 (${c.placedPallets.length}PLT)`,
         tagText: '균등 분산',
         color: '#a5b4fc',
