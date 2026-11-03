@@ -406,7 +406,7 @@ export function CbmSimulator() {
   const handleCopyReportText = () => {
     if (!simResult) return;
     const lines = [];
-    lines.push('■ [파레트 & 컨테이너 적재 산출 요약서]');
+    lines.push('■ [WAC 로딩플래너 적재 견적 산출 요약서]');
     lines.push(
       `• 총 화물 수량: ${simResult.summary.totalBoxesPacked.toLocaleString()} CTNS (순수 화물 ${simResult.summary.totalCargoCbm} CBM)`
     );
@@ -458,14 +458,14 @@ export function CbmSimulator() {
       ===================================================================== */}
       <header className="cbm-header">
         <div className="cbm-header-left">
-          <div className="cbm-logo-badge">3D CBM</div>
+          <div className="cbm-logo-badge">WAC LP</div>
           <div>
             <h1 className="cbm-title">
-              화물 파레트 & 컨테이너 적재 견적 시뮬레이터
-              <span className="cbm-version-tag">ESTIMATOR</span>
+              WAC 로딩플래너
+              <span className="cbm-version-tag">3D 시뮬레이터</span>
             </h1>
             <p className="cbm-subtitle">
-              Step 1. 화물·조건 입력 ➔ Step 2. 파레트 사이즈별 산출 및 적재 시각화 ➔ Step 3. 컨테이너 산출 및 적재 시각화
+              화물 치수/수량 입력 ➔ 파레트 수량 계산 ➔ 40HC 컨테이너 바닥 완적 소요 대수 & 3D 적재 시각화
             </p>
           </div>
         </div>
