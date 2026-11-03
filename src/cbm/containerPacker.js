@@ -722,9 +722,9 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     } else if (effectiveDoubleStack && c.tier2Count === 0) {
       c.stuffingBadge = {
         type: 'tier1_pure',
-        label: `🛡️ 순수 1단 안전 평적 (총 ${c.placedPallets.length}PLT · 2단 0개)`,
-        shortLabel: `1단 안전 평적 (${c.placedPallets.length}PLT)`,
-        tagText: '1단 안전 평적 (전도 위험 0%)',
+        label: `🛡️ 순수 1단적 안전 평적 (총 ${c.placedPallets.length}PLT · 2단적 0개)`,
+        shortLabel: `1단적 안전 평적 (${c.placedPallets.length}PLT)`,
+        tagText: '1단적 안전 평적 (전도 위험 0%)',
         color: '#34d399',
         bg: 'rgba(16, 185, 129, 0.16)',
         border: '1px solid rgba(16, 185, 129, 0.45)',
@@ -732,9 +732,9 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     } else if (effectiveDoubleStack && c.tier2Count >= floorSlots) {
       c.stuffingBadge = {
         type: 'tier2_full',
-        label: `📦 2단 집중 완적 (총 ${c.placedPallets.length}PLT · 40PLT 만적)`,
-        shortLabel: `2단 집중 완적 (${c.placedPallets.length}PLT)`,
-        tagText: '2단 집중 완적 (만적)',
+        label: `📦 2단적 집중 완적 (총 ${c.placedPallets.length}PLT · 40PLT 만적)`,
+        shortLabel: `2단적 집중 완적 (${c.placedPallets.length}PLT)`,
+        tagText: '2단적 집중 완적 (만적)',
         color: '#38bdf8',
         bg: 'rgba(56, 189, 248, 0.16)',
         border: '1px solid rgba(56, 189, 248, 0.45)',
@@ -754,10 +754,10 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         type: 'convenience_mixed',
         label:
           c.tier2Count > 0
-            ? `📦 2단 블록 적재 (1단 ${c.tier1Count} + 2단 ${c.tier2Count}PLT)`
+            ? `📦 2단적 블록 적재 (1단적 ${c.tier1Count} + 2단적 ${c.tier2Count}PLT)`
             : `🔀 잔여 품목 모음 적재 (${c.skuBreakdown.length}개 품목)`,
         shortLabel: `잔여 품목 모음 (${c.placedPallets.length}PLT)`,
-        tagText: c.tier2Count > 0 ? `2단 블록 (${c.tier2Count}PLT)` : '잔여 품목 모음',
+        tagText: c.tier2Count > 0 ? `2단적 블록 (${c.tier2Count}PLT)` : '잔여 품목 모음',
         color: '#fbbf24',
         bg: 'rgba(245, 158, 11, 0.16)',
         border: '1px solid rgba(245, 158, 11, 0.45)',
@@ -767,7 +767,7 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         type: 'balanced',
         label:
           c.tier2Count > 0
-            ? `⚖️ 2단 분산 적재 (1단 ${c.tier1Count} + 2단 ${c.tier2Count}PLT)`
+            ? `⚖️ 2단적 분산 적재 (1단적 ${c.tier1Count} + 2단적 ${c.tier2Count}PLT)`
             : `⚖️ 균등 분산 적재 (${c.skuBreakdown.length}개 품목)`,
         shortLabel: `균등 분산 (${c.placedPallets.length}PLT)`,
         tagText: '균등 분산',

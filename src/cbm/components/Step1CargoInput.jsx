@@ -34,7 +34,7 @@ export function Step1CargoInput({
           <div>
             <h2>화물 정보 입력 및 적재 조건 설정</h2>
             <p>
-              견적을 산출할 화물 치수·수량·무게를 입력(또는 엑셀 업로드)하고, 1단/2단 적재 여부와 혼적 허용 여부, 최대 적재 높이를 설정하세요.
+              견적을 산출할 화물 치수·수량·무게를 입력(또는 엑셀 업로드)하고, 1단적(평적)/2단적 여부와 혼적 허용 여부, 최대 적재 높이를 설정하세요.
             </p>
           </div>
         </div>
@@ -168,7 +168,7 @@ export function Step1CargoInput({
                   <th>높이 ({unitMode})</th>
                   <th>수량 (박스)</th>
                   <th>박스단중 (kg)</th>
-                  <th>단수제한</th>
+                  <th>박스단수제한</th>
                   <th>회전허용</th>
                   <th>삭제</th>
                 </tr>
@@ -335,8 +335,8 @@ export function Step1CargoInput({
             <span className="cbm-badge">적재 기준</span>
           </div>
 
-          {/* Option 1: 1단 vs 2단 적재 */}
-          <div className="cbm-field-label">① 파레트 단수 방식 선택</div>
+          {/* Option 1: 1단적 vs 2단적 */}
+          <div className="cbm-field-label">① 컨테이너 단적(段積) 방식 선택 (1단적 vs 2단적)</div>
           <div className="cbm-stack-mode-selector">
             <button
               type="button"
@@ -344,10 +344,10 @@ export function Step1CargoInput({
               onClick={() => setStackMode('single')}
             >
               <div className="cbm-stack-btn-top">
-                <strong>1단 적재 (Single Stack)</strong>
+                <strong>1단적 (Single Stack)</strong>
                 <span className="cbm-stack-tag">표준</span>
               </div>
-              <p>바닥 1층 안전 평적 (실무 권장)</p>
+              <p>바닥 1층 안전 평적 (단적 없음 · 실무 권장)</p>
             </button>
 
             <button
@@ -356,8 +356,8 @@ export function Step1CargoInput({
               onClick={() => setStackMode('double_auto')}
             >
               <div className="cbm-stack-btn-top">
-                <strong>2단 적재 — 높이 자동 맞춤</strong>
-                <span className="cbm-stack-tag highlight">2단 자동</span>
+                <strong>2단적 (Double Stack) — 높이 자동 맞춤</strong>
+                <span className="cbm-stack-tag highlight">2단적 자동</span>
               </div>
               <p>컨테이너 높이에 맞춰 최대 {effectivePalletConfig.maxTotalHeight}mm로 자동 분할</p>
             </button>
@@ -368,10 +368,10 @@ export function Step1CargoInput({
               onClick={() => setStackMode('double_manual')}
             >
               <div className="cbm-stack-btn-top">
-                <strong>2단 적재 — 지정 높이 유지</strong>
-                <span className="cbm-stack-tag">2단 수동</span>
+                <strong>2단적 (Double Stack) — 지정 높이 유지</strong>
+                <span className="cbm-stack-tag">2단적 수동</span>
               </div>
-              <p>지정 높이 유지, 수용 가능한 파레트만 2단 적재</p>
+              <p>지정 높이 유지, 수용 가능한 파레트만 2단적</p>
             </button>
           </div>
 
