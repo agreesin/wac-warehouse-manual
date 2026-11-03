@@ -788,6 +788,22 @@ export function Step2PalletResult({
                             >
                               ② 층간 쌓기 방식 (교차 vs 기둥)
                             </div>
+                            {activeCargoDiag.cantileverCheck?.hasRisk && (
+                              <div
+                                style={{
+                                  fontSize: '0.71rem',
+                                  color: '#fde047',
+                                  marginBottom: '6px',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(245, 158, 11, 0.15)',
+                                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                🛡️ <strong>실무 안전 진단:</strong> 1단 배열이 비대칭이어서, 층간 교차 시 박스가 공중에 뜨는 붕괴 위험을 방지하고자 <strong>[기둥식 수직 정렬]</strong>이 기본 추천되었습니다.
+                              </div>
+                            )}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               {activeCargoDiag.stackStyleOptions.map((stOpt) => {
                                 const isSel = activeCargoDiag.currentStackStyle === stOpt.id;

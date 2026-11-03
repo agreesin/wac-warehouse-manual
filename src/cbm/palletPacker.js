@@ -57,6 +57,87 @@ export function computePalletLocalCoG(pallet) {
 }
 
 /**
+ * 1단 평면 레이어(template)가 비대칭이어서 짝수 층에서 180° 대칭 교차(INTERLOCK) 시
+ * 아래층 지지 없이 허공에 걸치는(Cantilever Overhang) 박스가 발생하는지 검사
+ */
+export function checkLayerCantileverRisk(template, bounds, palletW, palletL) {
+  if (!template || template.length <= 1) {
+    return { hasRisk: false, minSupportRatio: 1.0, unsupportedCount: 0, reason: '단일 박스이므로 안전' };
+  }
+
+  const offsetX = Math.floor((palletW - bounds.spanW) / 2) - bounds.minX;
+  const offsetZ = Math.floor((palletL - bounds.spanL) / 2) - bounds.minZ;
+  const bMinX = bounds.minX + offsetX;
+  const bMaxX = bounds.maxX + offsetX;
+  const bMinZ = bounds.minZ + offsetZ;
+  const bMaxZ = bounds.maxZ + offsetZ;
+
+  // 1단(홀수단) 박스 경계 (x1, z1, x2, z2)
+  const tier1Boxes = template.map((p) => {
+    const x1 = p.x + offsetX;
+    const z1 = p.z + offsetZ;
+    return {
+      x1,
+      z1,
+      x2: x1 + p.w,
+      z2: z1 + p.l,
+      w: p.w,
+      l: p.l,
+      area: p.w * p.l,
+    };
+  });
+
+  // 2단(짝수단) INTERLOCK (180도 점대칭 반전) 적용 시 박스 경계
+  const tier2Boxes = template.map((p) => {
+    const rawX = p.x + offsetX;
+    const rawZ = p.z + offsetZ;
+    const x1 = bMinX + bMaxX - (rawX + p.w);
+    const z1 = bMinZ + bMaxZ - (rawZ + p.l);
+    return {
+      x1,
+      z1,
+      x2: x1 + p.w,
+      z2: z1 + p.l,
+      w: p.w,
+      l: p.l,
+      area: p.w * p.l,
+    };
+  });
+
+  let minSupportRatio = 1.0;
+  let unsupportedCount = 0;
+
+  for (const b2 of tier2Boxes) {
+    let supportedArea = 0;
+    for (const b1 of tier1Boxes) {
+      const ox = Math.max(0, Math.min(b2.x2, b1.x2) - Math.max(b2.x1, b1.x1));
+      const oz = Math.max(0, Math.min(b2.z2, b1.z2) - Math.max(b2.z1, b1.z1));
+      supportedArea += ox * oz;
+    }
+    const ratio = b2.area > 0 ? supportedArea / b2.area : 0;
+    if (ratio < minSupportRatio) {
+      minSupportRatio = ratio;
+    }
+    // 바닥 지지 면적이 82% 미만이거나 한쪽이 허공에 삐져나오면 위험으로 판정
+    if (ratio < 0.82) {
+      unsupportedCount++;
+    }
+  }
+
+  // 지지율이 85% 미만인 박스가 1개라도 있으면 허공 걸침 위험!
+  const hasRisk = unsupportedCount > 0 || minSupportRatio < 0.85;
+
+  return {
+    hasRisk,
+    minSupportRatio: Number(minSupportRatio.toFixed(2)),
+    unsupportedCount,
+    reason: hasRisk
+      ? `1단 배열이 비대칭이어서 층간 교차 시 박스가 허공(최소 지지율 ${(minSupportRatio * 100).toFixed(0)}%)에 걸침`
+      : '대칭 배열로 층간 100% 완벽 지지됨',
+  };
+}
+
+/**
  * 화물(Cargos)을 파레트(Pallets)에 적재하는 시뮬레이션
  */
 export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
@@ -73,6 +154,38 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     .map((c, idx) => {
       const resolvedPallet = resolvePalletDimsForCargo(c, palletConfig);
       const resolvedPosture = resolveCargoBoxDimsByPosture(c);
+      const itemOv =
+        c.allowedOverhang !== undefined && c.allowedOverhang !== null
+          ? Math.max(0, Number(c.allowedOverhang) || 0)
+          : overhang;
+      const effW = resolvedPallet.width + itemOv;
+      const effL = resolvedPallet.length + itemOv;
+
+      // 1단 평면 배열 템플릿 생성 및 캔틸레버 위험 사전 진단
+      const curPattern = c.layerPattern || options.layerPattern || 'AUTO_MAX';
+      const sampleTpl = computeBest2DLayer(
+        effW,
+        effL,
+        resolvedPosture.width,
+        resolvedPosture.length,
+        c.allowRotate !== false,
+        curPattern
+      );
+      const sampleBounds = measureLayerBounds(sampleTpl);
+      const cantileverCheck = checkLayerCantileverRisk(
+        sampleTpl,
+        sampleBounds,
+        resolvedPallet.width,
+        resolvedPallet.length
+      );
+
+      // 비대칭으로 인한 허공 걸침 위험이 있을 경우 자동으로 'COLUMN'(수직 기둥 정렬) 추천
+      const recommendedStyle = cantileverCheck.hasRisk ? 'COLUMN' : 'INTERLOCK';
+      const finalStackStyle =
+        c.stackingStyle ||
+        options.stackingStyle ||
+        (interlockLayers ? recommendedStyle : 'COLUMN');
+
       return {
         id: c.id || `cargo-${idx + 1}`,
         name: (c.name || `화물 ${idx + 1}`).trim(),
@@ -84,19 +197,14 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         rawHeight: Math.max(1, Number(c.height) || 0),
         boxPosture: resolvedPosture.posture,
         boxPostureLabel: resolvedPosture.postureLabel,
-        layerPattern: c.layerPattern || options.layerPattern || 'AUTO_MAX',
-        stackingStyle:
-          c.stackingStyle ||
-          options.stackingStyle ||
-          (interlockLayers ? 'INTERLOCK' : 'COLUMN'),
+        layerPattern: curPattern,
+        stackingStyle: finalStackStyle,
+        cantileverCheck,
         quantity: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         remaining: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         weight: Math.max(0, Number(c.weight) || 0),
         maxLayers: Math.max(0, Math.floor(Number(c.maxLayers) || 0)),
-        allowedOverhang:
-          c.allowedOverhang !== undefined && c.allowedOverhang !== null
-            ? Math.max(0, Number(c.allowedOverhang) || 0)
-            : overhang,
+        allowedOverhang: itemOv,
         color: c.color || CARGO_COLORS[idx % CARGO_COLORS.length],
         allowRotate: c.allowRotate !== false,
         palletSpecId: resolvedPallet.specId,
@@ -813,10 +921,30 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
 
       const curPosture = resolveCargoBoxDimsByPosture(c);
       const curPattern = c.layerPattern || options.layerPattern || 'AUTO_MAX';
+
+      // 1단 평면 배열 템플릿 생성 및 캔틸레버 위험 사전 진단
+      const curTpl = computeBest2DLayer(
+        effPalletW,
+        effPalletL,
+        curPosture.width,
+        curPosture.length,
+        c.allowRotate !== false,
+        curPattern
+      );
+      const curBounds = measureLayerBounds(curTpl);
+      const cantileverCheck = checkLayerCantileverRisk(
+        curTpl,
+        curBounds,
+        resolvedPallet.width,
+        resolvedPallet.length
+      );
+
+      // 비대칭 허공 걸침 위험 시 기둥식(COLUMN)을 기본 추천!
+      const recommendedStyle = cantileverCheck.hasRisk ? 'COLUMN' : 'INTERLOCK';
       const curStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
-        (defaultInterlock ? 'INTERLOCK' : 'COLUMN');
+        (defaultInterlock ? recommendedStyle : 'COLUMN');
       const qty = Math.max(0, Math.floor(Number(c.quantity) || 0));
       const unitW = Math.max(0, Number(c.weight) || 0);
       const customMaxL = Number(c.maxLayers) > 0 ? Math.floor(Number(c.maxLayers)) : 999;
@@ -877,6 +1005,34 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         };
       });
 
+      const stackStyleOptions = STACK_STYLE_DEFS.map((stDef) => {
+        if (stDef.id === 'COLUMN') {
+          return {
+            ...stDef,
+            label: cantileverCheck.hasRisk
+              ? '🏛️ 기둥식 수직 일자 정렬 (★ 비대칭 안전 추천)'
+              : stDef.label,
+            shortDesc: cantileverCheck.hasRisk
+              ? '1단 비대칭으로 인한 허공 걸침/무너짐을 방지하는 실무 정석 적재'
+              : stDef.shortDesc,
+            isRecommended: cantileverCheck.hasRisk,
+          };
+        }
+        if (stDef.id === 'INTERLOCK') {
+          return {
+            ...stDef,
+            label: cantileverCheck.hasRisk
+              ? '🧱 벽돌식 대칭 교차 (⚠️ 허공 걸침 주의)'
+              : stDef.label,
+            shortDesc: cantileverCheck.hasRisk
+              ? '비대칭 배열로 인해 짝수단 박스 일부가 허공에 뜸'
+              : stDef.shortDesc,
+            isWarning: cantileverCheck.hasRisk,
+          };
+        }
+        return stDef;
+      });
+
       return {
         cargoId: c.id || `cargo-${idx + 1}`,
         cargoName: c.name || `화물 ${idx + 1}`,
@@ -884,8 +1040,9 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         currentPattern: curPattern,
         currentStackStyle: curStackStyle,
         currentPosture: curPosture.posture,
+        cantileverCheck,
         patternOptions,
-        stackStyleOptions: STACK_STYLE_DEFS,
+        stackStyleOptions,
         postureOptions,
       };
     });
