@@ -857,7 +857,7 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     const doorShoringGuide = hasLowPalletAtDoor
       ? {
           hasRisk: true,
-          lowPalletLabels,
+          lowPalletLabels: lowDoorPalletLabels,
           minHeightMm: minDoorPalletH,
           maxHeightMm: maxContainerPalletH,
           heightDiffMm: maxContainerPalletH - minDoorPalletH,
