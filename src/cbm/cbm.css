@@ -9,6 +9,7 @@
   box-sizing: border-box;
   max-width: 1560px;
   margin: 0 auto;
+  overflow-x: clip;
 }
 
 .cbm-app * {
@@ -950,10 +951,14 @@
   color: #94a3b8;
 }
 
+.cbm-mix-items-grid,
 .cbm-mix-assign-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .cbm-mix-assign-item {
@@ -965,12 +970,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .cbm-mix-item-info {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .cbm-color-dot {
@@ -978,22 +988,29 @@
   height: 12px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .cbm-mix-item-info strong {
   font-size: 13px;
   color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cbm-mix-item-info small {
   font-size: 11.5px;
   color: #94a3b8;
+  white-space: nowrap;
 }
 
 .cbm-mix-item-control {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .cbm-mix-layer-badge {
@@ -1004,6 +1021,7 @@
   padding: 4px 8px;
   border-radius: 6px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Weight & Pallet Breakdown Table */

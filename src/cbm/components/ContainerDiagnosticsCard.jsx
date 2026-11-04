@@ -26,12 +26,12 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
           marginBottom: '8px',
         }}
       >
-        🚜 현장 적입(Stuffing) · 도어 통과 · 쇼링/에어백 진단
+        현장 적입(Stuffing) · 도어 통과 · 쇼링/에어백 진단
       </div>
 
       <div className="cbm-cog-metrics-grid">
         <div className="cbm-cog-metric">
-          <span>🚪 도어 프레임 통과 여유 (유효고 {currentContainer.spec?.doorHeight || 2588}mm)</span>
+          <span>도어 프레임 통과 여유 (유효고 {currentContainer.spec?.doorHeight || 2588}mm)</span>
           <strong
             style={{
               color:
@@ -49,7 +49,7 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
         </div>
 
         <div className="cbm-cog-metric">
-          <span>⚓ 도어측 잔여 길이 & 쇼링 진단</span>
+          <span>도어측 잔여 길이 & 쇼링 진단</span>
           <strong>
             적재길이 {(diag.usedLengthMm / 1000).toFixed(2)}m / 잔여 {diag.rearClearanceMm}mm
           </strong>
@@ -57,7 +57,7 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
         </div>
 
         <div className="cbm-cog-metric">
-          <span>🛡️ 측면 유격 & 에어백 규격</span>
+          <span>측면 유격 & 에어백 규격</span>
           <strong>
             폭 유격 {diag.lateralGapMm}mm (바닥 효율 {diag.floorUtilizationPct}%)
           </strong>
@@ -77,7 +77,18 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ fontSize: '1.1rem' }}>🛡️</span>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: 'rgba(245, 158, 11, 0.3)',
+                color: '#fbbf24',
+                fontWeight: 700,
+              }}
+            >
+              안전 시공
+            </span>
             <strong style={{ fontSize: '0.86rem', color: '#fbbf24' }}>
               {diag.doorShoringGuide.title}
             </strong>

@@ -117,24 +117,24 @@ export function Step1CargoInput({
                 className="cbm-btn-xs"
                 onClick={() => fileInputRef.current?.click()}
               >
-                📂 엑셀 파일 열기
+                엑셀 파일 열기
               </button>
               <button
                 type="button"
                 className="cbm-btn-xs"
                 onClick={() => setPasteModalOpen(true)}
               >
-                📋 복사/붙여넣기
+                복사/붙여넣기
               </button>
               <button
                 type="button"
                 className="cbm-btn-xs"
                 onClick={handleResetSample}
               >
-                🔄 기본 샘플 복원
+                기본값 초기화
               </button>
               <button type="button" className="cbm-btn-xs primary" onClick={handleAddCargo}>
-                + 화물 행 추가
+                + 화물 추가
               </button>
             </div>
           </div>
@@ -149,14 +149,14 @@ export function Step1CargoInput({
             }}
           >
             <span>
-              📄 여기에 <strong>엑셀 파일(.xlsx, .csv)</strong>을 드래그 앤 드롭하거나 클릭하여 업로드하세요
+              여기에 <strong>엑셀 파일(.xlsx, .csv)</strong>을 드래그 앤 드롭하거나 클릭하여 업로드하세요
             </span>
             <small>컬럼 양식: 화물명 | 가로(mm) | 세로(mm) | 높이(mm) | 수량 | 중량(kg/박스)</small>
           </div>
 
           <div className="cbm-cargo-table-wrap">
             <div className="cbm-table-scroll-hint">
-              <span>👉 표를 좌우로 밀어서(스크롤) 치수·단수·회전 설정을 확인하세요</span>
+              <span>표를 좌우로 스크롤하여 치수·단수·회전 설정을 확인하세요</span>
             </div>
             <table className="cbm-cargo-table">
               <thead>
@@ -398,7 +398,7 @@ export function Step1CargoInput({
                 checked={interlockLayers}
                 onChange={(e) => setInterlockLayers(e.target.checked)}
               />
-              <span>🧱 홀·짝수단 교차 적재(인터로킹)</span>
+              <span>홀·짝수단 교차 적재(인터로킹)</span>
             </label>
           </div>
           <div className="cbm-radio-pair">
@@ -555,25 +555,6 @@ export function Step1CargoInput({
                   }))
                 }
               />
-              <input
-                type="range"
-                min={50}
-                max={250}
-                step={10}
-                value={palletConfig.baseHeight}
-                onChange={(e) =>
-                  setPalletConfig((p) => ({
-                    ...p,
-                    baseHeight: Math.round(Number(e.target.value) / 10) * 10,
-                  }))
-                }
-                style={{
-                  width: '100%',
-                  marginTop: '4px',
-                  accentColor: '#3b82f6',
-                  cursor: 'grab',
-                }}
-              />
             </label>
             <label className="cbm-input-group">
               <span>파레트 자중(kg)</span>
@@ -618,8 +599,11 @@ export function Step1CargoInput({
           className="cbm-calculate-btn step-cta-btn"
           onClick={handleRunStep1ToStep2}
         >
-          🚀 [1단계 계산하기] 파레트 종류별 산출 수량 및 한 파레트 적재 시각화 보기 ▼
+          1단계: 파레트 적재 계산
         </button>
+        <div className="cbm-action-sub" style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '6px' }}>
+          입력된 {inputSummary.skuCount}종({inputSummary.totalBoxes.toLocaleString()}박스)의 파레트 소요량 산출 및 2D/3D 시각화 단계로 이동합니다.
+        </div>
       </div>
     </section>
   );

@@ -28,7 +28,7 @@ export function PalletStackingAccordion({
         onClick={() => setShowStackingDetails((prev) => !prev)}
       >
         <span>
-          🧱 <strong>상자 쌓기 패턴 및 자세 설정</strong> (현재 표준 수직 기둥 정렬 적용 중)
+          <strong>상자 쌓기 패턴 및 자세 설정</strong> (현재 표준 수직 기둥 정렬 적용 중)
         </span>
         <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>
           {showStackingDetails ? '▲ 설정 닫기' : '▼ 펼쳐서 배열/자세 변경하기'}
@@ -203,7 +203,7 @@ export function PalletStackingAccordion({
                       lineHeight: 1.4,
                     }}
                   >
-                    🛡️ 네 모서리가 반듯하게 일치하여 코너보드(종이 앵글) 결속 및 하중 지지력이 최고인 <strong>[수직 기둥 정렬]</strong>이 기본 표준으로 적용되어 있습니다.
+                    네 모서리가 반듯하게 일치하여 코너보드(종이 앵글) 결속 및 하중 지지력이 최고인 <strong>[수직 기둥 정렬]</strong>이 기본 표준으로 적용되어 있습니다.
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {activeCargoDiag.stackStyleOptions.map((stOpt) => {

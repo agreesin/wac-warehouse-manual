@@ -19,7 +19,7 @@ export function PalletOverhangPanel({
       <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '8px', paddingBottom: '6px' }}>
         <div>
           <h2 style={{ color: '#fbbf24', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            📏 파레트 외곽 돌출(Overhang) 보조 설정
+            파레트 외곽 돌출(Overhang) 보조 설정
           </h2>
           <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
             기본값은 파레트 규격에 맞춘 <strong>돌출 0mm (정사이즈 고수)</strong> 적재입니다. 특수한 경우 파레트 수를 절감하기 위해 보조 옵션으로 돌출을 선택할 수 있습니다.
@@ -36,7 +36,7 @@ export function PalletOverhangPanel({
               );
             }}
           >
-            🔒 기본 정사이즈 유지 (0mm)
+            기본 정사이즈 유지 (0mm)
           </button>
           <button
             type="button"
@@ -57,7 +57,7 @@ export function PalletOverhangPanel({
               );
             }}
           >
-            ⚠️ 감지된 돌출 일괄 허용
+            감지된 돌출 일괄 적용
           </button>
         </div>
       </div>
@@ -96,11 +96,11 @@ export function PalletOverhangPanel({
                 <div>
                   {isOvApplied ? (
                     <span style={{ color: '#fbbf24', fontWeight: 700 }}>
-                      ⚠️ {diag.current.ovDirectionText || `+${diag.current.maxOverhangMm}mm`} 허용 적용 중 ({diag.current.totalPallets}PLT)
+                      [돌출 적용] {diag.current.ovDirectionText || `+${diag.current.maxOverhangMm}mm`} ({diag.current.totalPallets} PLT)
                     </span>
                   ) : opp && opp.savedPallets > 0 ? (
                     <span style={{ color: '#fde68a' }}>
-                      💡 {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 <strong>{opp.savedPallets}PLT 절감!</strong> ({diag.strict.totalPallets} ➔ {opp.totalPallets}PLT)
+                      {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 <strong>{opp.savedPallets} PLT 절감 가능</strong> ({diag.strict.totalPallets} → {opp.totalPallets} PLT)
                     </span>
                   ) : (
                     <span style={{ color: '#94a3b8' }}>
@@ -123,7 +123,7 @@ export function PalletOverhangPanel({
                   className={`cbm-btn-xs ${!isOvApplied ? 'primary' : ''}`}
                   onClick={() => handleCargoChange(diag.cargoId, 'allowedOverhang', 0)}
                 >
-                  🔒 0mm 불허
+                  0mm (정사이즈)
                 </button>
 
                 {opp && opp.savedPallets > 0 && (
@@ -144,7 +144,7 @@ export function PalletOverhangPanel({
                       )
                     }
                   >
-                    ⚠️ +{opp.requiredOverhangMm}mm 허용 ({opp.savedPallets}개↓)
+                    +{opp.requiredOverhangMm}mm ({opp.savedPallets} PLT 절감)
                   </button>
                 )}
 
@@ -169,7 +169,7 @@ export function PalletOverhangPanel({
                     }}
                     title="1200×1000 파레트로 변경 시 무돌출로 적재되며 컨테이너 좌우 여유 300mm 이상 확보"
                   >
-                    🔄 1200×1000 변경 (무돌출 권장)
+                    1200×1000 규격 변경 (무돌출)
                   </button>
                 )}
 
@@ -229,7 +229,7 @@ export function PalletOverhangPanel({
           lineHeight: 1.4,
         }}
       >
-        💡 <strong>현장 래핑 공차 가이드:</strong> 스트레치 필름을 5~10회 래핑하고 상자 하중 배부름이 생기면 파레트당 외경이 약 +15~20mm 불어납니다. T11에서 +40mm 돌출 시 2열 실측 외경이 2,320mm가 되어 컨테이너 벽면 주름에 닿을 수 있으므로, 돌출을 줄이거나 <strong>1200×1000mm 규격으로 무돌출 전환</strong>하는 것이 현장 안전상 가장 추천됩니다.
+        <strong>현장 래핑 공차 가이드:</strong> 스트레치 필름을 5~10회 래핑하고 상자 하중 배부름이 생기면 파레트당 외경이 약 +15~20mm 불어납니다. T11에서 +40mm 돌출 시 2열 실측 외경이 2,320mm가 되어 컨테이너 벽면 주름에 닿을 수 있으므로, 돌출을 줄이거나 <strong>1200×1000mm 규격으로 무돌출 전환</strong>하는 것이 현장 안전상 가장 추천됩니다.
       </div>
     </div>
   );

@@ -9,13 +9,13 @@ export function Pallet2DBlueprint({ currentPallet }) {
   return (
     <div className="cbm-pallet-blueprint-col">
       <div className="cbm-blueprint-box">
-        <h3>📐 한 파레트 1층 평면 적재 도면 (위에서 본 모습)</h3>
+        <h3>한 파레트 1층 평면 적재 도면 (상부 평면도)</h3>
         <p className="cbm-blueprint-sub">
           파레트: <strong>{currentPallet.width} × {currentPallet.length} mm</strong> | 1층:{' '}
           <strong>{currentPallet.layers[0]?.boxCount || 0}박스</strong>
           {currentPallet.maxOverhangMm > 0 ? (
             <span style={{ color: '#fbbf24', marginLeft: '8px', fontWeight: 700 }}>
-              (⚠️ 돌출 +{currentPallet.maxOverhangMm}mm / 외곽 {currentPallet.cargoSpanW}×{currentPallet.cargoSpanL}mm)
+              (돌출 +{currentPallet.maxOverhangMm}mm / 외곽 {currentPallet.cargoSpanW}×{currentPallet.cargoSpanL}mm)
             </span>
           ) : (
             <span style={{ color: '#34d399', marginLeft: '8px' }}>
@@ -114,7 +114,7 @@ export function Pallet2DBlueprint({ currentPallet }) {
 
       {/* Worker Loading Guide Box */}
       <div className="cbm-pallet-info-list">
-        <h4>📋 Pallet #{currentPallet.index} 적재 가이드</h4>
+        <h4>Pallet #{currentPallet.index} 적재 가이드</h4>
         <div className="cbm-info-row">
           <span>파레트 규격:</span>
           <strong>

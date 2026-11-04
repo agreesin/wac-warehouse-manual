@@ -20,12 +20,28 @@ import { Step3ContainerResult } from './components/Step3ContainerResult';
 import { PasteCargoModal } from './components/PasteCargoModal';
 import './cbm.css';
 
+const STORAGE_KEY = 'wac_cbm_sim_saved_state_v1';
+
+function loadSavedState() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to parse saved state from localStorage:', e);
+    return null;
+  }
+}
+
 export function CbmSimulator() {
+  const savedState = useMemo(() => loadSavedState(), []);
+
   // =========================================================================
   // STEP 1 STATE: 화물 입력 및 적재 조건 (Rule) 설정
   // =========================================================================
-  const [cargos, setCargos] = useState(DEFAULT_CARGOS);
-  const [palletConfig, setPalletConfig] = useState({
+  const [cargos, setCargos] = useState(() => savedState?.cargos || DEFAULT_CARGOS);
+  const [palletConfig, setPalletConfig] = useState(() => savedState?.palletConfig || {
     width: 1100,
     length: 1100,
     baseHeight: 150,
@@ -35,17 +51,17 @@ export function CbmSimulator() {
   });
 
   // stackMode: 'single' (1단 적재) | 'double_auto' (2단 적재 - 높이 자동 맞춤) | 'double_manual' (2단 적재 - 지정 높이 유지)
-  const [stackMode, setStackMode] = useState('single');
-  const [mixCargos, setMixCargos] = useState(false); // 기본: 품목별 단독 적재
-  const [interlockLayers, setInterlockLayers] = useState(true); // 기본: 홀·짝수단 벽돌식 교차 적재(인터로킹)
-  const [overhang, setOverhang] = useState(0);
-  const [unitMode, setUnitMode] = useState('mm'); // 'mm' | 'cm' 치수 입력/표시 단위 전환
+  const [stackMode, setStackMode] = useState(() => savedState?.stackMode || 'single');
+  const [mixCargos, setMixCargos] = useState(() => savedState?.mixCargos ?? false); // 기본: 품목별 단독 적재
+  const [interlockLayers, setInterlockLayers] = useState(() => savedState?.interlockLayers ?? true); // 기본: 홀·짝수단 벽돌식 교차 적재(인터로킹)
+  const [overhang, setOverhang] = useState(() => savedState?.overhang ?? 0);
+  const [unitMode, setUnitMode] = useState(() => savedState?.unitMode || 'mm'); // 'mm' | 'cm' 치수 입력/표시 단위 전환
 
   // =========================================================================
   // STEP 2 STATE: 파레트 사이즈 선택 모드 (단일 규격 vs 여러 파레트 섞어 쓰기)
   // =========================================================================
   // palletSelectionMode: 'T11' | 'T12' | 'EUR' | 'EXPORT_1200' | 'CUSTOM_MIX'
-  const [palletSelectionMode, setPalletSelectionMode] = useState('CUSTOM_MIX');
+  const [palletSelectionMode, setPalletSelectionMode] = useState(() => savedState?.palletSelectionMode || 'CUSTOM_MIX');
   const [selectedPalletIdx, setSelectedPalletIdx] = useState(0);
   const [palletVisibleStep, setPalletVisibleStep] = useState(100);
   const [isPalletPlaying, setIsPalletPlaying] = useState(false);
@@ -54,13 +70,13 @@ export function CbmSimulator() {
   // =========================================================================
   // STEP 3 STATE: 컨테이너 종류 선택 및 컨테이너 적재 시각화
   // =========================================================================
-  const [selectedContainerId, setSelectedContainerId] = useState('40FT_HC');
+  const [selectedContainerId, setSelectedContainerId] = useState(() => savedState?.selectedContainerId || '40FT_HC');
   // stuffingStrategy: 'convenience' (작업 편의성 우선 - 품목별 몰아넣기 · 단일 품목 전용 완적)
   //                   'balance' (균등 밸런스 우선 - 전 호기 품목·무게 균등 배분)
-  const [stuffingStrategy, setStuffingStrategy] = useState('convenience');
+  const [stuffingStrategy, setStuffingStrategy] = useState(() => savedState?.stuffingStrategy || 'convenience');
   const [balanceContainers, setBalanceContainers] = useState(false);
-  const [fullFloorSpread, setFullFloorSpread] = useState(true); // 기본값: 컨테이너 빈 바닥 100% 풀채움 (1단 바닥 전체 균등 배치)
-  const [optimizeCoG, setOptimizeCoG] = useState(true);
+  const [fullFloorSpread, setFullFloorSpread] = useState(() => savedState?.fullFloorSpread ?? true); // 기본값: 컨테이너 빈 바닥 100% 풀채움 (1단 바닥 전체 균등 배치)
+  const [optimizeCoG, setOptimizeCoG] = useState(() => savedState?.optimizeCoG ?? true);
   const [selectedContainerIdx, setSelectedContainerIdx] = useState(0);
   const [containerVisibleStep, setContainerVisibleStep] = useState(100);
   const [isContainerPlaying, setIsContainerPlaying] = useState(false);
@@ -70,8 +86,8 @@ export function CbmSimulator() {
   // =========================================================================
   // WORKFLOW STEP VISIBILITY (방식 B: 상하 스크롤 리포트형)
   // =========================================================================
-  const [step2Unlocked, setStep2Unlocked] = useState(false);
-  const [step3Unlocked, setStep3Unlocked] = useState(false);
+  const [step2Unlocked, setStep2Unlocked] = useState(() => Boolean(savedState?.step2Unlocked));
+  const [step3Unlocked, setStep3Unlocked] = useState(() => Boolean(savedState?.step3Unlocked));
 
   const step1Ref = useRef(null);
   const step2Ref = useRef(null);
@@ -227,6 +243,46 @@ export function CbmSimulator() {
     return () => clearInterval(timer);
   }, [isContainerPlaying]);
 
+  // Save simulator configuration to localStorage on state changes
+  useEffect(() => {
+    try {
+      const stateToSave = {
+        cargos,
+        palletConfig,
+        stackMode,
+        mixCargos,
+        interlockLayers,
+        overhang,
+        unitMode,
+        palletSelectionMode,
+        selectedContainerId,
+        stuffingStrategy,
+        fullFloorSpread,
+        optimizeCoG,
+        step2Unlocked,
+        step3Unlocked,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    } catch (e) {
+      // Ignore quota errors
+    }
+  }, [
+    cargos,
+    palletConfig,
+    stackMode,
+    mixCargos,
+    interlockLayers,
+    overhang,
+    unitMode,
+    palletSelectionMode,
+    selectedContainerId,
+    stuffingStrategy,
+    fullFloorSpread,
+    optimizeCoG,
+    step2Unlocked,
+    step3Unlocked,
+  ]);
+
   // Keep indices in bounds
   useEffect(() => {
     if (simResult && selectedPalletIdx >= simResult.pallets.length) {
@@ -308,6 +364,11 @@ export function CbmSimulator() {
   };
 
   const handleResetSample = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      // ignore
+    }
     setCargos(DEFAULT_CARGOS);
     setPalletConfig({
       width: 1100,
@@ -319,12 +380,19 @@ export function CbmSimulator() {
     });
     setStackMode('single');
     setMixCargos(false);
+    setInterlockLayers(true);
     setOverhang(0);
+    setUnitMode('mm');
     setFullFloorSpread(true);
     setPalletSelectionMode('CUSTOM_MIX');
+    setSelectedContainerId('40FT_HC');
+    setStuffingStrategy('convenience');
+    setOptimizeCoG(true);
+    setStep2Unlocked(false);
+    setStep3Unlocked(false);
     setUploadNotice({
       type: 'info',
-      message: '기본 데모 화물 데이터(박스A 1,246개 / 박스B 294개 / 박스C 8개)를 불러왔습니다.',
+      message: '입력 데이터를 기본 샘플(박스A 1,246개 / 박스B 294개 / 박스C 8개)로 초기화했습니다.',
     });
   };
 
@@ -421,7 +489,7 @@ export function CbmSimulator() {
     lines.push('1. 품목별 파레트 분할 산출 내역');
     simResult.palletWeightGroups.forEach((g) => {
       lines.push(
-        `  - ${g.label} [${g.palletDim}]: 1단 ${g.firstLayerBoxCount}박스 × ${g.layerCount}단 (${g.boxesPerPallet} CTNS/PLT, 높이 약 ${(g.totalHeight / 10).toFixed(0)}cm) ➔ ${g.palletCount} PLT (PLT당 약 ${g.unitPalletWeight}kg / 합계 ${g.totalGroupWeight.toLocaleString()}kg)`
+        `  - ${g.label} [${g.palletDim}]: 1단 ${g.firstLayerBoxCount}박스 × ${g.layerCount}단 (${g.boxesPerPallet} CTNS/PLT, 높이 약 ${(g.totalHeight / 10).toFixed(0)}cm) → ${g.palletCount} PLT (PLT당 약 ${g.unitPalletWeight}kg / 합계 ${g.totalGroupWeight.toLocaleString()}kg)`
       );
     });
     lines.push('');
@@ -449,7 +517,7 @@ export function CbmSimulator() {
       navigator.clipboard.writeText(text).then(() => {
         setUploadNotice({
           type: 'success',
-          message: '📋 화주·현장 공유용 견적 및 작업지시서 요약 문구가 클립보드에 복사되었습니다! (카톡·메일에 바로 붙여넣기 가능)',
+          message: '화주·현장 공유용 견적 및 작업지시서 요약 문구가 클립보드에 복사되었습니다.',
         });
       });
     }
@@ -469,7 +537,7 @@ export function CbmSimulator() {
               <span className="cbm-version-tag">3D 시뮬레이터</span>
             </h1>
             <p className="cbm-subtitle">
-              화물 치수/수량 입력 ➔ 파레트 수량 계산 ➔ 40HC 컨테이너 바닥 완적 소요 대수 & 3D 적재 시각화
+              화물 치수·수량 입력 → 파레트 수량 산출 → 컨테이너 소요 대수 및 3D 적재 시각화
             </p>
           </div>
         </div>
@@ -483,7 +551,7 @@ export function CbmSimulator() {
           >
             <span className="step-num">1</span> 화물·조건 입력
           </button>
-          <span className="step-arrow">➔</span>
+          <span className="step-arrow">→</span>
           <button
             type="button"
             className={`cbm-step-pill ${step2Unlocked ? 'active' : 'locked'}`}
@@ -493,7 +561,7 @@ export function CbmSimulator() {
             <span className="step-num">2</span> 파레트 산출·시각화
             {simResult && <strong>({simResult.summary.totalPallets} PLT)</strong>}
           </button>
-          <span className="step-arrow">➔</span>
+          <span className="step-arrow">→</span>
           <button
             type="button"
             className={`cbm-step-pill ${step3Unlocked ? 'active' : 'locked'}`}
@@ -514,7 +582,6 @@ export function CbmSimulator() {
             onClick={downloadSampleExcelTemplate}
             title="화물 입력 엑셀 양식 다운로드"
           >
-            <span>📥</span>
             <span className="cbm-btn-label-desktop">엑셀 양식 다운로드</span>
             <span className="cbm-btn-label-mobile">양식</span>
           </button>
@@ -526,7 +593,6 @@ export function CbmSimulator() {
                 onClick={handleCopyReportText}
                 title="카톡이나 메일에 바로 붙여넣을 수 있는 요약 텍스트 복사"
               >
-                <span>📋</span>
                 <span className="cbm-btn-label-desktop">견적 요약 복사</span>
                 <span className="cbm-btn-label-mobile">복사</span>
               </button>
@@ -536,7 +602,6 @@ export function CbmSimulator() {
                 onClick={() => window.print()}
                 title="현재 화면 리포트 인쇄 또는 PDF 저장"
               >
-                <span>🖨️</span>
                 <span className="cbm-btn-label-desktop">인쇄/PDF</span>
                 <span className="cbm-btn-label-mobile">PDF</span>
               </button>
@@ -550,7 +615,6 @@ export function CbmSimulator() {
                 }
                 title="시뮬레이션 견적 결과 엑셀 파일 저장"
               >
-                <span>📊</span>
                 <span className="cbm-btn-label-desktop">견적 리포트 엑셀 저장</span>
                 <span className="cbm-btn-label-mobile">엑셀저장</span>
               </button>

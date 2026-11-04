@@ -38,7 +38,7 @@ export function ContainerComparisonTable({
                 marginBottom: '8px',
               }}
             >
-              📋 호기별 적재 품목(SKU) 명세표 ({simResult.selectedSpec.name})
+              호기별 적재 품목(SKU) 명세표 ({simResult.selectedSpec.name})
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {simResult.containerResult.containers.map((c) => (
@@ -120,7 +120,7 @@ export function ContainerComparisonTable({
                   marginBottom: '8px',
                 }}
               >
-                🚛 실무 최적 배차 조합 제안 (단독 배차 vs 혼합 배차 비교)
+                실무 최적 배차 조합 제안 (단독 배차 vs 혼합 배차 비교)
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {simResult.fleetRecommendations.map((rec) => (

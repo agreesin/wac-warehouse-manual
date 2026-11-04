@@ -60,6 +60,25 @@ export function ThreeViewport({
     controls.maxPolarAngle = Math.PI / 2 + 0.15;
     controls.minDistance = 0.8;
     controls.maxDistance = 45;
+    controls.enableZoom = false; // 기본은 비활성화하여 페이지 상하 스크롤이 3D 뷰에 걸리지 않도록 방지
+
+    let isCanvasFocused = false;
+    const handlePointerDown = () => {
+      isCanvasFocused = true;
+      controls.enableZoom = true;
+    };
+    const handlePointerLeave = () => {
+      isCanvasFocused = false;
+      controls.enableZoom = false;
+    };
+    const handleWheel = (e) => {
+      // Ctrl 키를 누르고 있거나 캔버스를 클릭한 경우에만 3D 줌 활성화
+      if (e.ctrlKey || e.metaKey || isCanvasFocused) {
+        controls.enableZoom = true;
+      } else {
+        controls.enableZoom = false;
+      }
+    };
 
     // Lights
     const ambientLight = new THREE.AmbientLight('#ffffff', 0.78);
@@ -131,6 +150,9 @@ export function ThreeViewport({
     };
 
     renderer.domElement.addEventListener('pointermove', handlePointerMove);
+    renderer.domElement.addEventListener('pointerdown', handlePointerDown);
+    renderer.domElement.addEventListener('pointerleave', handlePointerLeave);
+    renderer.domElement.addEventListener('wheel', handleWheel, { passive: true });
     renderer.domElement.addEventListener('click', handleClick);
 
     let reqId;
@@ -159,6 +181,9 @@ export function ThreeViewport({
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       renderer.domElement.removeEventListener('pointermove', handlePointerMove);
+      renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
+      renderer.domElement.removeEventListener('pointerleave', handlePointerLeave);
+      renderer.domElement.removeEventListener('wheel', handleWheel);
       renderer.domElement.removeEventListener('click', handleClick);
       renderer.dispose();
     };
@@ -618,16 +643,16 @@ export function ThreeViewport({
       {/* Camera Preset Toolbar Overlay */}
       <div className="cbm-camera-toolbar">
         <button type="button" onClick={() => setCameraView('iso')} title="기본 3D 등각 뷰">
-          <span className="cam-icon">🧊</span> <span className="cam-label">3D 등각</span>
+          <span className="cam-label">3D 등각</span>
         </button>
-        <button type="button" onClick={() => setCameraView('front')} title="정면(문쪽) 뷰">
-          <span className="cam-icon">🚪</span> <span className="cam-label">정면(도어)</span>
+        <button type="button" onClick={() => setCameraView('front')} title="정면(도어) 뷰">
+          <span className="cam-label">정면 (도어)</span>
         </button>
         <button type="button" onClick={() => setCameraView('side')} title="측면 뷰">
-          <span className="cam-icon">📐</span> <span className="cam-label">측면</span>
+          <span className="cam-label">측면 (Side)</span>
         </button>
         <button type="button" onClick={() => setCameraView('top')} title="위에서 내려다본 평면 뷰">
-          <span className="cam-icon">🔼</span> <span className="cam-label">평면(Top)</span>
+          <span className="cam-label">평면 (Top)</span>
         </button>
       </div>
 
@@ -636,20 +661,20 @@ export function ThreeViewport({
         {mode === 'container' ? (
           <>
             <span className="cbm-legend-desktop">
-              💡 마우스 드래그: 360° 회전 | 휠: 확대/축소 | 우클릭: 이동 |{' '}
-              <strong style={{ color: '#f59e0b' }}>주황색 테두리 = 컨테이너 문(Door) 방향</strong> | 파레트 클릭 시 상세 보기
+              마우스 드래그: 360° 회전 | 클릭 후 휠/Ctrl+휠: 확대·축소 | 우클릭: 이동 |{' '}
+              <strong style={{ color: '#f59e0b' }}>주황색 테두리: 컨테이너 문(Door)</strong> | 파레트 클릭 시 상세 보기
             </span>
             <span className="cbm-legend-mobile">
-              💡 👆 1손가락: 3D 회전 · ✌️ 2손가락: 줌 · <strong style={{ color: '#f59e0b' }}>주황: 도어</strong> · 파레트 터치 시 상세
+              드래그: 3D 회전 · 2손가락: 줌 · <strong style={{ color: '#f59e0b' }}>주황: 도어</strong> · 파레트 터치 시 상세 보기
             </span>
           </>
         ) : (
           <>
             <span className="cbm-legend-desktop">
-              💡 파레트 3D 뷰 — 네 모서리에 코너보드(종이 앵글) 결속 보호대가 적용되어 있습니다. (회색 외곽선: 최대 허용 높이 {palletInstance?.maxTotalHeight || 1800}mm 가이드)
+              파레트 3D 뷰 — 네 모서리에 코너보드(종이 앵글) 결속 보호대가 적용되어 있습니다. (회색 외곽선: 최대 허용 높이 {palletInstance?.maxTotalHeight || 1800}mm 가이드)
             </span>
             <span className="cbm-legend-mobile">
-              💡 파레트 3D 뷰 — 코너보드 결속 보호대 적용 (회색선: 최대 높이 {palletInstance?.maxTotalHeight || 1800}mm 가이드)
+              파레트 3D 뷰 — 코너보드 결속 보호대 적용 (회색선: 최대 높이 {palletInstance?.maxTotalHeight || 1800}mm 가이드)
             </span>
           </>
         )}

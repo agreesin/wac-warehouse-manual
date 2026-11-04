@@ -10,14 +10,14 @@ export function ContainerFloorPlanSvg({ currentContainer, setSelectedPalletIdx, 
     <div className="cbm-2d-floor-box">
       <div className="cbm-2d-floor-title">
         <span>
-          📐 {currentContainer.spec.name} #{currentContainer.index}호기 평면 배치도 (총{' '}
+          {currentContainer.spec.name} #{currentContainer.index}호기 평면 배치도 (총{' '}
           {currentContainer.placedPallets.length} 파레트 — 클릭 시 Step 2 이동)
         </span>
         <span>
           <strong style={{ color: '#60a5fa' }}>■ 1100×1100</strong> |{' '}
           <strong style={{ color: '#f59e0b' }}>■ 1200×1000</strong> |{' '}
           <strong style={{ color: '#10b981' }}>■ 잔여/부분</strong> |{' '}
-          <strong style={{ color: '#facc15' }}>🎯 CoG</strong>
+          <strong style={{ color: '#facc15' }}>CoG (무게중심)</strong>
         </span>
       </div>
 

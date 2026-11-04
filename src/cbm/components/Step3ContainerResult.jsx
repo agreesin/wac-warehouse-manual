@@ -75,7 +75,7 @@ export function Step3ContainerResult({
         <div className="cbm-ribbon-row">
           {/* 1) 컨테이너 규격 선택 */}
           <div className="cbm-ribbon-group">
-            <span className="cbm-ribbon-label">🚢 컨테이너:</span>
+            <span className="cbm-ribbon-label">컨테이너:</span>
             <div className="cbm-ribbon-btn-group">
               {simResult.containerComparison.map((item) => {
                 const isSelected = item.spec.id === selectedContainerId;
@@ -98,7 +98,7 @@ export function Step3ContainerResult({
 
           {/* 2) 적재 전략 선택 */}
           <div className="cbm-ribbon-group">
-            <span className="cbm-ribbon-label">🚜 적재 전략:</span>
+            <span className="cbm-ribbon-label">적재 전략:</span>
             <div className="cbm-ribbon-btn-group">
               <button
                 type="button"
@@ -108,7 +108,7 @@ export function Step3ContainerResult({
                 onClick={() => setStuffingStrategy && setStuffingStrategy('convenience')}
                 title="단일 품목으로 채울 수 있는 호기는 100% 전용 완적하여 지게차 동선 단순화"
               >
-                🚜 작업 편의성 우선
+                작업 편의성 우선
               </button>
               <button
                 type="button"
@@ -118,14 +118,14 @@ export function Step3ContainerResult({
                 onClick={() => setStuffingStrategy && setStuffingStrategy('balance')}
                 title="모든 호기에 품목과 무게를 골고루 분산"
               >
-                ⚖️ 균등 밸런스 우선
+                균등 밸런스 우선
               </button>
             </div>
           </div>
 
           {/* 3) 바닥 배치 선택 */}
           <div className="cbm-ribbon-group">
-            <span className="cbm-ribbon-label">🛡️ 바닥 배치:</span>
+            <span className="cbm-ribbon-label">바닥 배치:</span>
             <div className="cbm-ribbon-btn-group">
               <button
                 type="button"
@@ -133,7 +133,7 @@ export function Step3ContainerResult({
                 onClick={() => setFullFloorSpread(true)}
                 title="1단적(평적)으로 바닥 전체에 파레트를 균등 간격으로 끝까지 배치하여 운송 중 쏠림 방지"
               >
-                🛡️ 빈 바닥 채움 (1단적 전체)
+                빈 바닥 채움 (1단 평적)
               </button>
               <button
                 type="button"
@@ -141,7 +141,7 @@ export function Step3ContainerResult({
                 onClick={() => setFullFloorSpread(false)}
                 title="상단 적재 가능 파레트를 2단적으로 높게 쌓아 도어 쪽에 넓은 바닥 여유 공간 확보"
               >
-                📦 바닥 공간 확보 (2단적 밀착)
+                바닥 공간 확보 (2단 밀착)
               </button>
             </div>
           </div>
@@ -154,7 +154,7 @@ export function Step3ContainerResult({
                 checked={optimizeCoG}
                 onChange={(e) => setOptimizeCoG(e.target.checked)}
               />
-              <span style={{ fontSize: '0.78rem' }}>🎯 CoG 밸런싱</span>
+              <span style={{ fontSize: '0.78rem' }}>CoG 밸런싱</span>
             </label>
             <button
               type="button"
@@ -170,7 +170,7 @@ export function Step3ContainerResult({
         {showGuide && (
           <div className="cbm-guide-drawer">
             <div className="cbm-guide-card">
-              <h4>🚜 적재 전략 실무 가이드</h4>
+              <h4>적재 전략 실무 가이드</h4>
               <div>
                 • <strong>작업 편의성 우선 (권장):</strong> 단일 품목으로 1대를 채울 수 있는 물량은 1호기를 100% 전용 완적(FCL)하여 지게차 왕복 동선을 줄이고 도착지 소팅(분류) 작업을 생략합니다. (2단적 진행 시에도 1호기에 2단적을 집중 완적하고 2호기는 안전한 1단적 평적으로 끝냅니다)
                 <br />
@@ -178,7 +178,7 @@ export function Step3ContainerResult({
               </div>
             </div>
             <div className="cbm-guide-card">
-              <h4>🛡️ 바닥 배치 방식 실무 가이드</h4>
+              <h4>바닥 배치 방식 실무 가이드</h4>
               <div>
                 • <strong>빈 바닥 채움 (기본값):</strong> 모든 파레트를 1단적(평적)으로 바닥 전체에 고르게 펼쳐 배치하여 선박 롤링·피칭 시 전도를 원천 차단하고 추가 고정 쇼링목 비용을 절감합니다.
                 <br />
@@ -297,7 +297,18 @@ export function Step3ContainerResult({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '1rem' }}>⚠️</span>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(245, 158, 11, 0.3)',
+                    color: '#fbbf24',
+                    fontWeight: 700,
+                  }}
+                >
+                  쇼링 안전
+                </span>
                 <strong>
                   {currentContainer.fieldDiagnostics.doorShoringGuide.title}:
                 </strong>

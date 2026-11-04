@@ -13,7 +13,7 @@ export function PasteCargoModal({
     <div className="cbm-modal-backdrop" onClick={() => setPasteModalOpen(false)}>
       <div className="cbm-modal" onClick={(e) => e.stopPropagation()}>
         <div className="cbm-modal-head">
-          <h3>📋 엑셀 / CSV 데이터 복사 붙여넣기</h3>
+          <h3>엑셀 / CSV 데이터 복사 붙여넣기</h3>
           <button type="button" onClick={() => setPasteModalOpen(false)}>
             ✕
           </button>

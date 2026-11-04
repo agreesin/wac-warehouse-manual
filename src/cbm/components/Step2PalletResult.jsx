@@ -101,7 +101,7 @@ export function Step2PalletResult({
             onClick={() => setPalletSelectionMode('CUSTOM_MIX')}
           >
             <div className="cbm-pm-header">
-              <span className="cbm-pm-badge mix-badge">💡 추천 조합</span>
+              <span className="cbm-pm-badge mix-badge">추천 조합</span>
               <strong className="cbm-pm-title">품목별 최적 사이즈 섞어 쓰기</strong>
               <small className="cbm-pm-sub">박스별로 1100 또는 1200 최적 매칭</small>
             </div>
@@ -171,7 +171,7 @@ export function Step2PalletResult({
           <div className="cbm-mix-assigner-panel">
             <div className="cbm-mix-panel-header">
               <div>
-                <strong>📦 품목별 파레트 규격 개별 매칭</strong>
+                <strong>품목별 파레트 규격 개별 매칭</strong>
                 <p>각 박스 크기에 맞는 파레트 규격을 직접 변경하거나 최적 매칭 버튼을 누르세요.</p>
               </div>
               <button
@@ -179,7 +179,7 @@ export function Step2PalletResult({
                 className="cbm-btn-xs primary"
                 onClick={handleAutoRecommendPalletMix}
               >
-                ⚡ 박스별 최적 파레트 자동 매칭
+                최적 규격 자동 매칭
               </button>
             </div>
             <div className="cbm-mix-items-grid">
@@ -240,7 +240,7 @@ export function Step2PalletResult({
               선택한 파레트에 화물이 실제로 어떻게 적재되는지 2D 평면 도면과 3D 뷰어로 실시간 확인합니다.
             </p>
           </div>
-          <span className="cbm-badge">🖱️ 3D 드래그로 회전 · 휠로 확대/축소</span>
+          <span className="cbm-badge">3D 드래그: 회전 · 클릭 후 휠/Ctrl+휠: 확대/축소</span>
         </div>
 
         {/* Single Pallet Selector & 2D/3D Split Visualizer */}
@@ -248,7 +248,7 @@ export function Step2PalletResult({
           <div className="cbm-single-pallet-visualizer">
             <div className="cbm-vis-subheader">
               <div className="cbm-pallet-selector-bar">
-                <label>📦 보고 있는 파레트:</label>
+                <label>선택 파레트:</label>
                 <select
                   value={selectedPalletIdx}
                   onChange={(e) => {
@@ -257,22 +257,41 @@ export function Step2PalletResult({
                   }}
                   className="cbm-pallet-select"
                 >
-                  {simResult.pallets.map((p, idx) => {
-                    const breakdown = effectiveCargos
-                      .map((c) =>
-                        p.cargoCounts[c.id]
-                          ? `${c.name}(${p.cargoCounts[c.id]}박스)`
-                          : null
-                      )
-                      .filter(Boolean)
-                      .join(' + ');
-                    return (
-                      <option key={p.id} value={idx}>
-                        Pallet #{p.index} [{p.width}×{p.length}mm] — {breakdown} ({p.layers.length}단 ·{' '}
-                        {p.totalHeight}mm · {p.totalWeight}kg)
-                      </option>
-                    );
-                  })}
+                  {simResult.palletWeightGroups?.length > 0 ? (
+                    simResult.palletWeightGroups.map((g) => (
+                      <optgroup
+                        key={g.label}
+                        label={`${g.label} — ${g.palletDim} (${g.layerCount}단 · ${g.palletCount}개 파레트)`}
+                      >
+                        {g.palletIndices.map((pIdx1) => {
+                          const p = simResult.pallets[pIdx1 - 1];
+                          if (!p) return null;
+                          return (
+                            <option key={p.id} value={pIdx1 - 1}>
+                              Pallet #{p.index} ({p.boxes.length}박스 · {p.totalHeight}mm · {p.totalWeight}kg)
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    ))
+                  ) : (
+                    simResult.pallets.map((p, idx) => {
+                      const breakdown = effectiveCargos
+                        .map((c) =>
+                          p.cargoCounts[c.id]
+                            ? `${c.name}(${p.cargoCounts[c.id]}박스)`
+                            : null
+                        )
+                        .filter(Boolean)
+                        .join(' + ');
+                      return (
+                        <option key={p.id} value={idx}>
+                          Pallet #{p.index} [{p.width}×{p.length}mm] — {breakdown} ({p.layers.length}단 ·{' '}
+                          {p.totalHeight}mm · {p.totalWeight}kg)
+                        </option>
+                      );
+                    })
+                  )}
                 </select>
                 <div className="cbm-pallet-nav-btns">
                   <button
@@ -401,7 +420,7 @@ export function Step2PalletResult({
                             fontWeight: 700,
                           }}
                         >
-                          ⚠️ 돌출 +{g.maxOverhangMm}mm
+                          돌출 +{g.maxOverhangMm}mm
                         </span>
                       )}
                     </td>
@@ -426,7 +445,7 @@ export function Step2PalletResult({
                           setPalletVisibleStep(100);
                         }}
                       >
-                        {isSelectedGroup ? '✓ 현재 보는 중' : '🔍 보기'}
+                        {isSelectedGroup ? '✓ 선택됨' : '선택'}
                       </button>
                     </td>
                   </tr>
@@ -483,8 +502,11 @@ export function Step2PalletResult({
           className="cbm-calculate-btn step-cta-btn step3-cta"
           onClick={handleRunStep2ToStep3}
         >
-          🚢 [2단계 계산하기] 산출된 {simResult.summary.totalPallets}개 파레트를 컨테이너 종류별로 넣고 시각화 보기 ▼
+          2단계: 컨테이너 적재 시뮬레이션
         </button>
+        <div className="cbm-action-sub" style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '6px' }}>
+          산출된 {simResult.summary.totalPallets}개 파레트를 컨테이너 규격(20ft/40ft/40HC)별로 적재하고 3D 배치 및 소요 대수를 산출합니다.
+        </div>
       </div>
     </section>
   );
