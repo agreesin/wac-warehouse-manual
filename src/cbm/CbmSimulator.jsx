@@ -307,18 +307,30 @@ export function CbmSimulator() {
     step3Unlocked,
   ]);
 
-  // Keep indices in bounds
+  // Reset selected indices when mode changes or when out of bounds
   useEffect(() => {
-    if (simResult && selectedPalletIdx >= simResult.pallets.length) {
-      setSelectedPalletIdx(0);
-    }
-  }, [simResult, selectedPalletIdx]);
+    setSelectedPalletIdx(0);
+    setPalletVisibleStep(100);
+  }, [palletSelectionMode]);
 
   useEffect(() => {
-    if (simResult && selectedContainerIdx >= simResult.containerResult.containers.length) {
-      setSelectedContainerIdx(0);
+    setSelectedContainerIdx(0);
+    setContainerVisibleStep(100);
+  }, [selectedContainerId]);
+
+  useEffect(() => {
+    if (simResult) {
+      if (selectedPalletIdx >= simResult.pallets.length || selectedPalletIdx < 0) {
+        setSelectedPalletIdx(0);
+      }
+      if (
+        selectedContainerIdx >= simResult.containerResult.containers.length ||
+        selectedContainerIdx < 0
+      ) {
+        setSelectedContainerIdx(0);
+      }
     }
-  }, [simResult, selectedContainerIdx]);
+  }, [simResult, selectedPalletIdx, selectedContainerIdx]);
 
   // Handlers for Step 1 -> Step 2 -> Step 3 transitions
   const handleRunStep1ToStep2 = () => {

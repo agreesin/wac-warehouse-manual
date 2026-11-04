@@ -97,9 +97,34 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
             {diag.doorShoringGuide.summary}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.76rem', color: '#cbd5e1' }}>
-            <div>• {diag.doorShoringGuide.action1}</div>
-            <div>• {diag.doorShoringGuide.action2}</div>
+            {diag.doorShoringGuide.actions?.map((act, i) => (
+              <div key={i}>• {act}</div>
+            )) || (
+              <>
+                <div>• {diag.doorShoringGuide.action1}</div>
+                {diag.doorShoringGuide.action2 && <div>• {diag.doorShoringGuide.action2}</div>}
+              </>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* 길이 방향 래핑 공차 경고 (도어 잔여 길이 < 열 수 × 20mm) */}
+      {diag.lengthWrappingWarning && (
+        <div
+          style={{
+            marginTop: '10px',
+            padding: '9px 13px',
+            borderRadius: '8px',
+            background: 'rgba(239, 68, 68, 0.14)',
+            border: '1px solid rgba(239, 68, 68, 0.45)',
+            color: '#fca5a5',
+            fontSize: '0.78rem',
+            lineHeight: 1.45,
+          }}
+        >
+          <strong style={{ color: '#f87171', marginRight: '6px' }}>[래핑 공차 주의]</strong>
+          {diag.lengthWrappingWarning.text}
         </div>
       )}
     </div>

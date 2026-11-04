@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 /**
- * 🧱 상자 쌓기 패턴 및 자세 미세 조정 접이식 서랍 컴포넌트
+ * 상자 쌓기 패턴 및 자세 미세 조정 접이식 서랍 컴포넌트
  */
 export function PalletStackingAccordion({
   simResult,

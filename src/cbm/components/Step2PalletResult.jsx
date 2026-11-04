@@ -142,8 +142,8 @@ export function Step2PalletResult({
                 <span>40HC 컨테이너 예상</span>
                 <strong>
                   {mixHcEst.isDoubleStack
-                    ? `${mixHcEst.containerCount}대 (2단적 완적 기준)`
-                    : `${mixHcEst.containerCount}대 (1단 바닥 기준)`}
+                    ? `${simResult.summary.totalContainers}대 (2단적 완적 기준)`
+                    : `${simResult.summary.totalContainers}대 (1단 바닥 기준)`}
                 </strong>
               </div>
               <div className="cbm-pm-desc">
@@ -155,7 +155,7 @@ export function Step2PalletResult({
           {/* Cards 1..N: Uniform Pallet Presets */}
           {simResult.palletSpecComparison?.map((spec) => {
             const isSelected = palletSelectionMode === spec.id;
-            const hcEst = estimate40HcContainerNeeds(spec.totalPallets, spec.id);
+            const hcEst = spec.hcEstimate || estimate40HcContainerNeeds(spec.totalPallets, spec.id);
             const meta = PALLET_MODE_META[spec.id] || {
               badge: spec.id,
               title: spec.name,
@@ -300,9 +300,10 @@ export function Step2PalletResult({
                         {g.palletIndices.map((pIdx1) => {
                           const p = simResult.pallets[pIdx1 - 1];
                           if (!p) return null;
+                          const cargoLabel = p.primaryCargoName || g.label.split(' — ')[0];
                           return (
                             <option key={p.id} value={pIdx1 - 1}>
-                              Pallet #{p.index} ({p.boxes.length}박스 · {p.totalHeight}mm · {p.totalWeight}kg)
+                              Pallet #{p.index} [{p.width}×{p.length}mm] — {cargoLabel} ({p.boxes.length}박스 · {p.totalHeight}mm · {p.totalWeight}kg)
                             </option>
                           );
                         })}
@@ -381,7 +382,7 @@ export function Step2PalletResult({
                       setIsPalletPlaying((p) => !p);
                     }}
                   >
-                    {isPalletPlaying ? '⏸ 일시정지' : '▶ 적재 순서 재생'}
+                    {isPalletPlaying ? '일시정지' : '▶ 적재 순서 재생'}
                   </button>
                   <div className="cbm-slider-wrap">
                     <span>순서 ({palletVisibleStep}%)</span>
@@ -512,7 +513,7 @@ export function Step2PalletResult({
           </table>
         </div>
 
-        {/* 🧱 상자 쌓기 패턴/자세 미세 변경 접이식 서랍 (Subcomponent) */}
+        {/* 상자 쌓기 패턴/자세 미세 변경 접이식 서랍 (Subcomponent) */}
         <PalletStackingAccordion
           simResult={simResult}
           currentPallet={currentPallet}

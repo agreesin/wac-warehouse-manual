@@ -324,6 +324,39 @@ export function Step3ContainerResult({
               )}
             </div>
           )}
+
+          {/* 길이 방향 래핑 공차 경고 바 */}
+          {currentContainer?.fieldDiagnostics?.lengthWrappingWarning && (
+            <div
+              style={{
+                width: '100%',
+                marginTop: '6px',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.45)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.8rem',
+                color: '#fca5a5',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: 'rgba(239, 68, 68, 0.3)',
+                  color: '#f87171',
+                  fontWeight: 700,
+                }}
+              >
+                래핑 공차 주의
+              </span>
+              <span>{currentContainer.fieldDiagnostics.lengthWrappingWarning.text}</span>
+            </div>
+          )}
         </div>
 
         {/* 3D Container Canvas */}
@@ -352,7 +385,7 @@ export function Step3ContainerResult({
               setIsContainerPlaying((p) => !p);
             }}
           >
-            {isContainerPlaying ? '⏸ 일시정지' : '▶ 컨테이너 파레트 적재 순서 재생'}
+            {isContainerPlaying ? '일시정지' : '▶ 컨테이너 파레트 적재 순서 재생'}
           </button>
           <div className="cbm-slider-wrap">
             <span>컨테이너 적재 진행률 ({containerVisibleStep}%)</span>

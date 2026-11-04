@@ -70,9 +70,9 @@ export function estimate40HcContainerNeeds(palletCount, palletSpecId = 'T11') {
   // 40HC 컨테이너 바닥 적재 용량 (실무 기준):
   // - EUR (1200×800): 2열 지그재그/회전 24~25개
   // - T11 (1100×1100), T12 (1200×1000), CUSTOM_MIX: 2열 20개
-  // - EXPORT_1200 (1200×1200): 컨테이너 내부 폭(2352mm) 미달(2400 > 2352)로 1열 10개 적재 한도
+  // - EXPORT_1200 (1200×1200): 컨테이너 내부 폭(2352mm) 미달로 1열 적재, 길이(12032mm) 기준 1열 9개 적재
   const floorCapacity =
-    palletSpecId === 'EUR' ? 24 : palletSpecId === 'EXPORT_1200' ? 10 : 20;
+    palletSpecId === 'EUR' ? 24 : palletSpecId === 'EXPORT_1200' ? 9 : 20;
   if (!palletCount || palletCount <= 0) {
     return {
       containerCount: 0,
@@ -92,7 +92,7 @@ export function estimate40HcContainerNeeds(palletCount, palletSpecId = 'T11') {
   const emptySlots = Math.max(0, totalSlots - palletCount);
   const utilizationPct = Math.round((palletCount / totalSlots) * 100);
 
-  // 컨테이너별 균등 배분 (예: 38개 ➔ 19개 + 19개)
+  // 컨테이너별 균등 배분 (예: 38개 -> 19개 + 19개)
   const perContainerPlts = [];
   const basePerCont = Math.floor(palletCount / containerCount);
   let remainder = palletCount % containerCount;
@@ -104,9 +104,9 @@ export function estimate40HcContainerNeeds(palletCount, palletSpecId = 'T11') {
 
   const floorNote =
     emptySlots === 0
-      ? '바닥 100% 완적 (빈 공간 없음 · 쇼링 불필요)'
+      ? '바닥 100% 완적 (바닥 빈 슬롯 없음)'
       : emptySlots <= containerCount * 2
-      ? `바닥 ${totalSlots}슬롯 중 ${palletCount}PLT 채움 (바닥 충진률 ${utilizationPct}% · 전도 방지)`
+      ? `바닥 ${totalSlots}슬롯 중 ${palletCount}PLT 채움 (바닥 충진률 ${utilizationPct}%)`
       : `바닥 ${totalSlots}슬롯 중 ${palletCount}PLT 채움 (잔여 바닥 슬롯 ${emptySlots}개)`;
 
   return {
@@ -212,6 +212,12 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
             ).toFixed(1)
           )
         : 0;
+
+    // 3단계와 100% 동일한 실제 컨테이너 배치 함수를 사용하여 소요 대수 산출
+    const resCont = packPalletsIntoContainers(res.pallets, selectedSpec, options);
+    const actualContainers = resCont.containers.length;
+    const est = estimate40HcContainerNeeds(res.pallets.length, preset.id);
+
     return {
       id: preset.id,
       name: preset.name,
@@ -219,9 +225,13 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       width: preset.width,
       length: preset.length,
       totalPallets: res.pallets.length,
+      containerCount: actualContainers,
       avgUtilization: avgUtil,
       unpackedCount: res.unpackedErrors.length,
-      hcEstimate: estimate40HcContainerNeeds(res.pallets.length, preset.id),
+      hcEstimate: {
+        ...est,
+        containerCount: actualContainers,
+      },
     };
   });
 
@@ -292,10 +302,10 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       const comboEmpty = Math.max(0, comboSlots - totalPlt);
       fleetRecommendations.push({
         id: 'COMBO_40HC_20FT',
-        badge: '💰 운임·공간 최적 혼합 배차 추천',
+        badge: '[추천] 운임·공간 최적 혼합 배차',
         title: `40ft HC × ${full40Cnt}대 + 20ft Dry × 1대 (총 ${full40Cnt + 1}대)`,
         detail: `40HC에 ${full40Cnt * cap40}PLT + 20ft에 ${remPlt}PLT 적재 (빈 바닥 슬롯 ${hcOnlyEmpty}칸 → ${comboEmpty}칸으로 축소)`,
-        note: '두 컨테이너 모두 바닥을 꽉 채워 쇼링(고정장치) 비용 절감',
+        note: '두 컨테이너 모두 바닥을 채워 전후 밀림 및 쇼링 고정 보강 최소화',
         desc: `잔여 ${remPlt}파레트를 40HC 대신 20ft 1대에 적재하여 빈 바닥 슬롯을 ${hcOnlyEmpty}개 → ${comboEmpty}개로 줄이는 실무 추천 조합입니다.`,
         totalSlots: comboSlots,
         emptySlots: comboEmpty,
@@ -309,12 +319,12 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
 
     fleetRecommendations.push({
       id: 'SINGLE_40HC',
-      badge: hcOnlyEmpty <= 2 ? '⭐ 바닥 공간 최적 매칭 추천' : '⚖️ 전 호기 균등 배분 배차',
+      badge: hcOnlyEmpty <= 2 ? '[추천] 바닥 공간 최적 매칭' : '전 호기 균등 배분 배차',
       title: `40ft High Cube × ${hcOnlyCnt}대 (${perHcSplit})`,
       detail: `총 ${totalPlt}파레트를 호기별로 균등 배분 (바닥 ${hcOnlySlots}슬롯 기준)`,
       note:
         options.fullFloorSpread !== false
-          ? '1단 바닥 균등 분산 적재 (열 사이 유격 존재 시 에어백/완충재 충진 필수)'
+          ? '1단 바닥 밀착 적재 (도어 쪽 잔여 공간 및 측면 유격 진단에 맞춰 목재 블로킹/래싱 벨트 고정)'
           : `고단 스태킹 & 전방 밀착 배치 (호기당 약 ${(avgCompactRearClearanceMm / 1000).toFixed(2)}m 도어 여유 공간에 목재 블로킹 & 차단 래싱 시공)`,
       desc:
         hcOnlyEmpty <= 2

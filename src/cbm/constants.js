@@ -146,27 +146,27 @@ export const DEFAULT_CARGOS = [
 export const PATTERN_DEFS = [
   {
     id: 'AUTO_MAX',
-    label: '⚡ 자동 최대 혼합',
+    label: '자동 최대 혼합',
     shortDesc: '가장 많이 들어가는 최적 배열 자동 선택',
   },
   {
     id: 'PINWHEEL',
-    label: '🌀 핀휠 (풍차형 맞물림)',
+    label: '핀휠 (풍차형 맞물림)',
     shortDesc: '4면을 풍차처럼 돌려 맞물리게 배치 (흔들림에 강함)',
   },
   {
     id: 'SPLIT_MIX',
-    label: '🧩 블록 혼합 (정방향+회전)',
+    label: '블록 혼합 (정방향+회전)',
     shortDesc: '정방향 열과 90° 회전 열을 조합하여 빈 공간 최소화',
   },
   {
     id: 'GRID_NORMAL',
-    label: '⬆️ 일자 정방향 바둑판',
+    label: '일자 정방향 바둑판',
     shortDesc: '모든 상자를 회전 없이 같은 방향으로 줄 맞춰 정렬',
   },
   {
     id: 'GRID_ROTATED',
-    label: '↪️ 일자 90°회전 바둑판',
+    label: '일자 90°회전 바둑판',
     shortDesc: '모든 상자를 90° 회전 방향으로 통일하여 줄 맞춰 정렬',
   },
 ];
@@ -174,23 +174,23 @@ export const PATTERN_DEFS = [
 export const STACK_STYLE_DEFS = [
   {
     id: 'INTERLOCK',
-    label: '🧱 벽돌식 홀·짝수단 대칭 교차',
+    label: '벽돌식 홀·짝수단 대칭 교차',
     shortDesc: '홀수단과 짝수단을 180° 대칭 교차하여 층간 무너짐 방지',
   },
   {
     id: 'CROSS_TIER',
-    label: '🔄 홀·짝수단 90° 직교 교차',
-    shortDesc: '홀수단 가로열 ↔ 짝수단 세로열로 층마다 결을 90° 직교 배치',
+    label: '홀·짝수단 90° 직교 교차',
+    shortDesc: '홀수단 가로열과 짝수단 세로열로 층마다 결을 90° 직교 배치',
   },
   {
     id: 'COLUMN',
-    label: '🏛️ 기둥식 수직 일자 정렬',
+    label: '기둥식 수직 일자 정렬',
     shortDesc: '1단~끝단까지 동일 위치로 수직 기둥 정렬 (박스 모서리 강도 최고)',
   },
 ];
 
 export const POSTURE_DEFS = [
-  { id: 'UPRIGHT', label: '⬆️ 기본 세워 쌓기' },
-  { id: 'FLAT_W_H', label: '📐 앞으로 눕혀 쌓기 (세로=높이)' },
-  { id: 'FLAT_H_L', label: '📐 옆으로 눕혀 쌓기 (가로=높이)' },
+  { id: 'UPRIGHT', label: '기본 세워 쌓기' },
+  { id: 'FLAT_W_H', label: '앞으로 눕혀 쌓기 (세로=높이)' },
+  { id: 'FLAT_H_L', label: '옆으로 눕혀 쌓기 (가로=높이)' },
 ];

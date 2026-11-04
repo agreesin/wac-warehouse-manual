@@ -13,7 +13,7 @@ export function resolveCargoBoxDimsByPosture(cargo, postureOverride) {
   if (posture === 'FLAT_W_H') {
     return {
       posture: 'FLAT_W_H',
-      postureLabel: '📐 앞으로 눕혀 쌓기 (가로×높이 바닥)',
+      postureLabel: '앞으로 눕혀 쌓기 (가로×높이 바닥)',
       width: rawW,
       length: rawH,
       height: rawL,
@@ -22,7 +22,7 @@ export function resolveCargoBoxDimsByPosture(cargo, postureOverride) {
   if (posture === 'FLAT_H_L') {
     return {
       posture: 'FLAT_H_L',
-      postureLabel: '📐 옆으로 눕혀 쌓기 (높이×세로 바닥)',
+      postureLabel: '옆으로 눕혀 쌓기 (높이×세로 바닥)',
       width: rawH,
       length: rawL,
       height: rawW,
@@ -30,7 +30,7 @@ export function resolveCargoBoxDimsByPosture(cargo, postureOverride) {
   }
   return {
     posture: 'UPRIGHT',
-    postureLabel: '⬆️ 기본 세워 쌓기 (가로×세로 바닥)',
+    postureLabel: '기본 세워 쌓기 (가로×세로 바닥)',
     width: rawW,
     length: rawL,
     height: rawH,

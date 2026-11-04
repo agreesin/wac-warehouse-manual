@@ -58,8 +58,8 @@ export function computePalletLocalCoG(pallet) {
 
 /**
  * 자투리 잔여 층(Partial Layer) 박스 대칭 배치 헬퍼
- * - 완적 템플릿의 박스들 중 중심점 대비 대칭(Symmetric) 및 무게중심(CoG) 편차를 최소화하는 조합 선택
- * - 한쪽 구석 쏠림을 원천 방지하고 랩핑 결속 안정성 극대화
+ * - 완적 템플릿의 박스들 중 선택된 박스들의 중심이 파레트 중심(midX, midZ)에 가장 가깝도록 n개를 선택
+ * - 파레트 중심 기준 대칭성과 무게중심 편차 최소화를 보장하여 한쪽 구석 쏠림 원천 방지
  */
 export function pickBalancedSubset(template, takeCount, palletW, palletL) {
   if (!template || template.length === 0 || takeCount <= 0) return [];
@@ -67,81 +67,51 @@ export function pickBalancedSubset(template, takeCount, palletW, palletL) {
 
   const midX = palletW / 2;
   const midZ = palletL / 2;
+  const k = takeCount;
 
-  const pool = template.map((b, idx) => ({
-    b,
-    idx,
-    rx: b.x + b.w / 2 - midX,
-    rz: b.z + b.l / 2 - midZ,
-  }));
-
-  const selected = [];
-  let curSumX = 0;
-  let curSumZ = 0;
-
-  let remaining = takeCount;
-  // 홀수 개수일 경우 중심에 가장 가까운 박스 1개 우선 배치
-  if (remaining % 2 === 1) {
-    pool.sort((a, b) => Math.hypot(a.rx, a.rz) - Math.hypot(b.rx, b.rz));
-    const centerBox = pool.shift();
-    selected.push(centerBox.b);
-    curSumX += centerBox.rx;
-    curSumZ += centerBox.rz;
-    remaining -= 1;
+  // 후보 풀이 큰 경우(20개 초과) 중심에서 너무 먼 박스는 사전 정리
+  let pool = template;
+  if (pool.length > 20) {
+    pool = [...template]
+      .sort((a, b) => {
+        const da = Math.hypot(a.x + a.w / 2 - midX, a.z + a.l / 2 - midZ);
+        const db = Math.hypot(b.x + b.w / 2 - midX, b.z + b.l / 2 - midZ);
+        return da - db;
+      })
+      .slice(0, Math.min(pool.length, k + 8));
   }
 
-  // 짝수 쌍(Pair) 매칭: 점대칭으로 모멘트 합이 0에 가장 가까운 2개 박스를 탐욕적으로 선택
-  while (remaining >= 2 && pool.length >= 2) {
-    let bestPairIdx = [-1, -1];
-    let bestScore = Infinity;
+  let bestSubset = null;
+  let bestScore = Infinity;
 
-    for (let i = 0; i < pool.length; i++) {
-      for (let j = i + 1; j < pool.length; j++) {
-        const p1 = pool[i];
-        const p2 = pool[j];
-        const pairX = p1.rx + p2.rx;
-        const pairZ = p1.rz + p2.rz;
-        const newTotalX = curSumX + pairX;
-        const newTotalZ = curSumZ + pairZ;
-        const score = Math.hypot(newTotalX, newTotalZ) + Math.hypot(pairX, pairZ) * 0.1;
-        if (score < bestScore) {
-          bestScore = score;
-          bestPairIdx = [i, j];
-        }
+  function search(start, chosen, sumX, sumZ) {
+    const needed = k - chosen.length;
+    if (needed === 0) {
+      const avgX = sumX / k;
+      const avgZ = sumZ / k;
+      const distFromCenter = Math.hypot(avgX - midX, avgZ - midZ);
+      if (distFromCenter < bestScore - 1e-6) {
+        bestScore = distFromCenter;
+        bestSubset = [...chosen];
       }
+      return;
     }
 
-    if (bestPairIdx[0] !== -1) {
-      const [i, j] = bestPairIdx;
-      const p2 = pool.splice(j, 1)[0];
-      const p1 = pool.splice(i, 1)[0];
-      selected.push(p1.b, p2.b);
-      curSumX += p1.rx + p2.rx;
-      curSumZ += p1.rz + p2.rz;
-      remaining -= 2;
-    } else {
-      break;
+    if (pool.length - start < needed) return;
+
+    for (let i = start; i < pool.length; i++) {
+      const b = pool[i];
+      const bx = b.x + b.w / 2;
+      const bz = b.z + b.l / 2;
+      chosen.push(b);
+      search(i + 1, chosen, sumX + bx, sumZ + bz);
+      chosen.pop();
     }
   }
 
-  while (remaining > 0 && pool.length > 0) {
-    let bestIdx = 0;
-    let bestScore = Infinity;
-    for (let i = 0; i < pool.length; i++) {
-      const score = Math.hypot(curSumX + pool[i].rx, curSumZ + pool[i].rz);
-      if (score < bestScore) {
-        bestScore = score;
-        bestIdx = i;
-      }
-    }
-    const p = pool.splice(bestIdx, 1)[0];
-    selected.push(p.b);
-    curSumX += p.rx;
-    curSumZ += p.rz;
-    remaining -= 1;
-  }
+  search(0, [], 0, 0);
 
-  return selected;
+  return bestSubset || template.slice(0, takeCount);
 }
 
 /**
@@ -401,19 +371,23 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const isEvenLayer = pallet.layers.length % 2 === 1;
 
     if (!isFull && prevLayer && prevLayer.cargoId === cargoItem.id) {
-      const chosen = pickBalancedSubset(template, takeCount, pallet.width, pallet.length);
+      // 기둥 적재 안정성을 위해 완적 템플릿의 위치를 유지하며, 파레트 중심 대비 대칭인 박스들을 최적 선택
+      const positionedTpl = template.map((p) => ({
+        ...p,
+        x: p.x + meta.fullOffsetX,
+        z: p.z + meta.fullOffsetZ,
+      }));
+      const chosen = pickBalancedSubset(positionedTpl, takeCount, pallet.width, pallet.length);
       let lMinX = Infinity,
         lMaxX = 0,
         lMinZ = Infinity,
         lMaxZ = 0;
       const coords = chosen.map((p) => {
-        const bx = p.x + meta.fullOffsetX;
-        const bz = p.z + meta.fullOffsetZ;
-        if (bx < lMinX) lMinX = bx;
-        if (bx + p.w > lMaxX) lMaxX = bx + p.w;
-        if (bz < lMinZ) lMinZ = bz;
-        if (bz + p.l > lMaxZ) lMaxZ = bz + p.l;
-        return { ...p, x: bx, z: bz };
+        if (p.x < lMinX) lMinX = p.x;
+        if (p.x + p.w > lMaxX) lMaxX = p.x + p.w;
+        if (p.z < lMinZ) lMinZ = p.z;
+        if (p.z + p.l > lMaxZ) lMaxZ = p.z + p.l;
+        return { ...p };
       });
       return {
         coords,
@@ -427,9 +401,10 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       };
     }
 
+    const tplBounds = measureLayerBounds(template);
     const placedTemplate = isFull
       ? template
-      : pickBalancedSubset(template, takeCount, pallet.width, pallet.length);
+      : pickBalancedSubset(template, takeCount, tplBounds.spanW, tplBounds.spanL);
     const bounds = measureLayerBounds(placedTemplate);
     const offsetX = Math.floor((pallet.width - bounds.spanW) / 2) - bounds.minX;
     const offsetZ = Math.floor((pallet.length - bounds.spanL) / 2) - bounds.minZ;
@@ -912,13 +887,15 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
       const curOverhangW = Math.max(0, curBounds.spanW - pW);
       const curOverhangL = Math.max(0, curBounds.spanL - pL);
       const curMaxOverhangMm = Math.max(curOverhangW, curOverhangL);
+      const curOuterW = Math.max(pW, curBounds.spanW);
+      const curOuterL = Math.max(pL, curBounds.spanL);
       const curOvDirectionText =
         curOverhangW > 0 && curOverhangL === 0
-          ? `가로(W) +${curOverhangW}mm (외경 ${curBounds.spanW}×${curBounds.spanL}mm)`
+          ? `가로(W) +${curOverhangW}mm (외경 ${curOuterW}×${curOuterL}mm)`
           : curOverhangL > 0 && curOverhangW === 0
-          ? `길이(L) +${curOverhangL}mm (외경 ${curBounds.spanW}×${curBounds.spanL}mm)`
+          ? `길이(L) +${curOverhangL}mm (외경 ${curOuterW}×${curOuterL}mm)`
           : curOverhangW > 0 && curOverhangL > 0
-          ? `가로 +${curOverhangW}mm / 길이 +${curOverhangL}mm (외경 ${curBounds.spanW}×${curBounds.spanL}mm)`
+          ? `가로 +${curOverhangW}mm / 길이 +${curOverhangL}mm (외경 ${curOuterW}×${curOuterL}mm)`
           : '0mm 정사이즈';
 
       let opportunity = null;
@@ -940,18 +917,22 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
 
           // Claude 피드백 반영: 실제로 파레트 절감 효과(savedPallets > 0)가 있는 경우에만 돌출 제안 (0PLT 절감 제안 숨김)
           if (savedPallets > 0 || strictBounds.count === 0) {
+            const candOuterW = Math.max(pW, candBounds.spanW);
+            const candOuterL = Math.max(pL, candBounds.spanL);
             const ovDirectionText =
               ovW > 0 && ovL === 0
-                ? `가로(W) 방향만 +${ovW}mm (외경 ${candBounds.spanW}×${candBounds.spanL}mm)`
+                ? `가로(W) 방향만 +${ovW}mm (외경 ${candOuterW}×${candOuterL}mm)`
                 : ovL > 0 && ovW === 0
-                ? `길이(L) 방향만 +${ovL}mm (외경 ${candBounds.spanW}×${candBounds.spanL}mm)`
-                : `가로 +${ovW}mm / 길이 +${ovL}mm (외경 ${candBounds.spanW}×${candBounds.spanL}mm)`;
+                ? `길이(L) 방향만 +${ovL}mm (외경 ${candOuterW}×${candOuterL}mm)`
+                : `가로 +${ovW}mm / 길이 +${ovL}mm (외경 ${candOuterW}×${candOuterL}mm)`;
 
             opportunity = {
               requiredOverhangMm: exactOvMm,
               ovDirectionText,
               overhangW: ovW,
               overhangL: ovL,
+              outerW: candOuterW,
+              outerL: candOuterL,
               eachSideW: Number((ovW / 2).toFixed(1)),
               eachSideL: Number((ovL / 2).toFixed(1)),
               eachSideMax: Number((exactOvMm / 2).toFixed(1)),
@@ -1167,7 +1148,7 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         if (stDef.id === 'COLUMN') {
           return {
             ...stDef,
-            label: '🏛️ 수직 기둥 정렬 (표준 권장)',
+            label: '수직 기둥 정렬 (표준 권장)',
             shortDesc: '네 모서리가 일치하여 상자 하중 지지력 극대화',
             isRecommended: true,
           };
@@ -1176,8 +1157,8 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
           return {
             ...stDef,
             label: cantileverCheck.hasRisk
-              ? '🧱 벽돌식 대칭 교차 (⚠️ 허공 걸침 주의)'
-              : '🧱 벽돌식 대칭 교차',
+              ? '벽돌식 대칭 교차 (허공 걸침 주의)'
+              : '벽돌식 대칭 교차',
             shortDesc: cantileverCheck.hasRisk
               ? '비대칭 배열로 인해 짝수단 박스 일부가 허공에 뜸'
               : '홀수단과 짝수단을 180° 대칭 교차하여 층간 결속',
