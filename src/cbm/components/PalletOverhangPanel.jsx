@@ -94,24 +94,22 @@ export function PalletOverhangPanel({
               {/* 중앙 돌출 진단 및 절감 요약 메시지 */}
               <div className="cbm-overhang-row-mid" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                 <div>
-                  {opp ? (
-                    isOvApplied ? (
-                      <span style={{ color: '#fbbf24', fontWeight: 700 }}>
-                        ⚠️ +{diag.current.maxOverhangMm}mm 허용 적용 중 ({diag.current.totalPallets || opp.totalPallets}PLT)
-                      </span>
-                    ) : (
-                      <span style={{ color: '#fde68a' }}>
-                        💡 +{opp.requiredOverhangMm}mm 돌출 시 <strong>{opp.savedPallets}PLT 절감!</strong> ({diag.strict.totalPallets} ➔ {opp.totalPallets}PLT)
-                      </span>
-                    )
+                  {isOvApplied ? (
+                    <span style={{ color: '#fbbf24', fontWeight: 700 }}>
+                      ⚠️ {diag.current.ovDirectionText || `+${diag.current.maxOverhangMm}mm`} 허용 적용 중 ({diag.current.totalPallets}PLT)
+                    </span>
+                  ) : opp && opp.savedPallets > 0 ? (
+                    <span style={{ color: '#fde68a' }}>
+                      💡 {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 <strong>{opp.savedPallets}PLT 절감!</strong> ({diag.strict.totalPallets} ➔ {opp.totalPallets}PLT)
+                    </span>
                   ) : (
                     <span style={{ color: '#94a3b8' }}>
-                      정사이즈(0mm) 최적 적재 중 (돌출 여지 없음)
+                      정사이즈(0mm) 유지 (돌출 절감 효과 없음)
                     </span>
                   )}
                 </div>
                 {/* 래핑 공차 및 컨테이너 벽면 간섭 실시간 진단 */}
-                {cFit && (isOvApplied || (opp && opp.requiredOverhangMm > 25)) && (
+                {cFit && (isOvApplied || (opp && opp.savedPallets > 0 && opp.requiredOverhangMm > 25)) && (
                   <div style={{ fontSize: '0.71rem', color: cFit.riskLevel === 'danger' ? '#fca5a5' : '#cbd5e1' }}>
                     {cFit.warningText}
                   </div>
@@ -128,7 +126,7 @@ export function PalletOverhangPanel({
                   🔒 0mm 불허
                 </button>
 
-                {opp && (
+                {opp && opp.savedPallets > 0 && (
                   <button
                     type="button"
                     className="cbm-btn-xs"

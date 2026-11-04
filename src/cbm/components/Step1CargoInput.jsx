@@ -345,9 +345,9 @@ export function Step1CargoInput({
             >
               <div className="cbm-stack-btn-top">
                 <strong>1단적 (Single Stack)</strong>
-                <span className="cbm-stack-tag">표준</span>
+                <span className="cbm-stack-tag">단일층</span>
               </div>
-              <p>바닥 1층 안전 평적 (단적 없음 · 실무 권장)</p>
+              <p>바닥 1단 단일 평적 (화물 하중 부담 최소화 · 전도 위험 방지)</p>
             </button>
 
             <button
@@ -359,7 +359,7 @@ export function Step1CargoInput({
                 <strong>2단적 (Double Stack) — 높이 자동 맞춤</strong>
                 <span className="cbm-stack-tag highlight">2단적 자동</span>
               </div>
-              <p>컨테이너 높이에 맞춰 최대 {effectivePalletConfig.maxTotalHeight}mm로 자동 분할</p>
+              <p>화물 압축 강도 허용 시 컨테이너 높이에 맞춰 자동 분할 (공간 극대화)</p>
             </button>
 
             <button
@@ -371,7 +371,7 @@ export function Step1CargoInput({
                 <strong>2단적 (Double Stack) — 지정 높이 유지</strong>
                 <span className="cbm-stack-tag">2단적 수동</span>
               </div>
-              <p>지정 높이 유지, 수용 가능한 파레트만 2단적</p>
+              <p>지정 높이 유지, 적재 가능한 견고 화물만 2단적</p>
             </button>
           </div>
 

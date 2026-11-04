@@ -142,11 +142,11 @@ export function checkLayerCantileverRisk(template, bounds, palletW, palletL) {
  */
 export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
   const overhang = Math.max(0, Number(options.overhang) || 0);
-  const baseH = Math.max(0, Number(palletConfig.baseHeight) ?? 150);
-  const maxTotalH = Math.max(baseH + 50, Number(palletConfig.maxTotalHeight) || 1700);
+  const baseH = Number(palletConfig.baseHeight) || 150;
+  const maxTotalH = Number(palletConfig.maxTotalHeight) || 1700;
   const maxLoadH = maxTotalH - baseH;
-  const maxCargoWeight = Math.max(1, Number(palletConfig.maxWeight) || 1000);
-  const tareWeight = Math.max(0, Number(palletConfig.tareWeight) ?? 17);
+  const maxCargoWeight = Number(palletConfig.maxWeight) || 1000;
+  const tareWeight = Number(palletConfig.tareWeight) || 17;
   const mixCargos = Boolean(options.mixCargos);
   const interlockLayers = options.interlockLayers !== false;
 
@@ -755,10 +755,10 @@ export function autoRecommendPalletSpecs(cargos, overhang = 0) {
  * 사후 파레트 돌출(Overhang) 자동 감지 및 품목별 돌출 허용 시 적재 효율 분석
  */
 export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
-  const baseH = Math.max(0, Number(palletConfig.baseHeight) ?? 150);
-  const maxTotalH = Math.max(baseH + 50, Number(palletConfig.maxTotalHeight) || 1700);
+  const baseH = Number(palletConfig.baseHeight) || 150;
+  const maxTotalH = Number(palletConfig.maxTotalHeight) || 1700;
   const maxLoadH = maxTotalH - baseH;
-  const maxCargoWeight = Math.max(1, Number(palletConfig.maxWeight) || 1000);
+  const maxCargoWeight = Number(palletConfig.maxWeight) || 1000;
   const defaultOv = Math.max(0, Number(options.overhang) || 0);
 
   const calcPalletNeed = (perLayerCount, item) => {
@@ -808,6 +808,14 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
       const curOverhangW = Math.max(0, curBounds.spanW - pW);
       const curOverhangL = Math.max(0, curBounds.spanL - pL);
       const curMaxOverhangMm = Math.max(curOverhangW, curOverhangL);
+      const curOvDirectionText =
+        curOverhangW > 0 && curOverhangL === 0
+          ? `가로(W) +${curOverhangW}mm (외경 ${curBounds.spanW}×${curBounds.spanL}mm)`
+          : curOverhangL > 0 && curOverhangW === 0
+          ? `길이(L) +${curOverhangL}mm (외경 ${curBounds.spanW}×${curBounds.spanL}mm)`
+          : curOverhangW > 0 && curOverhangL > 0
+          ? `가로 +${curOverhangW}mm / 길이 +${curOverhangL}mm (외경 ${curBounds.spanW}×${curBounds.spanL}mm)`
+          : '0mm 정사이즈';
 
       let opportunity = null;
       for (let testOv = 2; testOv <= 150; testOv += 2) {
@@ -824,22 +832,35 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
           const ovL = Math.max(0, candBounds.spanL - pL);
           const exactOvMm = Math.max(ovW, ovL);
           const candStats = calcPalletNeed(candBounds.count, c);
-          opportunity = {
-            requiredOverhangMm: exactOvMm,
-            overhangW: ovW,
-            overhangL: ovL,
-            eachSideW: Number((ovW / 2).toFixed(1)),
-            eachSideL: Number((ovL / 2).toFixed(1)),
-            eachSideMax: Number((exactOvMm / 2).toFixed(1)),
-            spanW: candBounds.spanW,
-            spanL: candBounds.spanL,
-            layerCount: candBounds.count,
-            boxesPerPallet: candStats.boxesPerPallet,
-            totalPallets: candStats.totalPallets,
-            savedPallets: Math.max(0, strictStats.totalPallets - candStats.totalPallets),
-            needsOverhangToFitAtAll: strictBounds.count === 0,
-          };
-          break;
+          const savedPallets = Math.max(0, strictStats.totalPallets - candStats.totalPallets);
+
+          // Claude 피드백 반영: 실제로 파레트 절감 효과(savedPallets > 0)가 있는 경우에만 돌출 제안 (0PLT 절감 제안 숨김)
+          if (savedPallets > 0 || strictBounds.count === 0) {
+            const ovDirectionText =
+              ovW > 0 && ovL === 0
+                ? `가로(W) 방향만 +${ovW}mm (외경 ${candBounds.spanW}×${candBounds.spanL}mm)`
+                : ovL > 0 && ovW === 0
+                ? `길이(L) 방향만 +${ovL}mm (외경 ${candBounds.spanW}×${candBounds.spanL}mm)`
+                : `가로 +${ovW}mm / 길이 +${ovL}mm (외경 ${candBounds.spanW}×${candBounds.spanL}mm)`;
+
+            opportunity = {
+              requiredOverhangMm: exactOvMm,
+              ovDirectionText,
+              overhangW: ovW,
+              overhangL: ovL,
+              eachSideW: Number((ovW / 2).toFixed(1)),
+              eachSideL: Number((ovL / 2).toFixed(1)),
+              eachSideMax: Number((exactOvMm / 2).toFixed(1)),
+              spanW: candBounds.spanW,
+              spanL: candBounds.spanL,
+              layerCount: candBounds.count,
+              boxesPerPallet: candStats.boxesPerPallet,
+              totalPallets: candStats.totalPallets,
+              savedPallets,
+              needsOverhangToFitAtAll: strictBounds.count === 0,
+            };
+            break;
+          }
         }
       }
 
@@ -907,6 +928,7 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
           overhangW: curOverhangW,
           overhangL: curOverhangL,
           maxOverhangMm: curMaxOverhangMm,
+          ovDirectionText: curOvDirectionText,
           eachSideMax: Number((curMaxOverhangMm / 2).toFixed(1)),
           boxesPerPallet: curStats.boxesPerPallet,
           totalPallets: curStats.totalPallets,
@@ -930,10 +952,10 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
  * 품목(SKU)별로 '상자를 어떻게 쌓을지' (1층 평면 배열 패턴 5종 / 층간 교차 방식 3종 / 상자 세움·눕힘 자세 3종) 비교 분석
  */
 export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) {
-  const baseH = Math.max(0, Number(palletConfig.baseHeight) ?? 150);
-  const maxTotalH = Math.max(baseH + 50, Number(palletConfig.maxTotalHeight) || 1700);
+  const baseH = Number(palletConfig.baseHeight) || 150;
+  const maxTotalH = Number(palletConfig.maxTotalHeight) || 1700;
   const maxLoadH = maxTotalH - baseH;
-  const maxCargoWeight = Math.max(1, Number(palletConfig.maxWeight) || 1000);
+  const maxCargoWeight = Number(palletConfig.maxWeight) || 1000;
   const defaultOv = Math.max(0, Number(options.overhang) || 0);
   const defaultInterlock = options.interlockLayers !== false;
 

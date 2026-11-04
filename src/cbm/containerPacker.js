@@ -79,6 +79,33 @@ export function analyzeContainerCoG(container) {
   const isLateralSafe = Math.abs(50 - widthRatioPct) <= 6;
   const isLongitudinalSafe = Math.abs(50 - lengthRatioPct) <= 10;
 
+  // Claude 피드백 반영: 전후/좌우 오프셋(mm) 및 물류 기준 판정 설명 보강
+  const longitudinalCriteriaText = '컨테이너 중앙(L/2) 대비 전후 편차 ±1,200mm 이내 권장';
+  const lateralCriteriaText = '컨테이너 중심(W/2) 대비 좌우 편차 ±70mm 이내 (비율 50:50 ±6%)';
+
+  let axleLoadNote = '';
+  if (totalMass <= 10000) {
+    axleLoadNote = `화물 총중량 ${(totalMass / 1000).toFixed(1)}톤으로 경량 상태 — 전후 편차가 있어도 트랙터 축하중(Axle Load) 안전 허용치 충족`;
+  } else if (Math.abs(offsetXFromContainerCenter) > 1200) {
+    axleLoadNote = `총중량 ${(totalMass / 1000).toFixed(1)}톤 전방 쏠림 — 트랙터 구동축(Drive Axle) 과적 및 축중계 통과 확인 권장`;
+  } else {
+    axleLoadNote = '전후 하중 분산 균형 양호 — 도로교통법 축하중 10톤 제한 충족';
+  }
+
+  const offsetDirXText =
+    offsetXFromContainerCenter === 0
+      ? '중앙 정확 일치 (0mm)'
+      : offsetXFromContainerCenter < 0
+      ? `전방(헤드) ${Math.abs(offsetXFromContainerCenter).toLocaleString()}mm 치우침`
+      : `후방(도어) ${Math.abs(offsetXFromContainerCenter).toLocaleString()}mm 치우침`;
+
+  const offsetDirZText =
+    offsetZFromCenter === 0
+      ? '좌우 중심 일치 (0mm)'
+      : offsetZFromCenter < 0
+      ? `좌측 ${Math.abs(offsetZFromCenter)}mm 편차`
+      : `우측 ${Math.abs(offsetZFromCenter)}mm 편차`;
+
   let status = 'SAFE';
   let statusText = '안전 (무게중심 균형 양호)';
   if (!isLateralSafe || !isLongitudinalSafe) {
@@ -96,6 +123,11 @@ export function analyzeContainerCoG(container) {
     offsetXFromContainerCenter,
     offsetXFromLoadCenter,
     offsetZFromCenter,
+    offsetDirXText,
+    offsetDirZText,
+    longitudinalCriteriaText,
+    lateralCriteriaText,
+    axleLoadNote,
     lengthRatioPct,
     widthRatioPct,
     heightRatioPct,
@@ -297,19 +329,54 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
     }
   }
 
-  const doorShoringGuide = hasLowPalletAtDoor
-    ? {
-        hasRisk: true,
-        lowPalletLabels: lowDoorPalletLabels,
-        minHeightMm: minDoorPalletH,
-        maxHeightMm: maxContainerPalletH,
-        heightDiffMm: maxContainerPalletH - minDoorPalletH,
-        title: `도어(Door) 개방 시 낙하 방지 쇼링 필수 (${lowDoorPalletLabels.join(', ')})`,
-        summary: `문(Door) 쪽에 키가 낮은 자투리 파레트(${lowDoorPalletLabels.join(', ')} · 높이 ${minDoorPalletH}mm)가 배치되어, 앞쪽 높은 화물(${maxContainerPalletH}mm)과의 단차(-${maxContainerPalletH - minDoorPalletH}mm)로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`,
-        action1: '🛡️ 컨테이너 입구 모서리 D-Ring에 라싱 벨트(Lashing Belt) X자 결속 또는 카고 안전망(Cargo Net) 시공 필수',
-        action2: '🪵 앞쪽 높은 파레트와의 단차 공간에 듄네이지 에어백(Dunnage Bag) 또는 목재 각재(쇼링목) 버팀목 시공',
-      }
-    : null;
+  // Claude 피드백 반영:
+  // 1) 단차(-840mm 등)로 인한 도어 개방 시 낙하(Door Spill) 위험
+  // 2) 문 앞에 빈 공간(2호기 16PLT -> 잔여 2.4m)으로 인한 운송 중 화물 후방 슬라이딩(미끄러짐) 위험
+  // 3) 'X자 결속' 대신 실무 정석인 '완충 판재(합판/목재) 수평 래싱(Horizontal Lashing) 또는 카고 안전망' 및 '바닥 목재 블로킹(Chocking & Blocking)' 안내
+  const hasHeightGapRisk = hasLowPalletAtDoor;
+  const hasSlidingRisk = rearClearanceMm >= 400;
+  const hasRisk = hasHeightGapRisk || hasSlidingRisk;
+
+  let doorShoringGuide = null;
+  if (hasRisk) {
+    const actions = [];
+    let title = '';
+    let summary = '';
+    const heightDiffMm = isFinite(minDoorPalletH) ? maxContainerPalletH - minDoorPalletH : 0;
+    const rearClearanceM = (rearClearanceMm / 1000).toFixed(1);
+
+    if (hasHeightGapRisk && hasSlidingRisk) {
+      title = `도어측 화물 밀림 방지 블로킹 & 단차(-${heightDiffMm}mm) 쇼링 필수 (${lowDoorPalletLabels.join(', ')})`;
+      summary = `문 앞에 약 ${rearClearanceM}m의 빈 바닥 공간이 있고, 도어측 파레트(${lowDoorPalletLabels.join(', ')})와의 단차(-${heightDiffMm}mm)가 있어 해상 운송 중 화물 후방 슬라이딩(미끄러짐) 및 문 개방 시 쏟아짐 위험이 큽니다.`;
+      actions.push(`🪵 문 앞 빈 공간(${rearClearanceM}m) 밀림 방지: 바닥 목재 블로킹(Chocking & Blocking) 및 각재 고정 필수`);
+      actions.push(`🛡️ 단차 화물 전면에 완충 판재(합판/목재)를 대고 수평 래싱(Horizontal Lashing) 벨트 결속 또는 카고 안전망(Cargo Net) 시공`);
+    } else if (hasSlidingRisk) {
+      title = `도어측 화물 후방 미끄러짐 방지 목재 블로킹 필수 (빈 공간 ${rearClearanceM}m)`;
+      summary = `컨테이너 문(Door) 앞에 약 ${rearClearanceM}m의 빈 바닥 공간이 있어, 해상 피칭이나 차량 급제동 시 화물이 문 쪽으로 밀려나는 슬라이딩(미끄러짐) 사고 위험이 있습니다.`;
+      actions.push(`🪵 문 앞 빈 공간(${rearClearanceM}m) 밀림 방지: 바닥 목재 블로킹(Chocking & Blocking) 및 각재 버팀목 고정 필수`);
+      actions.push(`⚓ 컨테이너 최후미 파레트 전면에 완충 판재 지지 및 수평 래싱(Horizontal Lashing) 벨트 결속 권장`);
+    } else {
+      title = `도어(Door) 개방 시 낙하 방지 쇼링 필수 (${lowDoorPalletLabels.join(', ')})`;
+      summary = `문(Door) 쪽에 키가 낮은 자투리 파레트(${lowDoorPalletLabels.join(', ')} · 높이 ${minDoorPalletH}mm)가 배치되어, 앞쪽 높은 화물(${maxContainerPalletH}mm)과의 단차(-${heightDiffMm}mm)로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`;
+      actions.push(`🛡️ 단차 화물 전면에 완충 판재(합판/목재)를 대고 수평 래싱(Horizontal Lashing) 벨트 결속 또는 카고 안전망(Cargo Net) 시공 필수`);
+      actions.push(`🪵 앞쪽 높은 파레트와의 단차 공간에 듄네이지 에어백(Dunnage Bag) 또는 목재 각재 버팀목 시공`);
+    }
+
+    doorShoringGuide = {
+      hasRisk: true,
+      hasHeightGapRisk,
+      hasSlidingRisk,
+      rearClearanceMm,
+      lowPalletLabels: lowDoorPalletLabels,
+      minHeightMm: minDoorPalletH,
+      maxHeightMm: maxContainerPalletH,
+      heightDiffMm,
+      title,
+      summary,
+      action1: actions[0],
+      action2: actions[1] || '',
+    };
+  }
 
   return {
     maxStackHeightMm: maxStackH,

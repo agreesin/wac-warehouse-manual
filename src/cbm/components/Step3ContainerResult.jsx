@@ -236,7 +236,7 @@ export function Step3ContainerResult({
                 </div>
                 <span>
                   {c.placedPallets.length} 파레트 · {c.boxCount.toLocaleString()}박스 ·{' '}
-                  {c.totalWeight.toLocaleString()}kg ({c.volumeUtilization}%)
+                  {c.totalWeight.toLocaleString()}kg · 부피 {c.volumeUtilization}%
                 </span>
               </button>
             ))}
@@ -277,7 +277,7 @@ export function Step3ContainerResult({
             </label>
           </div>
 
-          {/* 도어(Door) 쪽 저단 파레트 낙하 방지 쇼링 알림 바 */}
+          {/* 도어(Door) 쪽 저단 파레트 낙하 방지 & 화물 밀림 방지 쇼링 알림 바 */}
           {currentContainer?.fieldDiagnostics?.doorShoringGuide && (
             <div
               style={{
@@ -296,18 +296,20 @@ export function Step3ContainerResult({
                 color: '#fef3c7',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1rem' }}>⚠️</span>
                 <strong>
                   {currentContainer.fieldDiagnostics.doorShoringGuide.title}:
                 </strong>
                 <span style={{ color: '#fde68a' }}>
-                  도어 개방 시 쏟아짐(Door Spill) 방지 ➔ <strong>라싱 벨트 X자 결속 또는 카고 안전망 쇼링 필수</strong>
+                  {currentContainer.fieldDiagnostics.doorShoringGuide.action1}
                 </span>
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
-                (앞 화물과의 단차 -{currentContainer.fieldDiagnostics.doorShoringGuide.heightDiffMm}mm)
-              </span>
+              {currentContainer.fieldDiagnostics.doorShoringGuide.action2 && (
+                <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                  {currentContainer.fieldDiagnostics.doorShoringGuide.action2}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -376,35 +378,35 @@ export function Step3ContainerResult({
                   <strong>{currentContainer.cog.statusText}</strong>
                 </div>
                 <p>
-                  {currentContainer.cog.status === 'SAFE'
-                    ? '컨테이너 전후 및 좌우 대칭 하중이 안전 범위 내에 정밀하게 유지되어 있습니다.'
-                    : '전후 또는 좌우 중량 편차가 감지되었습니다. 지게차 적입 시 하중 분산 상태를 확인하세요.'}
+                  {currentContainer.cog.offsetDirXText} · {currentContainer.cog.offsetDirZText}
+                  <br />
+                  <span style={{ fontSize: '0.73rem', color: '#94a3b8' }}>
+                    {currentContainer.cog.axleLoadNote}
+                  </span>
                 </p>
               </div>
 
               <div className="cbm-cog-metrics-grid">
                 <div className="cbm-cog-metric">
-                  <span>좌우 밸런스 (Left vs Right)</span>
+                  <span>좌우 밸런스 & 중앙 편차</span>
                   <strong>
-                    좌 {currentContainer.cog.leftRatio}% : 우 {currentContainer.cog.rightRatio}%
+                    좌 {currentContainer.cog.leftRatio}% : 우 {currentContainer.cog.rightRatio}% ({currentContainer.cog.offsetDirZText})
                   </strong>
-                  <small>이상 기준 50:50 (안전 범위 ±6% 이내)</small>
+                  <small>{currentContainer.cog.lateralCriteriaText}</small>
                 </div>
                 <div className="cbm-cog-metric">
-                  <span>전후 밸런스 (Front vs Rear)</span>
+                  <span>전후 밸런스 & 중앙 편차</span>
                   <strong>
-                    앞(벽) {currentContainer.cog.frontRatio}% : 뒤(문){' '}
-                    {currentContainer.cog.rearRatio}%
+                    {currentContainer.cog.offsetDirXText} ({currentContainer.cog.lengthRatioPct}%)
                   </strong>
                   <small>
-                    전방(헤드) 측 {currentContainer.cog.lengthRatioPct}% 지점 배치
+                    {currentContainer.cog.longitudinalCriteriaText}
                   </small>
                 </div>
                 <div className="cbm-cog-metric">
                   <span>단적(段積) 분석</span>
                   <strong>
-                    1단적(바닥) {currentContainer.tier1Count}PLT / 2단적(상단){' '}
-                    {currentContainer.tier2Count}PLT
+                    1단적 {currentContainer.tier1Count}PLT / 2단적 {currentContainer.tier2Count}PLT
                   </strong>
                   <small>
                     총 {currentContainer.placedPallets.length}개 파레트 (
