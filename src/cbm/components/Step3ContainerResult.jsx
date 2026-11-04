@@ -273,6 +273,40 @@ export function Step3ContainerResult({
               <span>층간 분리뷰</span>
             </label>
           </div>
+
+          {/* 도어(Door) 쪽 저단 파레트 낙하 방지 쇼링 알림 바 */}
+          {currentContainer?.fieldDiagnostics?.doorShoringGuide && (
+            <div
+              style={{
+                width: '100%',
+                marginTop: '8px',
+                padding: '7px 12px',
+                borderRadius: '8px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.45)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px',
+                fontSize: '0.8rem',
+                color: '#fef3c7',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1rem' }}>⚠️</span>
+                <strong>
+                  {currentContainer.fieldDiagnostics.doorShoringGuide.title}:
+                </strong>
+                <span style={{ color: '#fde68a' }}>
+                  도어 개방 시 쏟아짐(Door Spill) 방지 ➔ <strong>라싱 벨트 X자 결속 또는 카고 안전망 쇼링 필수</strong>
+                </span>
+              </div>
+              <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                (앞 화물과의 단차 -{currentContainer.fieldDiagnostics.doorShoringGuide.heightDiffMm}mm)
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 3D Container Canvas */}
@@ -582,6 +616,33 @@ export function Step3ContainerResult({
                       <small>{currentContainer.fieldDiagnostics.dunnageBagText}</small>
                     </div>
                   </div>
+
+                  {/* 도어측 저단 파레트 쇼링 시공 실무 가이드 */}
+                  {currentContainer.fieldDiagnostics.doorShoringGuide && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.12), rgba(180, 83, 9, 0.18))',
+                        border: '1px solid rgba(245, 158, 11, 0.45)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '1.1rem' }}>🛡️</span>
+                        <strong style={{ fontSize: '0.86rem', color: '#fbbf24' }}>
+                          {currentContainer.fieldDiagnostics.doorShoringGuide.title}
+                        </strong>
+                      </div>
+                      <p style={{ margin: '0 0 6px', fontSize: '0.79rem', color: '#fef3c7', lineHeight: 1.45 }}>
+                        {currentContainer.fieldDiagnostics.doorShoringGuide.summary}
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.76rem', color: '#cbd5e1' }}>
+                        <div>• {currentContainer.fieldDiagnostics.doorShoringGuide.action1}</div>
+                        <div>• {currentContainer.fieldDiagnostics.doorShoringGuide.action2}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

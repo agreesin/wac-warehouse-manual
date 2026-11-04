@@ -828,6 +828,46 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       dunnageBagText = `좌우 여유 ${lateralGapMm}mm — 타이트핏 (지게차 사이드쉬프트 정밀 진입 필요)`;
     }
 
+    // 도어(문) 쪽 최후미 파레트 높이 및 낙하(전도) 쇼링 필요성 진단
+    const doorThresholdX = Math.max(0, maxOccupiedX - 1300);
+    const doorPallets = c.placedPallets.filter((pp) => pp.x + pp.length >= doorThresholdX);
+    let maxContainerPalletH = 0;
+    for (const pp of c.placedPallets) {
+      if (pp.pallet.totalHeight > maxContainerPalletH) {
+        maxContainerPalletH = pp.pallet.totalHeight;
+      }
+    }
+
+    let hasLowPalletAtDoor = false;
+    const lowDoorPalletLabels = [];
+    let minDoorPalletH = Infinity;
+
+    for (const dp of doorPallets) {
+      const h = dp.pallet.totalHeight;
+      if (h < minDoorPalletH) minDoorPalletH = h;
+      if (h < 1150 || (maxContainerPalletH - h >= 350)) {
+        hasLowPalletAtDoor = true;
+        const pLabel = `P#${dp.pallet.index || dp.palletIndex}`;
+        if (!lowDoorPalletLabels.includes(pLabel)) {
+          lowDoorPalletLabels.push(pLabel);
+        }
+      }
+    }
+
+    const doorShoringGuide = hasLowPalletAtDoor
+      ? {
+          hasRisk: true,
+          lowPalletLabels,
+          minHeightMm: minDoorPalletH,
+          maxHeightMm: maxContainerPalletH,
+          heightDiffMm: maxContainerPalletH - minDoorPalletH,
+          title: `도어(Door) 개방 시 낙하 방지 쇼링 필수 (${lowDoorPalletLabels.join(', ')})`,
+          summary: `문(Door) 쪽에 키가 낮은 자투리 파레트(${lowDoorPalletLabels.join(', ')} · 높이 ${minDoorPalletH}mm)가 배치되어, 앞쪽 높은 화물(${maxContainerPalletH}mm)과의 단차(-${maxContainerPalletH - minDoorPalletH}mm)로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`,
+          action1: '🛡️ 컨테이너 입구 모서리 D-Ring에 라싱 벨트(Lashing Belt) X자 결속 또는 카고 안전망(Cargo Net) 시공 필수',
+          action2: '🪵 앞쪽 높은 파레트와의 단차 공간에 듄네이지 에어백(Dunnage Bag) 또는 목재 각재(쇼링목) 버팀목 시공',
+        }
+      : null;
+
     c.fieldDiagnostics = {
       maxStackHeightMm: maxStackH,
       doorHeightMm: doorH,
@@ -840,6 +880,7 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       lateralGapMm,
       dunnageBagText,
       floorUtilizationPct,
+      doorShoringGuide,
     };
   }
 

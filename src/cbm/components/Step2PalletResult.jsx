@@ -952,7 +952,7 @@ export function Step2PalletResult({
                 📏 파레트 외곽 돌출(Overhang) 허용 설정
               </h2>
               <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
-                파레트 외곽으로 약간 돌출 적재하여 <strong>파레트 수(40HC 소요 대수)를 줄일지</strong> 선택합니다.
+                파레트 외곽으로 약간 돌출 적재하여 <strong>파레트 수(40HC 소요 대수)를 줄일지</strong> 선택합니다. (컨테이너 내폭 2,352mm 2열 적재 시 안전 한계: T11 약 +25mm)
               </p>
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -997,6 +997,7 @@ export function Step2PalletResult({
               const opp = diag.opportunity;
               const t12Alt = diag.t12Alternative;
               const isOvApplied = diag.appliedOverhang > 0 && diag.isOverhangActive;
+              const cFit = diag.containerFit;
 
               return (
                 <div
@@ -1021,21 +1022,29 @@ export function Step2PalletResult({
                   </div>
 
                   {/* 중앙 돌출 진단 및 절감 요약 메시지 */}
-                  <div className="cbm-overhang-row-mid">
-                    {opp ? (
-                      isOvApplied ? (
-                        <span style={{ color: '#fbbf24', fontWeight: 700 }}>
-                          ⚠️ +{diag.current.maxOverhangMm}mm 허용 적용 중 ({diag.current.totalPallets || opp.totalPallets}PLT)
-                        </span>
+                  <div className="cbm-overhang-row-mid" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                    <div>
+                      {opp ? (
+                        isOvApplied ? (
+                          <span style={{ color: '#fbbf24', fontWeight: 700 }}>
+                            ⚠️ +{diag.current.maxOverhangMm}mm 허용 적용 중 ({diag.current.totalPallets || opp.totalPallets}PLT)
+                          </span>
+                        ) : (
+                          <span style={{ color: '#fde68a' }}>
+                            💡 +{opp.requiredOverhangMm}mm 돌출 시 <strong>{opp.savedPallets}PLT 절감!</strong> ({diag.strict.totalPallets} ➔ {opp.totalPallets}PLT)
+                          </span>
+                        )
                       ) : (
-                        <span style={{ color: '#fde68a' }}>
-                          💡 +{opp.requiredOverhangMm}mm 돌출 시 <strong>{opp.savedPallets}PLT 절감!</strong> ({diag.strict.totalPallets} ➔ {opp.totalPallets}PLT)
+                        <span style={{ color: '#94a3b8' }}>
+                          정사이즈(0mm) 최적 적재 중 (돌출 여지 없음)
                         </span>
-                      )
-                    ) : (
-                      <span style={{ color: '#94a3b8' }}>
-                        정사이즈(0mm) 최적 적재 중 (돌출 여지 없음)
-                      </span>
+                      )}
+                    </div>
+                    {/* 래핑 공차 및 컨테이너 벽면 간섭 실시간 진단 */}
+                    {cFit && (isOvApplied || (opp && opp.requiredOverhangMm > 25)) && (
+                      <div style={{ fontSize: '0.71rem', color: cFit.riskLevel === 'danger' ? '#fca5a5' : '#cbd5e1' }}>
+                        {cFit.warningText}
+                      </div>
                     )}
                   </div>
 
@@ -1090,8 +1099,9 @@ export function Step2PalletResult({
                             )
                           );
                         }}
+                        title="1200×1000 파레트로 변경 시 무돌출로 적재되며 컨테이너 좌우 여유 300mm 이상 확보"
                       >
-                        🔄 1200×1000 변경
+                        🔄 1200×1000 변경 (무돌출 권장)
                       </button>
                     )}
 
@@ -1136,6 +1146,22 @@ export function Step2PalletResult({
                 </div>
               );
             })}
+          </div>
+
+          {/* 현장 래핑 공차 가이드 팁 */}
+          <div
+            style={{
+              marginTop: '10px',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              background: 'rgba(15, 23, 42, 0.5)',
+              border: '1px dashed rgba(148, 163, 184, 0.25)',
+              fontSize: '0.73rem',
+              color: '#94a3b8',
+              lineHeight: 1.4,
+            }}
+          >
+            💡 <strong>현장 래핑 공차 가이드:</strong> 스트레치 필름을 5~10회 래핑하고 상자 하중 배부름이 생기면 파레트당 외경이 약 +15~20mm 불어납니다. T11에서 +40mm 돌출 시 2열 실측 외경이 2,320mm가 되어 컨테이너 벽면 주름에 닿을 수 있으므로, 돌출을 줄이거나 <strong>1200×1000mm 규격으로 무돌출 전환</strong>하는 것이 현장 안전상 가장 추천됩니다.
           </div>
         </div>
       )}

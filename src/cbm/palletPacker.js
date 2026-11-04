@@ -850,6 +850,35 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
       const canSolveWithT12NoOverhang =
         (pW !== 1200 || pL !== 1000) && t12Bounds.count > strictBounds.count;
 
+      // 컨테이너 폭(2,352mm) 2열 적재 시 래핑 공차 및 안전 돌출 한계치 계산
+      const containerInnerWidth = 2352;
+      const baseRowWidth = Math.min(pW, pL) * 2;
+      const fieldToleranceMargin = 50; // 래핑 두께(+30mm) + 박스 배부름(+20mm)
+      const safeOverhangLimitMm = Math.max(0, containerInnerWidth - baseRowWidth - fieldToleranceMargin);
+      const safeOverhangPerPalletMm = Math.floor(safeOverhangLimitMm / 2);
+
+      const activeOv = appliedOverhang;
+      const estimatedRowWidthWithWrap = baseRowWidth + activeOv + 40; // 래핑+배부름 감안
+      const remainingClearanceMm = containerInnerWidth - estimatedRowWidthWithWrap;
+      const isOverSafeLimit = activeOv > safeOverhangLimitMm;
+
+      const containerFit = {
+        containerInnerWidth,
+        baseRowWidth,
+        safeOverhangLimitMm,
+        safeOverhangPerPalletMm,
+        estimatedRowWidthWithWrap,
+        remainingClearanceMm,
+        isOverSafeLimit,
+        riskLevel: remainingClearanceMm < 50 ? 'danger' : remainingClearanceMm < 90 ? 'warning' : 'safe',
+        warningText:
+          remainingClearanceMm < 50
+            ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 잔여 여유 겨우 ${remainingClearanceMm}mm (지게차 진입 시 내벽 주름 간섭 위험!)`
+            : remainingClearanceMm < 90
+            ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 여유 ${remainingClearanceMm}mm (정밀 진입 필요)`
+            : `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 여유 ${remainingClearanceMm}mm (진입 여유 충분)`,
+      };
+
       return {
         cargoId: c.id || `cargo-${idx + 1}`,
         cargoName: c.name || `화물 ${idx + 1}`,
@@ -864,6 +893,7 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
         palletL: pL,
         appliedOverhang,
         isOverhangActive: curMaxOverhangMm > 0,
+        containerFit,
         strict: {
           layerCount: strictBounds.count,
           spanW: strictBounds.spanW,
