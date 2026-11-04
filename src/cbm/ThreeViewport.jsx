@@ -7,6 +7,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
  * - mode: 'container' (컨테이너 적재 뷰) | 'pallet' (개별 파레트 상세 뷰)
  */
 export function ThreeViewport({
+  theme = 'dark',
   mode = 'container',
   containerInstance = null,
   containerSpec = null,
@@ -24,6 +25,7 @@ export function ThreeViewport({
   const rendererRef = useRef(null);
   const controlsRef = useRef(null);
   const contentGroupRef = useRef(null);
+  const gridHelperRef = useRef(null);
   const pickableMeshesRef = useRef([]);
 
   const [hoveredInfo, setHoveredInfo] = useState(null);
@@ -40,7 +42,8 @@ export function ThreeViewport({
     const height = containerEl.clientHeight || 520;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#0f172a');
+    const isLightInitial = theme === 'light';
+    scene.background = new THREE.Color(isLightInitial ? '#f1f5f9' : '#0f172a');
 
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.05, 200);
     camera.position.set(10, 6.5, 11);
@@ -93,9 +96,15 @@ export function ThreeViewport({
     scene.add(dirLight2);
 
     // Subtle warehouse floor grid
-    const gridHelper = new THREE.GridHelper(28, 28, '#334155', '#1e293b');
+    const gridHelper = new THREE.GridHelper(
+      28,
+      28,
+      isLightInitial ? '#cbd5e1' : '#334155',
+      isLightInitial ? '#e2e8f0' : '#1e293b'
+    );
     gridHelper.position.y = -0.01;
     scene.add(gridHelper);
+    gridHelperRef.current = gridHelper;
 
     const contentGroup = new THREE.Group();
     scene.add(contentGroup);
@@ -188,6 +197,29 @@ export function ThreeViewport({
       renderer.dispose();
     };
   }, []);
+
+  // Update Three.js scene background and floor grid on theme toggle
+  useEffect(() => {
+    if (!sceneRef.current) return;
+    const isLight = theme === 'light';
+    sceneRef.current.background = new THREE.Color(isLight ? '#f1f5f9' : '#0f172a');
+
+    if (gridHelperRef.current && sceneRef.current) {
+      sceneRef.current.remove(gridHelperRef.current);
+      gridHelperRef.current.geometry?.dispose();
+      gridHelperRef.current.material?.dispose();
+
+      const newGrid = new THREE.GridHelper(
+        28,
+        28,
+        isLight ? '#cbd5e1' : '#334155',
+        isLight ? '#e2e8f0' : '#1e293b'
+      );
+      newGrid.position.y = -0.01;
+      sceneRef.current.add(newGrid);
+      gridHelperRef.current = newGrid;
+    }
+  }, [theme]);
 
   // Camera Preset Helper
   const setCameraView = (preset) => {

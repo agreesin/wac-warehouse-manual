@@ -5,6 +5,7 @@ import { ContainerDiagnosticsCard } from './ContainerDiagnosticsCard';
 import { ContainerComparisonTable } from './ContainerComparisonTable';
 
 export function Step3ContainerResult({
+  theme = 'dark',
   step3Ref,
   step2Ref,
   simResult,
@@ -327,6 +328,7 @@ export function Step3ContainerResult({
 
         {/* 3D Container Canvas */}
         <ThreeViewport
+          theme={theme}
           mode="container"
           containerInstance={currentContainer}
           containerSpec={simResult.selectedSpec}
@@ -372,6 +374,7 @@ export function Step3ContainerResult({
           <div className="cbm-container-detail-footer">
             {/* 2D Top-Down Container Floor Layout SVG (Subcomponent) */}
             <ContainerFloorPlanSvg
+              theme={theme}
               currentContainer={currentContainer}
               setSelectedPalletIdx={setSelectedPalletIdx}
               step2Ref={step2Ref}

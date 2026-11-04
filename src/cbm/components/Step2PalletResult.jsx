@@ -37,6 +37,7 @@ const PALLET_MODE_META = {
 };
 
 export function Step2PalletResult({
+  theme = 'dark',
   step2Ref,
   simResult,
   palletSelectionMode,
@@ -360,11 +361,12 @@ export function Step2PalletResult({
 
             <div className="cbm-pallet-split-view">
               {/* Left: 2D Top-Down Layer Blueprint (Subcomponent) */}
-              <Pallet2DBlueprint currentPallet={currentPallet} />
+              <Pallet2DBlueprint currentPallet={currentPallet} theme={theme} />
 
               {/* Right: 3D Single Pallet Viewport */}
               <div className="cbm-pallet-3d-col">
                 <ThreeViewport
+                  theme={theme}
                   mode="pallet"
                   palletInstance={currentPallet}
                   visibleStep={palletVisibleStep}

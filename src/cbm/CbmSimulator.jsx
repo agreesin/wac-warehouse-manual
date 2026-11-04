@@ -37,6 +37,28 @@ function loadSavedState() {
 export function CbmSimulator() {
   const savedState = useMemo(() => loadSavedState(), []);
 
+  // Theme State: 'dark' (검은바탕, 기본) | 'light' (흰바탕)
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('wac_cbm_theme') || savedState?.theme || 'dark';
+    } catch (e) {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('wac_cbm_theme', theme);
+    } catch (e) {}
+    if (theme === 'light') {
+      document.body.style.background = '#f8fafc';
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.body.style.background = '#0b1120';
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }, [theme]);
+
   // =========================================================================
   // STEP 1 STATE: 화물 입력 및 적재 조건 (Rule) 설정
   // =========================================================================
@@ -247,6 +269,7 @@ export function CbmSimulator() {
   useEffect(() => {
     try {
       const stateToSave = {
+        theme,
         cargos,
         palletConfig,
         stackMode,
@@ -267,6 +290,7 @@ export function CbmSimulator() {
       // Ignore quota errors
     }
   }, [
+    theme,
     cargos,
     palletConfig,
     stackMode,
@@ -527,7 +551,7 @@ export function CbmSimulator() {
   };
 
   return (
-    <div className="cbm-app">
+    <div className={`cbm-app ${theme === 'light' ? 'cbm-theme-light' : ''}`}>
       {/* =====================================================================
           TOP HEADER & STEP PROGRESS NAVIGATION BAR
       ===================================================================== */}
@@ -579,6 +603,28 @@ export function CbmSimulator() {
         </nav>
 
         <div className="cbm-header-actions">
+          {/* Theme Mode Toggle (검은바탕 vs 흰바탕) */}
+          <div className="cbm-theme-toggle" role="group" aria-label="화면 테마 설정">
+            <button
+              type="button"
+              className={`cbm-theme-btn ${theme === 'dark' ? 'active' : ''}`}
+              onClick={() => setTheme('dark')}
+              title="검은바탕 모드 (다크 테마)"
+            >
+              <span className="cbm-theme-icon">🌙</span>
+              <span className="cbm-theme-text">검은바탕</span>
+            </button>
+            <button
+              type="button"
+              className={`cbm-theme-btn ${theme === 'light' ? 'active' : ''}`}
+              onClick={() => setTheme('light')}
+              title="흰바탕 모드 (라이트 테마)"
+            >
+              <span className="cbm-theme-icon">☀️</span>
+              <span className="cbm-theme-text">흰바탕</span>
+            </button>
+          </div>
+
           <button
             type="button"
             className="cbm-btn cbm-btn-outline"
@@ -645,6 +691,7 @@ export function CbmSimulator() {
 
       {/* SECTION 1: STEP 1 — 화물 정보 입력 및 적재 조건 설정 */}
       <Step1CargoInput
+        theme={theme}
         step1Ref={step1Ref}
         inputSummary={inputSummary}
         cargos={cargos}
@@ -674,6 +721,7 @@ export function CbmSimulator() {
       {/* SECTION 2: STEP 2 — 파레트 종류(사이즈)별 산출 & 한 파레트 적재 시각화 */}
       {step2Unlocked && simResult && (
         <Step2PalletResult
+          theme={theme}
           step2Ref={step2Ref}
           simResult={simResult}
           palletSelectionMode={palletSelectionMode}
@@ -703,6 +751,7 @@ export function CbmSimulator() {
       {/* SECTION 3: STEP 3 — 컨테이너 종류별 수용량 비교 및 컨테이너 적재 시각화 */}
       {step2Unlocked && step3Unlocked && simResult && (
         <Step3ContainerResult
+          theme={theme}
           step3Ref={step3Ref}
           step2Ref={step2Ref}
           simResult={simResult}

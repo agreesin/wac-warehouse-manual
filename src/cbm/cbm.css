@@ -145,6 +145,54 @@
   flex-wrap: wrap;
 }
 
+/* Theme Toggle Button (헤더 우측 캡슐 세그먼트 컨트롤) */
+.cbm-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.cbm-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.cbm-theme-btn:hover {
+  color: #f8fafc;
+}
+
+.cbm-theme-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+.cbm-theme-btn .cbm-theme-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.cbm-theme-btn .cbm-theme-text {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
 .cbm-btn-label-desktop {
   display: inline;
 }
@@ -2643,6 +2691,592 @@
   background: rgba(51, 65, 85, 0.85);
   color: #f8fafc;
   border-color: #38bdf8;
+}
+
+/* =========================================================================
+   LIGHT THEME (흰바탕 모드) STYLES
+========================================================================= */
+[data-theme="light"],
+.cbm-app.cbm-theme-light {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Light Theme - Header */
+.cbm-app.cbm-theme-light .cbm-header {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08) !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-title {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-subtitle {
+  color: #475569 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-step-pill {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.cbm-app.cbm-theme-light .cbm-step-pill.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.cbm-app.cbm-theme-light .cbm-step-pill strong {
+  color: #d97706;
+}
+
+.cbm-app.cbm-theme-light .step-arrow {
+  color: #94a3b8;
+}
+
+.cbm-app.cbm-theme-light .cbm-btn-outline {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Light Theme - Theme Toggle */
+.cbm-app.cbm-theme-light .cbm-theme-toggle {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.cbm-app.cbm-theme-light .cbm-theme-btn {
+  color: #64748b;
+}
+
+.cbm-app.cbm-theme-light .cbm-theme-btn:hover {
+  color: #0f172a;
+}
+
+.cbm-app.cbm-theme-light .cbm-theme-btn.active {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  font-weight: 800;
+}
+
+/* Light Theme - Banners & Mini Stats */
+.cbm-app.cbm-theme-light .cbm-section-banner {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-section-banner h2 {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-section-banner p {
+  color: #475569 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mini-stat {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mini-stat span {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mini-stat strong {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mini-stat.highlight-amber {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mini-stat.highlight-amber strong {
+  color: #b45309 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mini-stat.highlight-emerald {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mini-stat.highlight-emerald strong {
+  color: #047857 !important;
+}
+
+/* Light Theme - Cards */
+.cbm-app.cbm-theme-light .cbm-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-card-header {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-card-header h2 {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-card-header p {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-badge {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0284c7 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-field-label {
+  color: #334155 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-btn-xs {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-btn-xs:hover {
+  border-color: #0284c7 !important;
+  background: #f0f9ff !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-btn-xs.primary {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+/* Light Theme - Dropzone & Cargo Table */
+.cbm-app.cbm-theme-light .cbm-dropzone {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-dropzone:hover {
+  background: #eff6ff !important;
+  border-color: #3b82f6 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-dropzone-icon {
+  color: #3b82f6 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-dropzone-text strong {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-dropzone-text p {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-table th {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-table td {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-table tr:hover td {
+  background: #f8fafc !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-table-input,
+.cbm-app.cbm-theme-light .cbm-table-select,
+.cbm-app.cbm-theme-light .cbm-input,
+.cbm-app.cbm-theme-light .cbm-select,
+.cbm-app.cbm-theme-light .cbm-pallet-select,
+.cbm-app.cbm-theme-light .cbm-container-select {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-table-input:focus,
+.cbm-app.cbm-theme-light .cbm-table-select:focus,
+.cbm-app.cbm-theme-light .cbm-input:focus,
+.cbm-app.cbm-theme-light .cbm-select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Light Theme - Pallet Mode Selection Cards (2-A) */
+.cbm-app.cbm-theme-light .cbm-pallet-mode-card {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pallet-mode-card:hover {
+  border-color: #94a3b8 !important;
+  background: #f8fafc !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pallet-mode-card.active {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 1.5px #2563eb, 0 4px 14px rgba(37, 99, 235, 0.15) !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pallet-mode-card.mix-mode-card.active {
+  background: #fffbeb !important;
+  border-color: #d97706 !important;
+  box-shadow: 0 0 0 1.5px #d97706, 0 4px 14px rgba(217, 119, 6, 0.18) !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-title {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-sub {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-stat {
+  color: #334155 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-stat span {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-stat strong {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-stat.highlight strong {
+  color: #0284c7 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pallet-mode-card.mix-mode-card .cbm-pm-stat.highlight strong {
+  color: #b45309 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-desc {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-badge {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-badge.mix-badge {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: #fcd34d !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-badge.std-badge {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border-color: #93c5fd !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pm-badge.int-badge {
+  background: #d1fae5 !important;
+  color: #047857 !important;
+  border-color: #6ee7b7 !important;
+}
+
+/* Light Theme - Multi-Pallet Mix Detailed SKU Assigner */
+.cbm-app.cbm-theme-light .cbm-mix-assigner-panel {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mix-panel-header strong {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mix-panel-header p {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mix-assign-item {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mix-item-name {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mix-item-dim {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mix-select {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-mix-layer-badge {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+  color: #15803d !important;
+}
+
+/* Light Theme - Rule Cards */
+.cbm-app.cbm-theme-light .cbm-rule-card {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-rule-title {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-rule-desc {
+  color: #64748b !important;
+}
+
+/* Light Theme - 2D Blueprints & Floor Boxes */
+.cbm-app.cbm-theme-light .cbm-blueprint-box,
+.cbm-app.cbm-theme-light .cbm-2d-floor-box {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-blueprint-box h3,
+.cbm-app.cbm-theme-light .cbm-2d-floor-title {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-blueprint-sub {
+  color: #475569 !important;
+}
+
+/* Light Theme - 3D Viewport Boxes & Toolbars */
+.cbm-app.cbm-theme-light .cbm-viewport-box {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-viewport-toolbar {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-cam-btn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-cam-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-playback-bar {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-play-btn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-slider-wrap span {
+  color: #475569 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pallet-info-list {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-pallet-info-list h4 {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-info-row {
+  border-bottom-color: #f1f5f9 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-info-row span {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-info-row strong {
+  color: #0f172a !important;
+}
+
+/* Light Theme - Accordions */
+.cbm-app.cbm-theme-light .cbm-accordion-header {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-accordion-body {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Light Theme - CoG & Diagnostics */
+.cbm-app.cbm-theme-light .cbm-cog-metric {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-cog-metric span {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-cog-metric strong {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-cog-metric small {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-diag-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-diag-title {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-diag-desc {
+  color: #475569 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-weight-summary-table {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-weight-summary-table th {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-weight-summary-table td {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hc-floor-est-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%) !important;
+  border-color: #bfdbfe !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hc-est-title {
+  color: #1e3a8a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hc-est-sub {
+  color: #475569 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hc-est-stat {
+  background: #ffffff !important;
+  border-color: #bfdbfe !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hc-est-stat span {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hc-est-stat strong {
+  color: #1d4ed8 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hover-tooltip {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15) !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hover-title {
+  color: #0f172a !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hover-row span {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-hover-row strong {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-modal-content {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-modal-title {
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-modal-desc {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-paste-textarea {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-stacking-toggle-btn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-stacking-toggle-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-overhang-item-row {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-overhang-row-mid {
+  color: #334155 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-overhang-panel-box {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
 }
 
 @media print {

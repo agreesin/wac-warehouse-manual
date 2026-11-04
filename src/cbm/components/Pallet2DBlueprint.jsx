@@ -3,8 +3,10 @@ import React from 'react';
 /**
  * 한 파레트 1층 평면 적재 도면 (2D SVG) 및 작업자 적재 가이드 카드 컴포넌트
  */
-export function Pallet2DBlueprint({ currentPallet }) {
+export function Pallet2DBlueprint({ theme = 'dark', currentPallet }) {
   if (!currentPallet) return null;
+
+  const isLight = theme === 'light';
 
   return (
     <div className="cbm-pallet-blueprint-col">
@@ -45,7 +47,7 @@ export function Pallet2DBlueprint({ currentPallet }) {
               x={currentPallet.width / 2}
               y={-34}
               textAnchor="middle"
-              fill="#94a3b8"
+              fill={isLight ? '#475569' : '#94a3b8'}
               fontSize="42"
               fontWeight="bold"
             >

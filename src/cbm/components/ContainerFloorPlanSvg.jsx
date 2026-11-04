@@ -3,8 +3,15 @@ import React from 'react';
 /**
  * 2D 컨테이너 평면 배치도 SVG 컴포넌트
  */
-export function ContainerFloorPlanSvg({ currentContainer, setSelectedPalletIdx, step2Ref }) {
+export function ContainerFloorPlanSvg({
+  theme = 'dark',
+  currentContainer,
+  setSelectedPalletIdx,
+  step2Ref,
+}) {
   if (!currentContainer?.spec) return null;
+
+  const isLight = theme === 'light';
 
   return (
     <div className="cbm-2d-floor-box">
@@ -14,10 +21,10 @@ export function ContainerFloorPlanSvg({ currentContainer, setSelectedPalletIdx, 
           {currentContainer.placedPallets.length} 파레트 — 클릭 시 Step 2 이동)
         </span>
         <span>
-          <strong style={{ color: '#60a5fa' }}>■ 1100×1100</strong> |{' '}
-          <strong style={{ color: '#f59e0b' }}>■ 1200×1000</strong> |{' '}
-          <strong style={{ color: '#10b981' }}>■ 잔여/부분</strong> |{' '}
-          <strong style={{ color: '#facc15' }}>CoG (무게중심)</strong>
+          <strong style={{ color: isLight ? '#2563eb' : '#60a5fa' }}>■ 1100×1100</strong> |{' '}
+          <strong style={{ color: isLight ? '#d97706' : '#f59e0b' }}>■ 1200×1000</strong> |{' '}
+          <strong style={{ color: isLight ? '#059669' : '#10b981' }}>■ 잔여/부분</strong> |{' '}
+          <strong style={{ color: isLight ? '#b45309' : '#facc15' }}>CoG (무게중심)</strong>
         </span>
       </div>
 
@@ -32,8 +39,8 @@ export function ContainerFloorPlanSvg({ currentContainer, setSelectedPalletIdx, 
           y={0}
           width={currentContainer.spec.length}
           height={currentContainer.spec.width}
-          fill="#0f172a"
-          stroke="#38bdf8"
+          fill={isLight ? '#f8fafc' : '#0f172a'}
+          stroke={isLight ? '#0284c7' : '#38bdf8'}
           strokeWidth={45}
           rx={30}
         />
@@ -42,7 +49,7 @@ export function ContainerFloorPlanSvg({ currentContainer, setSelectedPalletIdx, 
           y1={0}
           x2={currentContainer.spec.length / 2}
           y2={currentContainer.spec.width}
-          stroke="#475569"
+          stroke={isLight ? '#cbd5e1' : '#475569'}
           strokeWidth={22}
           strokeDasharray="80,80"
         />
@@ -51,7 +58,7 @@ export function ContainerFloorPlanSvg({ currentContainer, setSelectedPalletIdx, 
           y1={currentContainer.spec.width / 2}
           x2={currentContainer.spec.length}
           y2={currentContainer.spec.width / 2}
-          stroke="#475569"
+          stroke={isLight ? '#cbd5e1' : '#475569'}
           strokeWidth={22}
           strokeDasharray="80,80"
         />
