@@ -203,7 +203,7 @@ export function PalletStackingAccordion({
                       lineHeight: 1.4,
                     }}
                   >
-                    네 모서리가 반듯하게 일치하여 코너보드(종이 앵글) 결속 및 하중 지지력이 최고인 <strong>[수직 기둥 정렬]</strong>이 기본 표준으로 적용되어 있습니다.
+                    네 모서리가 반듯하게 일치하여 상자 하중 지지력이 최고인 <strong>[수직 기둥 정렬]</strong>이 기본 표준으로 적용되어 있습니다.
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {activeCargoDiag.stackStyleOptions.map((stOpt) => {

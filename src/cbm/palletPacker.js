@@ -1060,7 +1060,7 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
           return {
             ...stDef,
             label: '🏛️ 수직 기둥 정렬 (표준 권장)',
-            shortDesc: '네 모서리가 일치하여 코너보드 결속 및 박스 하중 지지력 극대화',
+            shortDesc: '네 모서리가 일치하여 상자 하중 지지력 극대화',
             isRecommended: true,
           };
         }

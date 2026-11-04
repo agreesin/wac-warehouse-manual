@@ -145,7 +145,7 @@ export function Step2PalletResult({
                   </small>
                 </div>
                 <div className="cbm-pm-body">
-                  <div className="cbm-pm-stat">
+                  <div className="cbm-pm-stat highlight">
                     <span>총 소요 파레트</span>
                     <strong>{spec.totalPallets} PLT</strong>
                   </div>

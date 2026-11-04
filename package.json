@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/build.js",
+    "build:cbm": "node scripts/build.js cbm",
+    "build:manual": "node scripts/build.js manual",
+    "verify:cbm": "node scripts/verify-cbm-build.js",
     "preview": "vite preview"
   },
   "dependencies": {

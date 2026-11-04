@@ -561,67 +561,6 @@ export function ThreeViewport({
         pGroup.add(line);
       });
 
-      // 실무 코너보드(종이 앵글 / Corner Board) 3D 시각화 (네 모서리 수직 보호대)
-      if (!explodeLayers && visibleStep >= 80 && palletInstance.boxes.length > 0) {
-        let minX = Infinity,
-          maxX = -Infinity,
-          minZ = Infinity,
-          maxZ = -Infinity,
-          topY = 0;
-        palletInstance.boxes.forEach((b) => {
-          const bx1 = b.x * SCALE;
-          const bx2 = (b.x + b.w) * SCALE;
-          const bz1 = b.z * SCALE;
-          const bz2 = (b.z + b.l) * SCALE;
-          const by2 = (b.y + b.h) * SCALE;
-          if (bx1 < minX) minX = bx1;
-          if (bx2 > maxX) maxX = bx2;
-          if (bz1 < minZ) minZ = bz1;
-          if (bz2 > maxZ) maxZ = bz2;
-          if (by2 > topY) topY = by2;
-        });
-
-        const baseH = (palletInstance.baseHeight || 150) * SCALE;
-        const cornerH = topY - baseH;
-
-        if (cornerH > 0.1 && isFinite(minX) && isFinite(maxX)) {
-          const cornerBoardMat = new THREE.MeshStandardMaterial({
-            color: '#b45309', // Kraft 카톤 종이 앵글 색상
-            roughness: 0.8,
-            metalness: 0.05,
-          });
-          const angleWing = 0.06; // 60mm 날개
-          const angleThick = 0.006; // 6mm 두께
-
-          const corners = [
-            { x: minX, z: minZ, dirX: 1, dirZ: 1 },
-            { x: maxX, z: minZ, dirX: -1, dirZ: 1 },
-            { x: minX, z: maxZ, dirX: 1, dirZ: -1 },
-            { x: maxX, z: maxZ, dirX: -1, dirZ: -1 },
-          ];
-
-          corners.forEach((c) => {
-            const wingXGeo = new THREE.BoxGeometry(angleWing, cornerH, angleThick);
-            const wingXMesh = new THREE.Mesh(wingXGeo, cornerBoardMat);
-            wingXMesh.position.set(
-              c.x + (c.dirX * angleWing) / 2,
-              baseH + cornerH / 2,
-              c.z + (c.dirZ * angleThick) / 2
-            );
-            pGroup.add(wingXMesh);
-
-            const wingZGeo = new THREE.BoxGeometry(angleThick, cornerH, angleWing);
-            const wingZMesh = new THREE.Mesh(wingZGeo, cornerBoardMat);
-            wingZMesh.position.set(
-              c.x + (c.dirX * angleThick) / 2,
-              baseH + cornerH / 2,
-              c.z + (c.dirZ * angleWing) / 2
-            );
-            pGroup.add(wingZMesh);
-          });
-        }
-      }
-
       contentGroup.add(pGroup);
     }
   }, [
@@ -671,10 +610,10 @@ export function ThreeViewport({
         ) : (
           <>
             <span className="cbm-legend-desktop">
-              파레트 3D 뷰 — 네 모서리에 코너보드(종이 앵글) 결속 보호대가 적용되어 있습니다. (회색 외곽선: 최대 허용 높이 {palletInstance?.maxTotalHeight || 1800}mm 가이드)
+              마우스 드래그: 360° 회전 | 클릭 후 휠/Ctrl+휠: 확대·축소 | 회색 외곽선: 최대 허용 높이({palletInstance?.maxTotalHeight || 1800}mm) 가이드
             </span>
             <span className="cbm-legend-mobile">
-              파레트 3D 뷰 — 코너보드 결속 보호대 적용 (회색선: 최대 높이 {palletInstance?.maxTotalHeight || 1800}mm 가이드)
+              드래그: 3D 회전 · 2손가락: 줌 · 회색선: 최대 허용 높이({palletInstance?.maxTotalHeight || 1800}mm) 가이드
             </span>
           </>
         )}
