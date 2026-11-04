@@ -354,6 +354,9 @@ export function CbmSimulator() {
         color: CARGO_COLORS[(nextIdx - 1) % CARGO_COLORS.length],
         allowRotate: true,
         palletSpecId: 'T11',
+        maxLayers: 0,
+        maxTopLoad: 0,
+        noDoubleStack: false,
       },
     ]);
   };

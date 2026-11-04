@@ -57,6 +57,94 @@ export function computePalletLocalCoG(pallet) {
 }
 
 /**
+ * 자투리 잔여 층(Partial Layer) 박스 대칭 배치 헬퍼
+ * - 완적 템플릿의 박스들 중 중심점 대비 대칭(Symmetric) 및 무게중심(CoG) 편차를 최소화하는 조합 선택
+ * - 한쪽 구석 쏠림을 원천 방지하고 랩핑 결속 안정성 극대화
+ */
+export function pickBalancedSubset(template, takeCount, palletW, palletL) {
+  if (!template || template.length === 0 || takeCount <= 0) return [];
+  if (takeCount >= template.length) return template;
+
+  const midX = palletW / 2;
+  const midZ = palletL / 2;
+
+  const pool = template.map((b, idx) => ({
+    b,
+    idx,
+    rx: b.x + b.w / 2 - midX,
+    rz: b.z + b.l / 2 - midZ,
+  }));
+
+  const selected = [];
+  let curSumX = 0;
+  let curSumZ = 0;
+
+  let remaining = takeCount;
+  // 홀수 개수일 경우 중심에 가장 가까운 박스 1개 우선 배치
+  if (remaining % 2 === 1) {
+    pool.sort((a, b) => Math.hypot(a.rx, a.rz) - Math.hypot(b.rx, b.rz));
+    const centerBox = pool.shift();
+    selected.push(centerBox.b);
+    curSumX += centerBox.rx;
+    curSumZ += centerBox.rz;
+    remaining -= 1;
+  }
+
+  // 짝수 쌍(Pair) 매칭: 점대칭으로 모멘트 합이 0에 가장 가까운 2개 박스를 탐욕적으로 선택
+  while (remaining >= 2 && pool.length >= 2) {
+    let bestPairIdx = [-1, -1];
+    let bestScore = Infinity;
+
+    for (let i = 0; i < pool.length; i++) {
+      for (let j = i + 1; j < pool.length; j++) {
+        const p1 = pool[i];
+        const p2 = pool[j];
+        const pairX = p1.rx + p2.rx;
+        const pairZ = p1.rz + p2.rz;
+        const newTotalX = curSumX + pairX;
+        const newTotalZ = curSumZ + pairZ;
+        const score = Math.hypot(newTotalX, newTotalZ) + Math.hypot(pairX, pairZ) * 0.1;
+        if (score < bestScore) {
+          bestScore = score;
+          bestPairIdx = [i, j];
+        }
+      }
+    }
+
+    if (bestPairIdx[0] !== -1) {
+      const [i, j] = bestPairIdx;
+      const p2 = pool.splice(j, 1)[0];
+      const p1 = pool.splice(i, 1)[0];
+      selected.push(p1.b, p2.b);
+      curSumX += p1.rx + p2.rx;
+      curSumZ += p1.rz + p2.rz;
+      remaining -= 2;
+    } else {
+      break;
+    }
+  }
+
+  while (remaining > 0 && pool.length > 0) {
+    let bestIdx = 0;
+    let bestScore = Infinity;
+    for (let i = 0; i < pool.length; i++) {
+      const score = Math.hypot(curSumX + pool[i].rx, curSumZ + pool[i].rz);
+      if (score < bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    const p = pool.splice(bestIdx, 1)[0];
+    selected.push(p.b);
+    curSumX += p.rx;
+    curSumZ += p.rz;
+    remaining -= 1;
+  }
+
+  return selected;
+}
+
+/**
  * 1단 평면 레이어(template)가 비대칭이어서 짝수 층에서 180° 대칭 교차(INTERLOCK) 시
  * 아래층 지지 없이 허공에 걸치는(Cantilever Overhang) 박스가 발생하는지 검사
  */
@@ -203,6 +291,8 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         remaining: Math.max(0, Math.floor(Number(c.quantity) || 0)),
         weight: Math.max(0, Number(c.weight) || 0),
         maxLayers: Math.max(0, Math.floor(Number(c.maxLayers) || 0)),
+        maxTopLoad: Math.max(0, Number(c.maxTopLoad) || 0),
+        noDoubleStack: Boolean(c.noDoubleStack),
         allowedOverhang: itemOv,
         color: c.color || CARGO_COLORS[idx % CARGO_COLORS.length],
         allowRotate: c.allowRotate !== false,
@@ -253,10 +343,14 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         fullLayerWeight > 0
           ? Math.max(1, Math.floor(maxCargoWeight / fullLayerWeight))
           : maxLayersByH;
+      const maxLayersByStrength =
+        item.maxTopLoad > 0 && item.weight > 0
+          ? Math.max(1, Math.floor(1 + item.maxTopLoad / item.weight))
+          : 999;
       const customMaxL = item.maxLayers > 0 ? item.maxLayers : 999;
       const maxFullLayersPerPallet = Math.max(
         1,
-        Math.min(maxLayersByH, maxLayersByW, customMaxL)
+        Math.min(maxLayersByH, maxLayersByW, maxLayersByStrength, customMaxL)
       );
 
       templateMeta.set(item.id, {
@@ -307,7 +401,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const isEvenLayer = pallet.layers.length % 2 === 1;
 
     if (!isFull && prevLayer && prevLayer.cargoId === cargoItem.id) {
-      const chosen = template.slice(0, takeCount);
+      const chosen = pickBalancedSubset(template, takeCount, pallet.width, pallet.length);
       let lMinX = Infinity,
         lMaxX = 0,
         lMinZ = Infinity,
@@ -333,7 +427,9 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       };
     }
 
-    const placedTemplate = template.slice(0, takeCount);
+    const placedTemplate = isFull
+      ? template
+      : pickBalancedSubset(template, takeCount, pallet.width, pallet.length);
     const bounds = measureLayerBounds(placedTemplate);
     const offsetX = Math.floor((pallet.width - bounds.spanW) / 2) - bounds.minX;
     const offsetZ = Math.floor((pallet.length - bounds.spanL) / 2) - bounds.minZ;
@@ -672,6 +768,10 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       p.layers.length > 0 &&
       (p.layers.length < Math.floor(maxLoadH / (p.boxes[0]?.h || 200)) ||
         p.boxes.length < p.layers.length * (p.layers[0]?.boxCount || 1));
+    p.noDoubleStack = Object.keys(p.cargoCounts).some((cid) => {
+      const cObj = queue.find((c) => c.id === cid) || cargos.find((c) => c.id === cid);
+      return Boolean(cObj?.noDoubleStack);
+    });
   }
 
   const groupMap = new Map();
@@ -769,8 +869,12 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
     const layerWeight = perLayerCount * Math.max(0, Number(item.weight) || 0);
     const maxLayersByW =
       layerWeight > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerWeight)) : maxLayersByH;
+    const maxLayersByStrength =
+      Number(item.maxTopLoad) > 0 && Number(item.weight) > 0
+        ? Math.max(1, Math.floor(1 + Number(item.maxTopLoad) / Number(item.weight)))
+        : 999;
     const customMaxL = Number(item.maxLayers) > 0 ? Math.floor(Number(item.maxLayers)) : 999;
-    const maxLayers = Math.max(1, Math.min(maxLayersByH, maxLayersByW, customMaxL));
+    const maxLayers = Math.max(1, Math.min(maxLayersByH, maxLayersByW, maxLayersByStrength, customMaxL));
     const boxesPerPallet = perLayerCount * maxLayers;
     const qty = Math.max(0, Math.floor(Number(item.quantity) || 0));
     return {
@@ -1006,7 +1110,11 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         const byH = Math.max(1, Math.floor(maxLoadH / Math.max(1, boxH)));
         const layerW = perLayerCnt * unitW;
         const byW = layerW > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerW)) : byH;
-        const maxLayers = Math.max(1, Math.min(byH, byW, customMaxL));
+        const maxLayersByStrength =
+          Number(c.maxTopLoad) > 0 && unitW > 0
+            ? Math.max(1, Math.floor(1 + Number(c.maxTopLoad) / unitW))
+            : 999;
+        const maxLayers = Math.max(1, Math.min(byH, byW, maxLayersByStrength, customMaxL));
         const boxesPerPallet = perLayerCnt * maxLayers;
         return {
           maxLayers,

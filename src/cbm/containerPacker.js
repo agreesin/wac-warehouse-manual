@@ -76,20 +76,22 @@ export function analyzeContainerCoG(container) {
   const frontRatio = Number(((frontHalfWeight / totalMass) * 100).toFixed(1));
   const rearRatio = Number((100 - frontRatio).toFixed(1));
 
-  const isLateralSafe = Math.abs(50 - widthRatioPct) <= 6;
-  const isLongitudinalSafe = Math.abs(50 - lengthRatioPct) <= 10;
+  // IMO/ILO/UNECE CTU Code 실무 기준:
+  // 1. 전후 하중 분배: 한쪽 절반(전반부 또는 후반부)의 화물 중량이 전체 중량의 60% 이하 (40%:60% ~ 60%:40% 범위)
+  // 2. 좌우 횡방향 균형: 좌·우측 각 55% 이하 (45%:55% ~ 55%:45% 범위)
+  const isCtuLongitudinalSafe = frontRatio <= 60 && rearRatio <= 60;
+  const isLateralSafe = leftRatio <= 55 && rightRatio <= 55;
 
-  // Claude 피드백 반영: 전후/좌우 오프셋(mm) 및 물류 기준 판정 설명 보강
-  const longitudinalCriteriaText = '컨테이너 중앙(L/2) 대비 전후 편차 ±1,200mm 이내 권장';
-  const lateralCriteriaText = '컨테이너 중심(W/2) 대비 좌우 편차 ±70mm 이내 (비율 50:50 ±6%)';
+  const longitudinalCriteriaText = `IMO CTU 규정: 전·후반부 각 60% 이하 (현재 ${frontRatio}% : ${rearRatio}%, 중앙 편차 ${Math.abs(offsetXFromContainerCenter).toLocaleString()}mm)`;
+  const lateralCriteriaText = `횡방향 안전 규정: 좌·우측 각 55% 이하 (현재 ${leftRatio}% : ${rightRatio}%, 중심 편차 ${Math.abs(offsetZFromCenter)}mm)`;
 
   let axleLoadNote = '';
   if (totalMass <= 10000) {
     axleLoadNote = `화물 총중량 ${(totalMass / 1000).toFixed(1)}톤으로 경량 상태 — 전후 편차가 있어도 트랙터 축하중(Axle Load) 안전 허용치 충족`;
-  } else if (Math.abs(offsetXFromContainerCenter) > 1200) {
-    axleLoadNote = `총중량 ${(totalMass / 1000).toFixed(1)}톤 전방 쏠림 — 트랙터 구동축(Drive Axle) 과적 및 축중계 통과 확인 권장`;
+  } else if (!isCtuLongitudinalSafe) {
+    axleLoadNote = `총중량 ${(totalMass / 1000).toFixed(1)}톤 전후 편심(${frontRatio > 60 ? `전방 ${frontRatio}%` : `후방 ${rearRatio}%`}) — 트랙터 구동축(Drive Axle) 과적 및 축중계 통과 확인 권장`;
   } else {
-    axleLoadNote = '전후 하중 분산 균형 양호 — 도로교통법 축하중 10톤 제한 충족';
+    axleLoadNote = '전후 하중 분산 균형 양호 — 도로교통법 축하중 10톤 제한 및 IMO CTU 규정 충족';
   }
 
   const offsetDirXText =
@@ -107,12 +109,19 @@ export function analyzeContainerCoG(container) {
       : `우측 ${Math.abs(offsetZFromCenter)}mm 편차`;
 
   let status = 'SAFE';
-  let statusText = '안전 (무게중심 균형 양호)';
-  if (!isLateralSafe || !isLongitudinalSafe) {
+  let statusText = '안전 (IMO CTU 전후 밸런스 규정 충족)';
+  if (!isLateralSafe && !isCtuLongitudinalSafe) {
     status = 'WARN';
-    statusText = !isLateralSafe
-      ? '주의 (좌우 중량 편차 확인)'
-      : '안내 (전후 무게중심 안쪽 이동)';
+    statusText = `주의 (전후 편심 ${Math.max(frontRatio, rearRatio)}% · 좌우 편심 ${Math.max(leftRatio, rightRatio)}%)`;
+  } else if (!isCtuLongitudinalSafe) {
+    status = 'WARN';
+    statusText = `주의 (IMO CTU 60% 초과 — ${frontRatio > 60 ? `전방 ${frontRatio}%` : `후방 ${rearRatio}%`})`;
+  } else if (!isLateralSafe) {
+    status = 'WARN';
+    statusText = `주의 (좌우 편차 확인 — ${leftRatio > 55 ? `좌측 ${leftRatio}%` : `우측 ${rightRatio}%`})`;
+  } else if (totalMass <= 10000) {
+    status = 'SAFE';
+    statusText = `안전 (경량 ${(totalMass / 1000).toFixed(1)}톤 · IMO 기준 충족)`;
   }
 
   return {
@@ -842,13 +851,29 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
           Math.abs(b.slotRef.x + b.slotRef.length / 2 - midX)
       );
 
+      // 도어 높이 및 지게차 인양 여유(Lift margin 80mm)를 고려한 2단 적재 최대 높이 한도
+      const doorH = cSpec.doorHeight || cHeight;
+      const forkliftLiftMargin = 80;
+      const maxDoubleStackTotalHeight = Math.min(cHeight, doorH - forkliftLiftMargin);
+
       for (const cand of tier2Candidates) {
+        // 2단 적재 허용 조건 (실무 안전 기준):
+        // 1. 하단 및 상단 모두 자투리 파레트(isPartial)가 아닐 것
+        // 2. 하단 및 상단 화물 모두 '2단 적재 금지(noDoubleStack)' 옵션이 아닐 것
+        // 3. 규격 일치: 상단 파레트와 하단 파레트의 가로·세로 규격이 동일할 것 (T11 위에 T12 적재 금지)
+        // 4. 높이 제한: 합산 높이가 도어 개구부 및 지게차 인양 여유(Lift margin) 이내일 것
+        // 5. 중량 제한: 컨테이너 최대 적재중량 이하 + 상경하중 원칙(상단은 하단보다 무겁지 않아야 함)
         const sIdx = openTopSlots.findIndex(
           (s) =>
             !s.bottomPallet.isPartial &&
-            s.bottomPallet.totalHeight + cand.totalHeight <= cHeight &&
+            !cand.isPartial &&
+            !s.bottomPallet.noDoubleStack &&
+            !cand.noDoubleStack &&
+            s.bottomPallet.width === cand.width &&
+            s.bottomPallet.length === cand.length &&
+            s.bottomPallet.totalHeight + cand.totalHeight <= maxDoubleStackTotalHeight &&
             currentWeight + cand.totalWeight <= cMaxWeight &&
-            cand.totalWeight <= s.bottomPallet.totalWeight * 1.15
+            cand.totalWeight <= s.bottomPallet.totalWeight
         );
         if (sIdx !== -1) {
           const target = openTopSlots.splice(sIdx, 1)[0];

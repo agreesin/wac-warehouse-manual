@@ -67,7 +67,12 @@ export {
  * - EUR (1200×800): 24 PLT / 대
  */
 export function estimate40HcContainerNeeds(palletCount, palletSpecId = 'T11') {
-  const floorCapacity = palletSpecId === 'EUR' ? 24 : 20;
+  // 40HC 컨테이너 바닥 적재 용량 (실무 기준):
+  // - EUR (1200×800): 2열 지그재그/회전 24~25개
+  // - T11 (1100×1100), T12 (1200×1000), CUSTOM_MIX: 2열 20개
+  // - EXPORT_1200 (1200×1200): 컨테이너 내부 폭(2352mm) 미달(2400 > 2352)로 1열 10개 적재 한도
+  const floorCapacity =
+    palletSpecId === 'EUR' ? 24 : palletSpecId === 'EXPORT_1200' ? 10 : 20;
   if (!palletCount || palletCount <= 0) {
     return {
       containerCount: 0,
@@ -309,8 +314,8 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       detail: `총 ${totalPlt}파레트를 호기별로 균등 배분 (바닥 ${hcOnlySlots}슬롯 기준)`,
       note:
         options.fullFloorSpread !== false
-          ? '전 컨테이너 1단 바닥 전체 균등 배치 완료 (쏠림·전도 및 추가 고정장치 불필요)'
-          : `고단(2단) 스태킹 & 앞벽 밀착 배치로 호기당 약 ${(avgCompactRearClearanceMm / 1000).toFixed(2)}m 바닥 여유 공간 확보`,
+          ? '1단 바닥 균등 분산 적재 (열 사이 유격 존재 시 에어백/완충재 충진 필수)'
+          : `고단 스태킹 & 전방 밀착 배치 (호기당 약 ${(avgCompactRearClearanceMm / 1000).toFixed(2)}m 도어 여유 공간에 목재 블로킹 & 차단 래싱 시공)`,
       desc:
         hcOnlyEmpty <= 2
           ? `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트를 채워 바닥 공간 활용도가 매우 높습니다.`

@@ -168,7 +168,9 @@ export function Step1CargoInput({
                   <th>높이 ({unitMode})</th>
                   <th>수량 (박스)</th>
                   <th>박스단중 (kg)</th>
-                  <th>박스단수제한</th>
+                  <th title="품목별 최대 적재 단수 제한 (0: 높이 기준 자동)">단수제한</th>
+                  <th title="박스 허용 상단 하중(kg) — 하단 박스가 상단에서 견딜 수 있는 최대 하중 (1 + 허용하중/단중으로 자동 계산)">허용상중(kg)</th>
+                  <th title="컨테이너 적재 시 이 화물이 실린 파레트의 2단(상단) 적재 및 상단에 다른 파레트 올리기 금지">2단적금지</th>
                   <th>회전허용</th>
                   <th>삭제</th>
                 </tr>
@@ -299,6 +301,35 @@ export function Step1CargoInput({
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="cbm-table-input"
+                          style={{ width: '68px', padding: '4px 4px', fontSize: '12px' }}
+                          placeholder="자동"
+                          value={cargo.maxTopLoad ?? ''}
+                          min={0}
+                          step={5}
+                          title="박스 허용 상단 하중(kg) — 미입력 시 높이 기준 자동 계산 (식: 1 + 허용하중 ÷ 박스단중)"
+                          onChange={(e) =>
+                            handleCargoChange(
+                              cargo.id,
+                              'maxTopLoad',
+                              e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0)
+                            )
+                          }
+                        />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(cargo.noDoubleStack)}
+                          onChange={(e) =>
+                            handleCargoChange(cargo.id, 'noDoubleStack', e.target.checked)
+                          }
+                          title="2단 적재 금지 (단단하고 무거운 다른 파레트 위 적재 불가 & 이 파레트 위에도 적재 불가)"
+                        />
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <input

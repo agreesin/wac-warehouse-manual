@@ -180,9 +180,9 @@ export function Step3ContainerResult({
             <div className="cbm-guide-card">
               <h4>바닥 배치 방식 실무 가이드</h4>
               <div>
-                • <strong>빈 바닥 채움 (기본값):</strong> 모든 파레트를 1단적(평적)으로 바닥 전체에 고르게 펼쳐 배치하여 선박 롤링·피칭 시 전도를 원천 차단하고 추가 고정 쇼링목 비용을 절감합니다.
+                • <strong>바닥 분산 배치:</strong> 모든 파레트를 1단적(평적)으로 바닥 전체에 고르게 분산 배치합니다. 열(Row) 간격이 30mm 이상 벌어질 경우 해상 운송 중 쏠림 방지를 위해 에어백(Dunnage Bag) 등 충전재 시공이 필요합니다.
                 <br />
-                • <strong>바닥 공간 확보 (선택):</strong> 상단 적재 가능 파레트를 2단적으로 높게 쌓고 앞벽 쪽으로 밀착하여 도어 쪽에 넓은 바닥 여유 공간을 만듭니다.
+                • <strong>전방 밀착 배치:</strong> 안쪽(Front) 벽면부터 빈틈없이 밀착 적재하며, 도어 전면의 빈 공간에는 목재 블로킹(Chocking & Blocking) 및 차단 래싱 벨트를 시공합니다.
               </div>
             </div>
           </div>
@@ -406,9 +406,9 @@ export function Step3ContainerResult({
                   <small>{currentContainer.cog.lateralCriteriaText}</small>
                 </div>
                 <div className="cbm-cog-metric">
-                  <span>전후 밸런스 & 중앙 편차</span>
+                  <span>전후 밸런스 & 중앙 편차 (IMO CTU)</span>
                   <strong>
-                    {currentContainer.cog.offsetDirXText} ({currentContainer.cog.lengthRatioPct}%)
+                    전 {currentContainer.cog.frontRatio}% : 후 {currentContainer.cog.rearRatio}% ({currentContainer.cog.offsetDirXText})
                   </strong>
                   <small>
                     {currentContainer.cog.longitudinalCriteriaText}

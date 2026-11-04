@@ -25,6 +25,8 @@ function normalizeRowToCargo(row, idx) {
   const rawQty = findVal(['수량', '개수', '박스수', 'qty', 'quantity', 'count']);
   const rawWeight = findVal(['중량', '무게', '단중', 'weight', 'kg']);
   const rawPallet = findVal(['파레트', '팔레트', 'pallet']);
+  const rawTopLoad = findVal(['허용하중', '상단하중', 'topload', 'strength']);
+  const rawNoDouble = findVal(['2단적금지', '2단금지', 'nodoublestack', 'singleonly']);
 
   const toNum = (val, fallback = 0) => {
     if (typeof val === 'number') return val;
@@ -68,6 +70,15 @@ function normalizeRowToCargo(row, idx) {
     height,
     quantity,
     weight,
+    maxLayers: 0,
+    maxTopLoad: toNum(rawTopLoad, 0),
+    noDoubleStack: Boolean(
+      rawNoDouble &&
+        (String(rawNoDouble).toLowerCase().includes('y') ||
+          String(rawNoDouble) === '1' ||
+          String(rawNoDouble).includes('금지') ||
+          String(rawNoDouble).includes('true'))
+    ),
     color: CARGO_COLORS[idx % CARGO_COLORS.length],
     allowRotate: true,
     palletSpecId,
