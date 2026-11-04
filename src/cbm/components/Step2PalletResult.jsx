@@ -79,7 +79,7 @@ export function Step2PalletResult({
       const pCount = customMixComparison?.totalPallets || simResult.summary.totalPallets;
       return {
         currentModePallets: pCount,
-        currentModeLabel: '회사 기준안 (품목별 맞춤 혼용)',
+        currentModeLabel: '표준 운영안 (기본 규격 유지 · 선별 혼용)',
         currentModeHcEst: estimate40HcContainerNeeds(pCount, 'CUSTOM_MIX'),
       };
     }
@@ -140,11 +140,11 @@ export function Step2PalletResult({
           <span className="cbm-badge">카드를 클릭하면 즉시 적용됩니다</span>
         </div>
 
-        {/* 파레트 운영 기준 설정 (회사 기준안 설정 영역) */}
+        {/* 파레트 표준 운영 기준 설정 패널 */}
         <div className="cbm-policy-config-panel">
           <div className="cbm-policy-config-head">
             <div>
-              <strong>파레트 운영 기준 설정 (회사 기준안)</strong>
+              <strong>파레트 표준 운영 기준 (기본 유지 · 선별 대체)</strong>
               <p>기본 파레트 유지 원칙을 적용하며, 층 적재 효율이 기준에 미달하고 대체 규격 적용 시 파레트 수가 실제로 줄어드는 품목만 전환합니다.</p>
             </div>
             <button
@@ -152,7 +152,7 @@ export function Step2PalletResult({
               className="cbm-btn-xs primary"
               onClick={handleAutoRecommendPalletMix}
             >
-              회사 기준안 적용
+              표준 운영안 적용
             </button>
           </div>
           <div className="cbm-policy-config-grid">
@@ -337,7 +337,7 @@ export function Step2PalletResult({
         </div>
 
         <div className="cbm-pallet-mode-grid">
-          {/* Card 0: 회사 기준안 Mode */}
+          {/* Card 0: 표준 운영안 Mode */}
           <button
             type="button"
             className={`cbm-pallet-mode-card mix-mode-card ${
@@ -347,9 +347,9 @@ export function Step2PalletResult({
           >
             <div className="cbm-pm-header">
               <div className="cbm-pm-badge-wrapper">
-                <span className="cbm-pm-badge mix-badge">회사 기준안</span>
+                <span className="cbm-pm-badge mix-badge">표준 운영안</span>
               </div>
-              <strong className="cbm-pm-title">회사 기준안</strong>
+              <strong className="cbm-pm-title">표준 운영안</strong>
               <small className="cbm-pm-sub">기본 {policyBasePallet} 유지 · 기준 미달만 대체</small>
             </div>
             <div className="cbm-pm-body">
@@ -434,10 +434,10 @@ export function Step2PalletResult({
           })}
         </div>
 
-        {/* 회사 기준안 품목별 판정 사유 패널 */}
+        {/* 표준 운영안 품목별 판정 사유 패널 */}
         <div className="cbm-policy-decisions-panel">
           <div className="cbm-policy-decisions-head">
-            <strong className="cbm-policy-decisions-title">회사 기준안 품목별 규격 판정 사유</strong>
+            <strong className="cbm-policy-decisions-title">표준 운영안 품목별 규격 판정 사유</strong>
             <span className="cbm-policy-decisions-sub">
               기본 {policyBasePallet} 유지 원칙 · 층 효율 {policyMinEfficiency}% 미달 및 수량 절감 품목만 대체 규격 적용
             </span>
@@ -463,14 +463,14 @@ export function Step2PalletResult({
             <div className="cbm-mix-panel-header">
               <div>
                 <strong>품목별 파레트 규격 개별 매칭</strong>
-                <p>각 박스 크기에 맞는 파레트 규격을 직접 변경하거나 회사 기준안 적용 버튼을 누르세요.</p>
+                <p>각 박스 크기에 맞는 파레트 규격을 직접 변경하거나 표준 운영안 적용 버튼을 누르세요.</p>
               </div>
               <button
                 type="button"
                 className="cbm-btn-xs primary"
                 onClick={handleAutoRecommendPalletMix}
               >
-                회사 기준안 적용
+                표준 운영안 적용
               </button>
             </div>
             <div className="cbm-mix-items-grid">

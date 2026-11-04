@@ -27,6 +27,13 @@ const STORAGE_KEY = 'wac_cbm_sim_saved_state_v1';
 function loadSavedState() {
   if (typeof window === 'undefined') return null;
   try {
+    // 사용자가 브라우저를 처음 열거나 새로 방문했을 때는 항상 기본값 초기화 상태로 시작
+    const isExistingSession = sessionStorage.getItem('wac_cbm_active_session');
+    if (!isExistingSession) {
+      sessionStorage.setItem('wac_cbm_active_session', 'true');
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
@@ -87,7 +94,7 @@ export function CbmSimulator() {
   // palletSelectionMode: 'T11' | 'T12' | 'EUR' | 'EXPORT_1200' | 'CUSTOM_MIX'
   const [palletSelectionMode, setPalletSelectionMode] = useState(() => savedState?.palletSelectionMode || 'CUSTOM_MIX');
   
-  // 파레트 운영 기준 (회사 기준안 설정)
+  // 파레트 표준 운영 기준 (기본 유지 · 선별 대체)
   const [policyBasePallet, setPolicyBasePallet] = useState(() => savedState?.policyBasePallet || 'T11');
   const [policyAllowedAlternates, setPolicyAllowedAlternates] = useState(() => savedState?.policyAllowedAlternates || ['T12']);
   const [policyOverhang, setPolicyOverhang] = useState(() => savedState?.policyOverhang ?? 0);
@@ -218,7 +225,7 @@ export function CbmSimulator() {
     wrappingConfig,
   ]);
 
-  // 회사 기준안(Company Policy) 자동 판정 결과
+  // 표준 운영안(Standard Operational Policy) 자동 판정 결과
   const companyPolicyResult = useMemo(() => {
     return evaluateCompanyPolicy({
       cargos,
@@ -496,7 +503,7 @@ export function CbmSimulator() {
     setPalletSelectionMode('CUSTOM_MIX');
     setUploadNotice({
       type: 'success',
-      message: `회사 기준안이 적용되었습니다. (기본 규격: ${policyBasePallet}, 전환 기준 효율: ${policyMinEfficiency}%)`,
+      message: `표준 운영안이 적용되었습니다. (기본 규격: ${policyBasePallet}, 전환 기준 효율: ${policyMinEfficiency}%)`,
     });
   };
 

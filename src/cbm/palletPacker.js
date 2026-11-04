@@ -800,7 +800,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
 }
 
 /**
- * 회사 기준안(Company Policy) 기반 파레트 규격 자동 판정
+ * 표준 운영안(Standard Operational Policy) 기반 파레트 규격 자동 판정
  * 1. 기본 파레트에 허용 돌출 이내로 적재
  * 2. 기본 파레트 바닥 크기 초과 등 적재 불가 시 대체 규격으로 전환
  * 3. 층 적재 효율 < minEfficiency이고 대체 규격 중 파레트 수가 실제로 줄어들 때만 그 규격으로 전환 (여러 개면 파레트 수 최소인 것)
@@ -952,7 +952,7 @@ export function evaluateCompanyPolicy({
 }
 
 /**
- * 품목별 최적 파레트 규격 자동 추천 (회사 기준안 기본값 연계)
+ * 품목별 최적 파레트 규격 자동 추천 (표준 운영안 기본값 연계)
  */
 export function autoRecommendPalletSpecs(cargos, overhang = 0) {
   const policy = evaluateCompanyPolicy({
