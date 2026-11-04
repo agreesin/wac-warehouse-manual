@@ -109,6 +109,370 @@ export function analyzeContainerCoG(container) {
 }
 
 /**
+ * 2열 적재 시 파레트 회전 자세 계산 헬퍼
+ */
+export function orientPalletFor2Rows(p, containerWidth, preferCompactX = false) {
+  const halfW = containerWidth / 2;
+  const maxDim = Math.max(p.width, p.length);
+  const minDim = Math.min(p.width, p.length);
+
+  if (preferCompactX && maxDim <= 1220 && minDim <= 1050 && p.width !== p.length) {
+    return {
+      lengthX: minDim,
+      widthZ: maxDim,
+      rotated: p.length !== minDim,
+    };
+  }
+
+  if (p.width <= halfW && p.length <= halfW) {
+    return { lengthX: p.length, widthZ: p.width, rotated: false };
+  }
+  if (p.length <= halfW && p.width > halfW) {
+    return { lengthX: p.width, widthZ: p.length, rotated: true };
+  }
+  if (p.width <= halfW && p.length > halfW) {
+    return { lengthX: p.length, widthZ: p.width, rotated: false };
+  }
+  return { lengthX: p.length, widthZ: p.width, rotated: false };
+}
+
+/**
+ * 실무 적재 유형 뱃지 생성 헬퍼
+ */
+export function computeStuffingBadge(container, cLength, effectiveDoubleStack, isConvenienceMode) {
+  const floorSlots = cLength < 7000 ? 10 : 20;
+  const isSingleSku = container.skuBreakdown.length === 1;
+  const singleSkuName = isSingleSku ? container.skuBreakdown[0].name.split(' (')[0] : '';
+
+  if (isSingleSku && container.placedPallets.length >= floorSlots) {
+    return {
+      type: 'dedicated_full',
+      label: `📦 [${singleSkuName}] 단일 품목 전용 완적 (FCL)`,
+      shortLabel: `${singleSkuName} 전용 완적 (${container.placedPallets.length}PLT)`,
+      tagText: '단일 품목 전용 완적',
+      color: '#34d399',
+      bg: 'rgba(16, 185, 129, 0.16)',
+      border: '1px solid rgba(16, 185, 129, 0.45)',
+    };
+  }
+  if (effectiveDoubleStack && container.tier2Count === 0) {
+    return {
+      type: 'tier1_pure',
+      label: `🛡️ 순수 1단적 안전 평적 (총 ${container.placedPallets.length}PLT · 2단적 0개)`,
+      shortLabel: `1단적 안전 평적 (${container.placedPallets.length}PLT)`,
+      tagText: '1단적 안전 평적 (전도 위험 0%)',
+      color: '#34d399',
+      bg: 'rgba(16, 185, 129, 0.16)',
+      border: '1px solid rgba(16, 185, 129, 0.45)',
+    };
+  }
+  if (effectiveDoubleStack && container.tier2Count >= floorSlots) {
+    return {
+      type: 'tier2_full',
+      label: `📦 2단적 집중 완적 (총 ${container.placedPallets.length}PLT · 40PLT 만적)`,
+      shortLabel: `2단적 집중 완적 (${container.placedPallets.length}PLT)`,
+      tagText: '2단적 집중 완적 (만적)',
+      color: '#38bdf8',
+      bg: 'rgba(56, 189, 248, 0.16)',
+      border: '1px solid rgba(56, 189, 248, 0.45)',
+    };
+  }
+  if (isSingleSku) {
+    return {
+      type: 'dedicated_partial',
+      label: `📦 [${singleSkuName}] 단일 품목 전용 적재`,
+      shortLabel: `${singleSkuName} 전용 (${container.placedPallets.length}PLT)`,
+      tagText: '단일 품목 전용',
+      color: '#38bdf8',
+      bg: 'rgba(56, 189, 248, 0.16)',
+      border: '1px solid rgba(56, 189, 248, 0.45)',
+    };
+  }
+  if (isConvenienceMode) {
+    return {
+      type: 'convenience_mixed',
+      label:
+        container.tier2Count > 0
+          ? `📦 2단적 블록 적재 (1단적 ${container.tier1Count} + 2단적 ${container.tier2Count}PLT)`
+          : `🔀 잔여 품목 모음 적재 (${container.skuBreakdown.length}개 품목)`,
+      shortLabel: `잔여 품목 모음 (${container.placedPallets.length}PLT)`,
+      tagText: container.tier2Count > 0 ? `2단적 블록 (${container.tier2Count}PLT)` : '잔여 품목 모음',
+      color: '#fbbf24',
+      bg: 'rgba(245, 158, 11, 0.16)',
+      border: '1px solid rgba(245, 158, 11, 0.45)',
+    };
+  }
+  return {
+    type: 'balanced',
+    label:
+      container.tier2Count > 0
+        ? `⚖️ 2단적 분산 적재 (1단적 ${container.tier1Count} + 2단적 ${container.tier2Count}PLT)`
+        : `⚖️ 균등 분산 적재 (${container.skuBreakdown.length}개 품목)`,
+    shortLabel: `균등 분산 (${container.placedPallets.length}PLT)`,
+    tagText: '균등 분산',
+    color: '#a5b4fc',
+    bg: 'rgba(129, 140, 248, 0.16)',
+    border: '1px solid rgba(129, 140, 248, 0.45)',
+  };
+}
+
+/**
+ * 현장 적재 정밀 진단(도어 여유고, 전후 쇼링 여유, 좌우 유격, 도어측 낙하 방지 쇼링) 계산 헬퍼
+ */
+export function computeFieldDiagnostics(container, containerSpec, cLength, cWidth, cHeight) {
+  const maxStackH = container.placedPallets.reduce(
+    (max, pp) => Math.max(max, pp.y + pp.pallet.totalHeight),
+    0
+  );
+  const doorH = Number(container.spec?.doorHeight) || cHeight - 110;
+  const doorClearanceMm = doorH - maxStackH;
+  let doorStatus = 'safe';
+  let doorStatusText = `도어 통과 여유 +${doorClearanceMm}mm (지게차 진입 원활)`;
+  if (doorClearanceMm < 0) {
+    doorStatus = 'danger';
+    doorStatusText = `도어 입구 높이(${doorH}mm) ${Math.abs(doorClearanceMm)}mm 초과 — 문턱 걸림 주의!`;
+  } else if (doorClearanceMm < 80) {
+    doorStatus = 'warning';
+    doorStatusText = `도어 상부 여유 ${doorClearanceMm}mm (밀착 진입·마스트 틸팅 주의)`;
+  }
+
+  const maxOccupiedX = container.placedPallets.reduce(
+    (max, pp) => Math.max(max, pp.x + pp.length),
+    0
+  );
+  const rearClearanceMm = Math.max(0, cLength - maxOccupiedX);
+  let shoringText = '여유 공간 적정';
+  if (rearClearanceMm <= 220) {
+    shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 바닥 전체 균등·밀착 배치로 전후 쏠림 및 쇼링 비용 최소화`;
+  } else if (rearClearanceMm <= 900) {
+    shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 운송 중 밀림 방지를 위해 후미 쇼링목/라싱 벨트 권장`;
+  } else {
+    shoringText = `도어 쪽 여유 ${(rearClearanceMm / 1000).toFixed(2)}m 확보 — 전방 밀착·고단 적재로 후미 바닥 여유 공간 확보됨`;
+  }
+
+  const tier1Pallets = container.placedPallets.filter((p) => p.tier === 1);
+  const occupiedFloorAreaMm2 = tier1Pallets.reduce(
+    (acc, pp) => acc + pp.length * pp.width,
+    0
+  );
+  const floorUtilizationPct = Number(
+    Math.min(100, (occupiedFloorAreaMm2 / (cLength * cWidth)) * 100).toFixed(1)
+  );
+
+  const avgRowWidthZ =
+    tier1Pallets.length > 0
+      ? tier1Pallets.reduce((acc, pp) => acc + pp.width, 0) / tier1Pallets.length
+      : 1100;
+  const lateralGapMm = Math.max(0, Math.round(cWidth - avgRowWidthZ * 2));
+  let dunnageBagText = `좌우 여유 합계 약 ${lateralGapMm}mm (표준 유격)`;
+  if (lateralGapMm >= 250) {
+    dunnageBagText = `좌우 유격 약 ${lateralGapMm}mm — 열(Row) 사이 에어백(Dunnage Bag) 충진 권장`;
+  } else if (lateralGapMm < 60) {
+    dunnageBagText = `좌우 여유 ${lateralGapMm}mm — 타이트핏 (지게차 사이드쉬프트 정밀 진입 필요)`;
+  }
+
+  // 도어(문) 쪽 최후미 파레트 높이 및 낙하(전도) 쇼링 필요성 진단
+  const doorThresholdX = Math.max(0, maxOccupiedX - 1300);
+  const doorPallets = container.placedPallets.filter((pp) => pp.x + pp.length >= doorThresholdX);
+  let maxContainerPalletH = 0;
+  for (const pp of container.placedPallets) {
+    if (pp.pallet.totalHeight > maxContainerPalletH) {
+      maxContainerPalletH = pp.pallet.totalHeight;
+    }
+  }
+
+  let hasLowPalletAtDoor = false;
+  const lowDoorPalletLabels = [];
+  let minDoorPalletH = Infinity;
+
+  for (const dp of doorPallets) {
+    const h = dp.pallet.totalHeight;
+    if (h < minDoorPalletH) minDoorPalletH = h;
+    if (h < 1150 || (maxContainerPalletH - h >= 350)) {
+      hasLowPalletAtDoor = true;
+      const pLabel = `P#${dp.pallet.index || dp.palletIndex}`;
+      if (!lowDoorPalletLabels.includes(pLabel)) {
+        lowDoorPalletLabels.push(pLabel);
+      }
+    }
+  }
+
+  const doorShoringGuide = hasLowPalletAtDoor
+    ? {
+        hasRisk: true,
+        lowPalletLabels: lowDoorPalletLabels,
+        minHeightMm: minDoorPalletH,
+        maxHeightMm: maxContainerPalletH,
+        heightDiffMm: maxContainerPalletH - minDoorPalletH,
+        title: `도어(Door) 개방 시 낙하 방지 쇼링 필수 (${lowDoorPalletLabels.join(', ')})`,
+        summary: `문(Door) 쪽에 키가 낮은 자투리 파레트(${lowDoorPalletLabels.join(', ')} · 높이 ${minDoorPalletH}mm)가 배치되어, 앞쪽 높은 화물(${maxContainerPalletH}mm)과의 단차(-${maxContainerPalletH - minDoorPalletH}mm)로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`,
+        action1: '🛡️ 컨테이너 입구 모서리 D-Ring에 라싱 벨트(Lashing Belt) X자 결속 또는 카고 안전망(Cargo Net) 시공 필수',
+        action2: '🪵 앞쪽 높은 파레트와의 단차 공간에 듄네이지 에어백(Dunnage Bag) 또는 목재 각재(쇼링목) 버팀목 시공',
+      }
+    : null;
+
+  return {
+    maxStackHeightMm: maxStackH,
+    doorHeightMm: doorH,
+    doorClearanceMm,
+    doorStatus,
+    doorStatusText,
+    usedLengthMm: maxOccupiedX,
+    rearClearanceMm,
+    shoringText,
+    lateralGapMm,
+    dunnageBagText,
+    floorUtilizationPct,
+    doorShoringGuide,
+  };
+}
+
+/**
+ * 2대 이상 다수 컨테이너 생성 시 파레트 배분 헬퍼
+ */
+export function distributePalletsForMultiContainer({
+  validPallets,
+  neededCount,
+  isConvenienceMode,
+  effectiveDoubleStack,
+  floorSlotsPerContainer,
+  cMaxWeight,
+}) {
+  if (isConvenienceMode) {
+    // [작업 편의성 우선]:
+    // 단일 품목(SKU)으로 1대 이상 채울 수 있으면 타 품목을 섞지 않고 100% 전용 컨테이너로 완적!
+    const byCargo = new Map();
+    for (const p of validPallets) {
+      const key = p.primaryCargoId || 'other';
+      if (!byCargo.has(key)) byCargo.set(key, []);
+      byCargo.get(key).push(p);
+    }
+
+    // 완적 파레트 먼저, 부분 파레트(자투리)는 뒤쪽
+    for (const [, list] of byCargo.entries()) {
+      list.sort((a, b) => {
+        if (a.isPartial !== b.isPartial) return a.isPartial ? 1 : -1;
+        return b.totalWeight - a.totalWeight;
+      });
+    }
+
+    // 파레트 수량이 많은 주력 SKU부터 정렬 (예: 박스A 23PLT -> 박스B 14PLT -> 박스C 1PLT)
+    const sortedGroups = Array.from(byCargo.values()).sort(
+      (a, b) => b.length - a.length
+    );
+
+    const buckets = Array.from({ length: neededCount }, () => []);
+    const bucketWeights = new Array(neededCount).fill(0);
+    const contCap = effectiveDoubleStack ? floorSlotsPerContainer * 2 : floorSlotsPerContainer;
+
+    let curBIdx = 0;
+    for (const grp of sortedGroups) {
+      let remInGrp = [...grp];
+      while (remInGrp.length > 0 && curBIdx < neededCount) {
+        const curBucket = buckets[curBIdx];
+        const curWeight = bucketWeights[curBIdx];
+        const spaceLeft = contCap - curBucket.length;
+
+        if (spaceLeft <= 0 || curWeight >= cMaxWeight - 300) {
+          curBIdx++;
+          continue;
+        }
+
+        let take = 0;
+        let weightToAdd = 0;
+        while (take < remInGrp.length && take < spaceLeft) {
+          const nextP = remInGrp[take];
+          if (curWeight + weightToAdd + nextP.totalWeight > cMaxWeight) {
+            break;
+          }
+          weightToAdd += nextP.totalWeight;
+          take++;
+        }
+
+        if (take === 0) {
+          curBIdx++;
+          continue;
+        }
+
+        const picked = remInGrp.splice(0, take);
+        curBucket.push(...picked);
+        bucketWeights[curBIdx] += weightToAdd;
+
+        if (curBucket.length >= contCap) {
+          curBIdx++;
+        }
+      }
+
+      if (remInGrp.length > 0) {
+        buckets[neededCount - 1].push(...remInGrp);
+      }
+    }
+
+    // 각 호기 내부 SKU 블록 정렬:
+    // 해당 호기에 가장 많이 실린 SKU 블록을 앞쪽(안쪽 벽)에 두고, 자투리/소량 품목은 도어 쪽에 배치
+    buckets.forEach((b) => {
+      const skuCountsInBucket = new Map();
+      for (const p of b) {
+        const k = p.primaryCargoId || 'other';
+        skuCountsInBucket.set(k, (skuCountsInBucket.get(k) || 0) + 1);
+      }
+      b.sort((p1, p2) => {
+        if (p1.isPartial !== p2.isPartial) return p1.isPartial ? 1 : -1;
+        const k1 = p1.primaryCargoId || 'other';
+        const k2 = p2.primaryCargoId || 'other';
+        const c1 = skuCountsInBucket.get(k1) || 0;
+        const c2 = skuCountsInBucket.get(k2) || 0;
+        if (c1 !== c2) return c2 - c1;
+        return 0;
+      });
+    });
+
+    return buckets;
+  }
+
+  // [균등 밸런스 우선]: 전 호기에 품목·중량을 고르게 쪼개어 분산
+  const buckets = Array.from({ length: neededCount }, () => []);
+  const bucketWeights = new Array(neededCount).fill(0);
+
+  const byCargo = new Map();
+  for (const p of validPallets) {
+    const key = p.primaryCargoId || 'other';
+    if (!byCargo.has(key)) byCargo.set(key, []);
+    byCargo.get(key).push(p);
+  }
+
+  const allFulls = [];
+  const allPartials = [];
+  for (const [, group] of byCargo.entries()) {
+    for (const p of group) {
+      if (p.isPartial) allPartials.push(p);
+      else allFulls.push(p);
+    }
+  }
+
+  const assignToLightestBucket = (p) => {
+    let bestIdx = 0;
+    for (let bIdx = 1; bIdx < neededCount; bIdx++) {
+      if (buckets[bIdx].length < buckets[bestIdx].length) {
+        bestIdx = bIdx;
+      } else if (
+        buckets[bIdx].length === buckets[bestIdx].length &&
+        bucketWeights[bIdx] < bucketWeights[bestIdx]
+      ) {
+        bestIdx = bIdx;
+      }
+    }
+    buckets[bestIdx].push(p);
+    bucketWeights[bestIdx] += p.totalWeight;
+  };
+
+  allFulls.forEach(assignToLightestBucket);
+  allPartials.forEach(assignToLightestBucket);
+
+  return buckets;
+}
+
+/**
  * 생성된 파레트들을 컨테이너에 적재 (다중 파레트 규격 혼합, 전 호기 균등 배분, 바닥 전체 배치 vs 2단/밀착 배치 지원)
  */
 export function packPalletsIntoContainers(pallets, containerSpec, options = {}) {
@@ -165,31 +529,6 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
   const floorSlotsPerContainer = colsPerContainer * 2;
 
   let orderedContainerBuckets = [];
-
-  const orientPalletFor2Rows = (p, preferCompactX = false) => {
-    const halfW = cWidth / 2;
-    const maxDim = Math.max(p.width, p.length);
-    const minDim = Math.min(p.width, p.length);
-
-    if (preferCompactX && maxDim <= 1220 && minDim <= 1050 && p.width !== p.length) {
-      return {
-        lengthX: minDim,
-        widthZ: maxDim,
-        rotated: p.length !== minDim,
-      };
-    }
-
-    if (p.width <= halfW && p.length <= halfW) {
-      return { lengthX: p.length, widthZ: p.width, rotated: false };
-    }
-    if (p.length <= halfW && p.width > halfW) {
-      return { lengthX: p.width, widthZ: p.length, rotated: true };
-    }
-    if (p.width <= halfW && p.length > halfW) {
-      return { lengthX: p.length, widthZ: p.width, rotated: false };
-    }
-    return { lengthX: p.length, widthZ: p.width, rotated: false };
-  };
 
   const tryPackSingleContainer = (palletList) => {
     let workingList = [...palletList];
@@ -307,12 +646,12 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
 
       const p2Candidate = idx + 1 < workingList.length ? workingList[idx + 1] : null;
 
-      let o1 = orientPalletFor2Rows(p1, false);
-      let o2 = p2Candidate ? orientPalletFor2Rows(p2Candidate, false) : null;
+      let o1 = orientPalletFor2Rows(p1, cWidth, false);
+      let o2 = p2Candidate ? orientPalletFor2Rows(p2Candidate, cWidth, false) : null;
 
       if (needsTightFit && p2Candidate) {
-        const tryO1 = orientPalletFor2Rows(p1, true);
-        const tryO2 = orientPalletFor2Rows(p2Candidate, true);
+        const tryO1 = orientPalletFor2Rows(p1, cWidth, true);
+        const tryO2 = orientPalletFor2Rows(p2Candidate, cWidth, true);
         if (tryO1.widthZ + tryO2.widthZ <= cWidth) {
           o1 = tryO1;
           o2 = tryO2;
@@ -322,7 +661,7 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
           o2 = tryO2;
         }
       } else if (!fullFloorSpread && !p2Candidate) {
-        const tryO1 = orientPalletFor2Rows(p1, true);
+        const tryO1 = orientPalletFor2Rows(p1, cWidth, true);
         if (tryO1.widthZ <= cWidth) o1 = tryO1;
       }
 
@@ -368,34 +707,43 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         placedPallets.push(slot1, slot2);
         const colLen = Math.max(o1.lengthX, o2.lengthX);
         placedColumns.push({ slots: [slot1, slot2], colLen });
+
         currentWeight += p1.totalWeight + p2Candidate.totalWeight;
-        if (effectiveDoubleStack) {
+        cursorX += colLen + colGapX;
+
+        if (p1.totalHeight < cHeight - 200) {
           openTopSlots.push({ slotRef: slot1, bottomPallet: p1 });
+        }
+        if (p2Candidate.totalHeight < cHeight - 200) {
           openTopSlots.push({ slotRef: slot2, bottomPallet: p2Candidate });
         }
+
         idx += 2;
-        cursorX += colLen + colGapX;
       } else {
-        const zCenter = Math.max(0, Math.round((cWidth - o1.widthZ) / 2));
+        const zCentered = Math.max(0, Math.floor((cWidth - o1.widthZ) / 2));
         const slot1 = {
           pallet: p1,
           slotIndex: slotCounter++,
           tier: 1,
           x: cursorX,
           y: 0,
-          z: zCenter,
+          z: zCentered,
           length: o1.lengthX,
           width: o1.widthZ,
           rotated: o1.rotated,
         };
+
         placedPallets.push(slot1);
         placedColumns.push({ slots: [slot1], colLen: o1.lengthX });
+
         currentWeight += p1.totalWeight;
-        if (effectiveDoubleStack) {
+        cursorX += o1.lengthX + colGapX;
+
+        if (p1.totalHeight < cHeight - 200) {
           openTopSlots.push({ slotRef: slot1, bottomPallet: p1 });
         }
+
         idx += 1;
-        cursorX += o1.lengthX + colGapX;
       }
     }
 
@@ -477,138 +825,14 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     }
 
     if (neededCount >= 2) {
-      if (isConvenienceMode) {
-        // [작업 편의성 우선]:
-        // 단일 품목(SKU)으로 1대 이상 채울 수 있으면 타 품목을 섞지 않고 100% 전용 컨테이너로 완적!
-        const byCargo = new Map();
-        for (const p of validPallets) {
-          const key = p.primaryCargoId || 'other';
-          if (!byCargo.has(key)) byCargo.set(key, []);
-          byCargo.get(key).push(p);
-        }
-
-        // 완적 파레트 먼저, 부분 파레트(자투리)는 뒤쪽
-        for (const [, list] of byCargo.entries()) {
-          list.sort((a, b) => {
-            if (a.isPartial !== b.isPartial) return a.isPartial ? 1 : -1;
-            return b.totalWeight - a.totalWeight;
-          });
-        }
-
-        // 파레트 수량이 많은 주력 SKU부터 정렬 (예: 박스A 23PLT -> 박스B 14PLT -> 박스C 1PLT)
-        const sortedGroups = Array.from(byCargo.values()).sort(
-          (a, b) => b.length - a.length
-        );
-
-        const buckets = Array.from({ length: neededCount }, () => []);
-        const bucketWeights = new Array(neededCount).fill(0);
-        const contCap = effectiveDoubleStack ? floorSlotsPerContainer * 2 : floorSlotsPerContainer;
-
-        let curBIdx = 0;
-        for (const grp of sortedGroups) {
-          let remInGrp = [...grp];
-          while (remInGrp.length > 0 && curBIdx < neededCount) {
-            const curBucket = buckets[curBIdx];
-            const curWeight = bucketWeights[curBIdx];
-            const spaceLeft = contCap - curBucket.length;
-
-            if (spaceLeft <= 0 || curWeight >= cMaxWeight - 300) {
-              curBIdx++;
-              continue;
-            }
-
-            let take = 0;
-            let weightToAdd = 0;
-            while (take < remInGrp.length && take < spaceLeft) {
-              const nextP = remInGrp[take];
-              if (curWeight + weightToAdd + nextP.totalWeight > cMaxWeight) {
-                break;
-              }
-              weightToAdd += nextP.totalWeight;
-              take++;
-            }
-
-            if (take === 0) {
-              curBIdx++;
-              continue;
-            }
-
-            const picked = remInGrp.splice(0, take);
-            curBucket.push(...picked);
-            bucketWeights[curBIdx] += weightToAdd;
-
-            if (curBucket.length >= contCap) {
-              curBIdx++;
-            }
-          }
-
-          if (remInGrp.length > 0) {
-            buckets[neededCount - 1].push(...remInGrp);
-          }
-        }
-
-        // 각 호기 내부 SKU 블록 정렬:
-        // 해당 호기에 가장 많이 실린 SKU 블록을 앞쪽(안쪽 벽)에 두고, 자투리/소량 품목은 도어 쪽에 배치
-        buckets.forEach((b) => {
-          const skuCountsInBucket = new Map();
-          for (const p of b) {
-            const k = p.primaryCargoId || 'other';
-            skuCountsInBucket.set(k, (skuCountsInBucket.get(k) || 0) + 1);
-          }
-          b.sort((p1, p2) => {
-            if (p1.isPartial !== p2.isPartial) return p1.isPartial ? 1 : -1;
-            const k1 = p1.primaryCargoId || 'other';
-            const k2 = p2.primaryCargoId || 'other';
-            const c1 = skuCountsInBucket.get(k1) || 0;
-            const c2 = skuCountsInBucket.get(k2) || 0;
-            if (c1 !== c2) return c2 - c1;
-            return 0;
-          });
-        });
-
-        orderedContainerBuckets = buckets;
-      } else {
-        // [균등 밸런스 우선]: 전 호기에 품목·중량을 고르게 쪼개어 분산
-        const buckets = Array.from({ length: neededCount }, () => []);
-        const bucketWeights = new Array(neededCount).fill(0);
-
-        const byCargo = new Map();
-        for (const p of validPallets) {
-          const key = p.primaryCargoId || 'other';
-          if (!byCargo.has(key)) byCargo.set(key, []);
-          byCargo.get(key).push(p);
-        }
-
-        const allFulls = [];
-        const allPartials = [];
-        for (const [, group] of byCargo.entries()) {
-          for (const p of group) {
-            if (p.isPartial) allPartials.push(p);
-            else allFulls.push(p);
-          }
-        }
-
-        const assignToLightestBucket = (p) => {
-          let bestIdx = 0;
-          for (let bIdx = 1; bIdx < neededCount; bIdx++) {
-            if (buckets[bIdx].length < buckets[bestIdx].length) {
-              bestIdx = bIdx;
-            } else if (
-              buckets[bIdx].length === buckets[bestIdx].length &&
-              bucketWeights[bIdx] < bucketWeights[bestIdx]
-            ) {
-              bestIdx = bIdx;
-            }
-          }
-          buckets[bestIdx].push(p);
-          bucketWeights[bestIdx] += p.totalWeight;
-        };
-
-        allFulls.forEach(assignToLightestBucket);
-        allPartials.forEach(assignToLightestBucket);
-
-        orderedContainerBuckets = buckets;
-      }
+      orderedContainerBuckets = distributePalletsForMultiContainer({
+        validPallets,
+        neededCount,
+        isConvenienceMode,
+        effectiveDoubleStack,
+        floorSlotsPerContainer,
+        cMaxWeight,
+      });
     }
   }
 
@@ -704,184 +928,11 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     c.cog = analyzeContainerCoG(c);
     c.stuffingStrategy = stuffingStrategy;
 
-    // 실무 적재 유형 뱃지 (단일 SKU 전용 완적 / 단일 적재 / 잔여 혼적 / 균등 분산)
-    const floorSlots = cLength < 7000 ? 10 : 20;
-    const isSingleSku = c.skuBreakdown.length === 1;
-    const singleSkuName = isSingleSku ? c.skuBreakdown[0].name.split(' (')[0] : '';
+    // 실무 적재 유형 뱃지
+    c.stuffingBadge = computeStuffingBadge(c, cLength, effectiveDoubleStack, isConvenienceMode);
 
-    if (isSingleSku && c.placedPallets.length >= floorSlots) {
-      c.stuffingBadge = {
-        type: 'dedicated_full',
-        label: `📦 [${singleSkuName}] 단일 품목 전용 완적 (FCL)`,
-        shortLabel: `${singleSkuName} 전용 완적 (${c.placedPallets.length}PLT)`,
-        tagText: '단일 품목 전용 완적',
-        color: '#34d399',
-        bg: 'rgba(16, 185, 129, 0.16)',
-        border: '1px solid rgba(16, 185, 129, 0.45)',
-      };
-    } else if (effectiveDoubleStack && c.tier2Count === 0) {
-      c.stuffingBadge = {
-        type: 'tier1_pure',
-        label: `🛡️ 순수 1단적 안전 평적 (총 ${c.placedPallets.length}PLT · 2단적 0개)`,
-        shortLabel: `1단적 안전 평적 (${c.placedPallets.length}PLT)`,
-        tagText: '1단적 안전 평적 (전도 위험 0%)',
-        color: '#34d399',
-        bg: 'rgba(16, 185, 129, 0.16)',
-        border: '1px solid rgba(16, 185, 129, 0.45)',
-      };
-    } else if (effectiveDoubleStack && c.tier2Count >= floorSlots) {
-      c.stuffingBadge = {
-        type: 'tier2_full',
-        label: `📦 2단적 집중 완적 (총 ${c.placedPallets.length}PLT · 40PLT 만적)`,
-        shortLabel: `2단적 집중 완적 (${c.placedPallets.length}PLT)`,
-        tagText: '2단적 집중 완적 (만적)',
-        color: '#38bdf8',
-        bg: 'rgba(56, 189, 248, 0.16)',
-        border: '1px solid rgba(56, 189, 248, 0.45)',
-      };
-    } else if (isSingleSku) {
-      c.stuffingBadge = {
-        type: 'dedicated_partial',
-        label: `📦 [${singleSkuName}] 단일 품목 전용 적재`,
-        shortLabel: `${singleSkuName} 전용 (${c.placedPallets.length}PLT)`,
-        tagText: '단일 품목 전용',
-        color: '#38bdf8',
-        bg: 'rgba(56, 189, 248, 0.16)',
-        border: '1px solid rgba(56, 189, 248, 0.45)',
-      };
-    } else if (isConvenienceMode) {
-      c.stuffingBadge = {
-        type: 'convenience_mixed',
-        label:
-          c.tier2Count > 0
-            ? `📦 2단적 블록 적재 (1단적 ${c.tier1Count} + 2단적 ${c.tier2Count}PLT)`
-            : `🔀 잔여 품목 모음 적재 (${c.skuBreakdown.length}개 품목)`,
-        shortLabel: `잔여 품목 모음 (${c.placedPallets.length}PLT)`,
-        tagText: c.tier2Count > 0 ? `2단적 블록 (${c.tier2Count}PLT)` : '잔여 품목 모음',
-        color: '#fbbf24',
-        bg: 'rgba(245, 158, 11, 0.16)',
-        border: '1px solid rgba(245, 158, 11, 0.45)',
-      };
-    } else {
-      c.stuffingBadge = {
-        type: 'balanced',
-        label:
-          c.tier2Count > 0
-            ? `⚖️ 2단적 분산 적재 (1단적 ${c.tier1Count} + 2단적 ${c.tier2Count}PLT)`
-            : `⚖️ 균등 분산 적재 (${c.skuBreakdown.length}개 품목)`,
-        shortLabel: `균등 분산 (${c.placedPallets.length}PLT)`,
-        tagText: '균등 분산',
-        color: '#a5b4fc',
-        bg: 'rgba(129, 140, 248, 0.16)',
-        border: '1px solid rgba(129, 140, 248, 0.45)',
-      };
-    }
-
-    const maxStackH = c.placedPallets.reduce(
-      (max, pp) => Math.max(max, pp.y + pp.pallet.totalHeight),
-      0
-    );
-    const doorH = Number(c.spec.doorHeight) || cHeight - 110;
-    const doorClearanceMm = doorH - maxStackH;
-    let doorStatus = 'safe';
-    let doorStatusText = `도어 통과 여유 +${doorClearanceMm}mm (지게차 진입 원활)`;
-    if (doorClearanceMm < 0) {
-      doorStatus = 'danger';
-      doorStatusText = `도어 입구 높이(${doorH}mm) ${Math.abs(doorClearanceMm)}mm 초과 — 문턱 걸림 주의!`;
-    } else if (doorClearanceMm < 80) {
-      doorStatus = 'warning';
-      doorStatusText = `도어 상부 여유 ${doorClearanceMm}mm (밀착 진입·마스트 틸팅 주의)`;
-    }
-
-    const maxOccupiedX = c.placedPallets.reduce(
-      (max, pp) => Math.max(max, pp.x + pp.length),
-      0
-    );
-    const rearClearanceMm = Math.max(0, cLength - maxOccupiedX);
-    let shoringText = '여유 공간 적정';
-    if (rearClearanceMm <= 220) {
-      shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 바닥 전체 균등·밀착 배치로 전후 쏠림 및 쇼링 비용 최소화`;
-    } else if (rearClearanceMm <= 900) {
-      shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 운송 중 밀림 방지를 위해 후미 쇼링목/라싱 벨트 권장`;
-    } else {
-      shoringText = `도어 쪽 여유 ${(rearClearanceMm / 1000).toFixed(2)}m 확보 — 전방 밀착·고단 적재로 후미 바닥 여유 공간 확보됨`;
-    }
-
-    const tier1Pallets = c.placedPallets.filter((p) => p.tier === 1);
-    const occupiedFloorAreaMm2 = tier1Pallets.reduce(
-      (acc, pp) => acc + pp.length * pp.width,
-      0
-    );
-    const floorUtilizationPct = Number(
-      Math.min(100, (occupiedFloorAreaMm2 / (cLength * cWidth)) * 100).toFixed(1)
-    );
-
-    const avgRowWidthZ =
-      tier1Pallets.length > 0
-        ? tier1Pallets.reduce((acc, pp) => acc + pp.width, 0) / tier1Pallets.length
-        : 1100;
-    const lateralGapMm = Math.max(0, Math.round(cWidth - avgRowWidthZ * 2));
-    let dunnageBagText = `좌우 여유 합계 약 ${lateralGapMm}mm (표준 유격)`;
-    if (lateralGapMm >= 250) {
-      dunnageBagText = `좌우 유격 약 ${lateralGapMm}mm — 열(Row) 사이 에어백(Dunnage Bag) 충진 권장`;
-    } else if (lateralGapMm < 60) {
-      dunnageBagText = `좌우 여유 ${lateralGapMm}mm — 타이트핏 (지게차 사이드쉬프트 정밀 진입 필요)`;
-    }
-
-    // 도어(문) 쪽 최후미 파레트 높이 및 낙하(전도) 쇼링 필요성 진단
-    const doorThresholdX = Math.max(0, maxOccupiedX - 1300);
-    const doorPallets = c.placedPallets.filter((pp) => pp.x + pp.length >= doorThresholdX);
-    let maxContainerPalletH = 0;
-    for (const pp of c.placedPallets) {
-      if (pp.pallet.totalHeight > maxContainerPalletH) {
-        maxContainerPalletH = pp.pallet.totalHeight;
-      }
-    }
-
-    let hasLowPalletAtDoor = false;
-    const lowDoorPalletLabels = [];
-    let minDoorPalletH = Infinity;
-
-    for (const dp of doorPallets) {
-      const h = dp.pallet.totalHeight;
-      if (h < minDoorPalletH) minDoorPalletH = h;
-      if (h < 1150 || (maxContainerPalletH - h >= 350)) {
-        hasLowPalletAtDoor = true;
-        const pLabel = `P#${dp.pallet.index || dp.palletIndex}`;
-        if (!lowDoorPalletLabels.includes(pLabel)) {
-          lowDoorPalletLabels.push(pLabel);
-        }
-      }
-    }
-
-    const doorShoringGuide = hasLowPalletAtDoor
-      ? {
-          hasRisk: true,
-          lowPalletLabels: lowDoorPalletLabels,
-          minHeightMm: minDoorPalletH,
-          maxHeightMm: maxContainerPalletH,
-          heightDiffMm: maxContainerPalletH - minDoorPalletH,
-          title: `도어(Door) 개방 시 낙하 방지 쇼링 필수 (${lowDoorPalletLabels.join(', ')})`,
-          summary: `문(Door) 쪽에 키가 낮은 자투리 파레트(${lowDoorPalletLabels.join(', ')} · 높이 ${minDoorPalletH}mm)가 배치되어, 앞쪽 높은 화물(${maxContainerPalletH}mm)과의 단차(-${maxContainerPalletH - minDoorPalletH}mm)로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`,
-          action1: '🛡️ 컨테이너 입구 모서리 D-Ring에 라싱 벨트(Lashing Belt) X자 결속 또는 카고 안전망(Cargo Net) 시공 필수',
-          action2: '🪵 앞쪽 높은 파레트와의 단차 공간에 듄네이지 에어백(Dunnage Bag) 또는 목재 각재(쇼링목) 버팀목 시공',
-        }
-      : null;
-
-    c.fieldDiagnostics = {
-      maxStackHeightMm: maxStackH,
-      doorHeightMm: doorH,
-      doorClearanceMm,
-      doorStatus,
-      doorStatusText,
-      usedLengthMm: maxOccupiedX,
-      rearClearanceMm,
-      shoringText,
-      lateralGapMm,
-      dunnageBagText,
-      floorUtilizationPct,
-      doorShoringGuide,
-    };
+    // 현장 적재 정밀 진단 (도어 여유고, 쇼링 여유, 유격, 도어측 낙하 방지 쇼링 가이드)
+    c.fieldDiagnostics = computeFieldDiagnostics(c, containerSpec, cLength, cWidth, cHeight);
   }
 
   return {

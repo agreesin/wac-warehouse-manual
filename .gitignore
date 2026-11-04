@@ -15,3 +15,6 @@ packaging/
 
 # Vercel
 .vercel/
+
+.vercel
+.env*
