@@ -4,6 +4,7 @@ import {
   PALLET_PRESETS,
   CARGO_COLORS,
   DEFAULT_CARGOS,
+  DEFAULT_WRAPPING_CONFIG,
   runFullSimulation,
   packCargosIntoPallets,
   evaluateCompanyPolicy,
@@ -91,6 +92,9 @@ export function CbmSimulator() {
   const [policyAllowedAlternates, setPolicyAllowedAlternates] = useState(() => savedState?.policyAllowedAlternates || ['T12']);
   const [policyOverhang, setPolicyOverhang] = useState(() => savedState?.policyOverhang ?? 0);
   const [policyMinEfficiency, setPolicyMinEfficiency] = useState(() => savedState?.policyMinEfficiency ?? 70);
+
+  // 래핑 공차 및 현장 실무 여유 설정 (배부름, 어긋남, 지게차 여유, 내폭 기준)
+  const [wrappingConfig, setWrappingConfig] = useState(() => savedState?.wrappingConfig || DEFAULT_WRAPPING_CONFIG);
 
   const [selectedPalletIdx, setSelectedPalletIdx] = useState(0);
   const [palletVisibleStep, setPalletVisibleStep] = useState(100);
@@ -197,6 +201,7 @@ export function CbmSimulator() {
       balanceContainers: stuffingStrategy === 'balance',
       fullFloorSpread,
       optimizeCoG,
+      wrappingConfig,
     });
   }, [
     step2Unlocked,
@@ -210,6 +215,7 @@ export function CbmSimulator() {
     stuffingStrategy,
     fullFloorSpread,
     optimizeCoG,
+    wrappingConfig,
   ]);
 
   // 회사 기준안(Company Policy) 자동 판정 결과
@@ -309,6 +315,7 @@ export function CbmSimulator() {
         policyAllowedAlternates,
         policyOverhang,
         policyMinEfficiency,
+        wrappingConfig,
         selectedContainerId,
         stuffingStrategy,
         fullFloorSpread,
@@ -334,6 +341,7 @@ export function CbmSimulator() {
     policyAllowedAlternates,
     policyOverhang,
     policyMinEfficiency,
+    wrappingConfig,
     selectedContainerId,
     stuffingStrategy,
     fullFloorSpread,
@@ -463,6 +471,7 @@ export function CbmSimulator() {
     setPolicyAllowedAlternates(['T12']);
     setPolicyOverhang(0);
     setPolicyMinEfficiency(70);
+    setWrappingConfig(DEFAULT_WRAPPING_CONFIG);
     setSelectedContainerId('40FT_HC');
     setStuffingStrategy('convenience');
     setOptimizeCoG(true);
@@ -792,6 +801,8 @@ export function CbmSimulator() {
           policyMinEfficiency={policyMinEfficiency}
           setPolicyMinEfficiency={setPolicyMinEfficiency}
           companyPolicyResult={companyPolicyResult}
+          wrappingConfig={wrappingConfig}
+          setWrappingConfig={setWrappingConfig}
           customMixComparison={customMixComparison}
           cargos={cargos}
           setCargos={setCargos}
@@ -834,6 +845,8 @@ export function CbmSimulator() {
           setFullFloorSpread={setFullFloorSpread}
           optimizeCoG={optimizeCoG}
           setOptimizeCoG={setOptimizeCoG}
+          wrappingConfig={wrappingConfig}
+          setWrappingConfig={setWrappingConfig}
           containerVisibleStep={containerVisibleStep}
           setContainerVisibleStep={setContainerVisibleStep}
           isContainerPlaying={isContainerPlaying}

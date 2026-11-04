@@ -1054,10 +1054,19 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
           const candStats = calcPalletNeed(candBounds.count, c);
           const savedPallets = Math.max(0, strictStats.totalPallets - candStats.totalPallets);
 
-          // Claude 피드백 반영: 실제로 파레트 절감 효과(savedPallets > 0)가 있는 경우에만 돌출 제안 (0PLT 절감 제안 숨김)
-          if (savedPallets > 0 || strictBounds.count === 0) {
-            const candOuterW = Math.max(pW, candBounds.spanW);
-            const candOuterL = Math.max(pL, candBounds.spanL);
+          // 측면 및 길이 방향 3단계 판정 (가능 / 주의 / 불가): '불가' 판정인 돌출안은 추천에서 제외
+          const candOuterW = Math.max(pW, candBounds.spanW);
+          const candOuterL = Math.max(pL, candBounds.spanL);
+          const candRowWidth = Math.min(candOuterW, candOuterL) * 2;
+          const candRowLength = Math.max(candOuterW, candOuterL);
+          const lateralClearance = 2352 - (candRowWidth + 70);
+          const estCols = Math.ceil(candStats.totalPallets / 2);
+          const totalLoadLength = estCols * candRowLength;
+          const netLengthClearance = 12032 - (totalLoadLength + estCols * 20); // 20mm 래핑 공차 차감 순수 여유
+          const isViable = lateralClearance >= 40 && netLengthClearance >= 50;
+
+          // 실제 파레트 절감 효과가 있고 현장 적입이 가능한 경우에만 돌출 제안
+          if (isViable && (savedPallets > 0 || strictBounds.count === 0)) {
             const ovDirectionText =
               ovW > 0 && ovL === 0
                 ? `가로(W) 방향만 +${ovW}mm (외경 ${candOuterW}×${candOuterL}mm)`
@@ -1082,6 +1091,7 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
               totalPallets: candStats.totalPallets,
               savedPallets,
               needsOverhangToFitAtAll: strictBounds.count === 0,
+              isViable: true,
             };
             break;
           }

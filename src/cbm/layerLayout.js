@@ -38,24 +38,30 @@ export function resolveCargoBoxDimsByPosture(cargo, postureOverride) {
 }
 
 /**
- * 화물의 파레트 설정 결정 헬퍼 (개별 지정 규격 우선, 없으면 기본 파레트 규격)
+ * 화물의 파레트 설정 결정 헬퍼 (개별 지정 규격 우선, 없으면 기본 파레트 규격 / 품목별 실측 외경 지원)
  */
 export function resolvePalletDimsForCargo(cargo, defaultPalletConfig) {
   const specId = cargo?.palletSpecId;
-  if (specId && specId !== 'DEFAULT' && PALLET_PRESETS[specId]) {
-    const preset = PALLET_PRESETS[specId];
-    return {
-      specId: preset.id,
-      specName: preset.shortLabel || preset.name,
-      width: preset.width,
-      length: preset.length,
-    };
-  }
+  const basePreset =
+    specId && specId !== 'DEFAULT' && PALLET_PRESETS[specId]
+      ? PALLET_PRESETS[specId]
+      : {
+          id: 'DEFAULT',
+          name: `${defaultPalletConfig.width}×${defaultPalletConfig.length}`,
+          shortLabel: `${defaultPalletConfig.width}×${defaultPalletConfig.length}`,
+          width: Math.max(100, Number(defaultPalletConfig.width) || 1100),
+          length: Math.max(100, Number(defaultPalletConfig.length) || 1100),
+        };
+
+  const hasMeasured = Number(cargo?.measuredWidth) > 0 && Number(cargo?.measuredLength) > 0;
   return {
-    specId: 'DEFAULT',
-    specName: `${defaultPalletConfig.width}×${defaultPalletConfig.length}`,
-    width: Math.max(100, Number(defaultPalletConfig.width) || 1100),
-    length: Math.max(100, Number(defaultPalletConfig.length) || 1100),
+    specId: basePreset.id,
+    specName: hasMeasured ? `${basePreset.shortLabel || basePreset.name} (실측적용)` : (basePreset.shortLabel || basePreset.name),
+    width: hasMeasured ? Number(cargo.measuredWidth) : basePreset.width,
+    length: hasMeasured ? Number(cargo.measuredLength) : basePreset.length,
+    nominalWidth: basePreset.width,
+    nominalLength: basePreset.length,
+    isMeasured: hasMeasured,
   };
 }
 

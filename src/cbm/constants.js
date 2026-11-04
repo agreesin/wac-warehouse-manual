@@ -104,6 +104,16 @@ export const CARGO_COLORS = [
  *   -> 8박스 1PLT (파레트당 105.0kg, 합 105.0kg)
  * - 파레트 자중(tareWeight): 17.0kg 기준 총합 38개 파레트, 8,865.2kg
  */
+export const DEFAULT_WRAPPING_CONFIG = {
+  wrappingBulgeMm: 20, // 래핑 배부름 공차 (mm)
+  stackingMisalignmentMm: 10, // 수작업 적재 어긋남 공차 (mm)
+  forkliftClearanceMm: 20, // 지게차 적입 여유 (mm)
+  containerInnerWidthOption: 2352, // 표준 2352mm vs ISO 하한 2330mm
+};
+
+export const ISO_MIN_INNER_WIDTH = 2330;
+export const STANDARD_INNER_WIDTH = 2352;
+
 export const DEFAULT_CARGOS = [
   {
     id: 'cargo-1',
@@ -116,6 +126,8 @@ export const DEFAULT_CARGOS = [
     color: CARGO_COLORS[0],
     allowRotate: true,
     palletSpecId: 'T11', // 1100 x 1100
+    measuredWidth: 0,
+    measuredLength: 0,
   },
   {
     id: 'cargo-2',
@@ -128,6 +140,8 @@ export const DEFAULT_CARGOS = [
     color: CARGO_COLORS[1],
     allowRotate: true,
     palletSpecId: 'T12', // 돌출 방지를 위해 1200 x 1000 파레트 지정
+    measuredWidth: 0,
+    measuredLength: 0,
   },
   {
     id: 'cargo-3',
@@ -140,6 +154,8 @@ export const DEFAULT_CARGOS = [
     color: CARGO_COLORS[2],
     allowRotate: true,
     palletSpecId: 'T11', // 1100 x 1100
+    measuredWidth: 0,
+    measuredLength: 0,
   },
 ];
 

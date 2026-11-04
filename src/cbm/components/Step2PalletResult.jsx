@@ -70,6 +70,8 @@ export function Step2PalletResult({
   explodePalletLayers,
   setExplodePalletLayers,
   handleRunStep2ToStep3,
+  wrappingConfig,
+  setWrappingConfig,
 }) {
   // 현재 선택된 파레트 규격에 대한 40HC 컨테이너 바닥 완적 기준 소요 대수 실시간 계산
   const { currentModePallets, currentModeLabel, currentModeHcEst } = useMemo(() => {
@@ -241,6 +243,97 @@ export function Step2PalletResult({
               </div>
             </div>
           </div>
+
+          {/* 실무 적재 공차 및 컨테이너 유격 기준 설정 */}
+          {wrappingConfig && setWrappingConfig && (
+            <div className="cbm-policy-tolerance-section">
+              <div className="cbm-policy-tolerance-head">
+                <span className="cbm-policy-tolerance-title">현장 안전 공차 및 컨테이너 유격 기준</span>
+                <span className="cbm-policy-tolerance-sub">래핑 배부름·어긋남·인양 여유를 반영하여 측면 2열 및 길이 방향 폐쇄 안정성을 진단합니다.</span>
+              </div>
+              <div className="cbm-policy-tolerance-grid">
+                <div className="cbm-tolerance-item">
+                  <label>래핑 배부름 공차</label>
+                  <div className="cbm-policy-input-box">
+                    <input
+                      type="number"
+                      min={0}
+                      max={50}
+                      step={5}
+                      value={wrappingConfig.wrappingBulgeMm ?? 20}
+                      onChange={(e) =>
+                        setWrappingConfig({
+                          ...wrappingConfig,
+                          wrappingBulgeMm: Math.max(0, Number(e.target.value) || 0),
+                        })
+                      }
+                      className="cbm-policy-number-input"
+                    />
+                    <span className="cbm-policy-unit">mm/파레트</span>
+                  </div>
+                </div>
+
+                <div className="cbm-tolerance-item">
+                  <label>박스 적재 어긋남</label>
+                  <div className="cbm-policy-input-box">
+                    <input
+                      type="number"
+                      min={0}
+                      max={30}
+                      step={2}
+                      value={wrappingConfig.stackingMisalignmentMm ?? 10}
+                      onChange={(e) =>
+                        setWrappingConfig({
+                          ...wrappingConfig,
+                          stackingMisalignmentMm: Math.max(0, Number(e.target.value) || 0),
+                        })
+                      }
+                      className="cbm-policy-number-input"
+                    />
+                    <span className="cbm-policy-unit">mm</span>
+                  </div>
+                </div>
+
+                <div className="cbm-tolerance-item">
+                  <label>지게차 인양/도어 여유</label>
+                  <div className="cbm-policy-input-box">
+                    <input
+                      type="number"
+                      min={0}
+                      max={50}
+                      step={5}
+                      value={wrappingConfig.forkliftClearanceMm ?? 20}
+                      onChange={(e) =>
+                        setWrappingConfig({
+                          ...wrappingConfig,
+                          forkliftClearanceMm: Math.max(0, Number(e.target.value) || 0),
+                        })
+                      }
+                      className="cbm-policy-number-input"
+                    />
+                    <span className="cbm-policy-unit">mm</span>
+                  </div>
+                </div>
+
+                <div className="cbm-tolerance-item">
+                  <label>컨테이너 내폭 기준</label>
+                  <select
+                    className="cbm-table-select cbm-tolerance-select"
+                    value={wrappingConfig.containerInnerWidthOption ?? 2352}
+                    onChange={(e) =>
+                      setWrappingConfig({
+                        ...wrappingConfig,
+                        containerInnerWidthOption: Number(e.target.value) || 2352,
+                      })
+                    }
+                  >
+                    <option value={2352}>표준 내폭 (2,352 mm)</option>
+                    <option value={2330}>ISO 최소 하한 (2,330 mm / 보수적)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="cbm-pallet-mode-grid">
@@ -253,7 +346,9 @@ export function Step2PalletResult({
             onClick={() => setPalletSelectionMode('CUSTOM_MIX')}
           >
             <div className="cbm-pm-header">
-              <span className="cbm-pm-badge mix-badge">회사 기준안</span>
+              <div className="cbm-pm-badge-wrapper">
+                <span className="cbm-pm-badge mix-badge">회사 기준안</span>
+              </div>
               <strong className="cbm-pm-title">회사 기준안</strong>
               <small className="cbm-pm-sub">기본 {policyBasePallet} 유지 · 기준 미달만 대체</small>
             </div>
@@ -307,13 +402,15 @@ export function Step2PalletResult({
                 onClick={() => setPalletSelectionMode(spec.id)}
               >
                 <div className="cbm-pm-header">
-                  <span
-                    className={`cbm-pm-badge ${
-                      spec.id === 'T11' ? 'std-badge' : spec.id === 'T12' ? 'int-badge' : ''
-                    }`}
-                  >
-                    {meta.badge}
-                  </span>
+                  <div className="cbm-pm-badge-wrapper">
+                    <span
+                      className={`cbm-pm-badge ${
+                        spec.id === 'T11' ? 'std-badge' : spec.id === 'T12' ? 'int-badge' : ''
+                      }`}
+                    >
+                      {meta.badge}
+                    </span>
+                  </div>
                   <strong className="cbm-pm-title">{meta.title}</strong>
                   <small className="cbm-pm-sub">{meta.sub}</small>
                 </div>

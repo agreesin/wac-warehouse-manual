@@ -171,6 +171,7 @@ export function Step1CargoInput({
                   <th title="품목별 최대 적재 단수 제한 (0: 높이 기준 자동)">단수제한</th>
                   <th title="박스 허용 상단 하중(kg) — 하단 박스가 상단에서 견딜 수 있는 최대 하중 (1 + 허용하중/단중으로 자동 계산)">허용상중(kg)</th>
                   <th title="컨테이너 적재 시 이 화물이 실린 파레트의 2단(상단) 적재 및 상단에 다른 파레트 올리기 금지">2단적금지</th>
+                  <th title="첫 완성 파레트 실측 외경(가로×세로 mm) — 입력 시 계산 규격 대신 실측 치수를 우선 적용하여 컨테이너 적재 유격을 정밀 계산합니다">실측외경(W×L)</th>
                   <th>회전허용</th>
                   <th>삭제</th>
                 </tr>
@@ -330,6 +331,45 @@ export function Step1CargoInput({
                           }
                           title="2단 적재 금지 (단단하고 무거운 다른 파레트 위 적재 불가 & 이 파레트 위에도 적재 불가)"
                         />
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            className="cbm-table-input"
+                            style={{ width: '48px', padding: '3px 4px', fontSize: '11px' }}
+                            placeholder="W"
+                            value={cargo.measuredWidth || ''}
+                            min={0}
+                            step={10}
+                            title="첫 완성 파레트 실측 가로 외경(mm)"
+                            onChange={(e) =>
+                              handleCargoChange(
+                                cargo.id,
+                                'measuredWidth',
+                                e.target.value === '' ? 0 : Math.max(0, Number(e.target.value) || 0)
+                              )
+                            }
+                          />
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>×</span>
+                          <input
+                            type="number"
+                            className="cbm-table-input"
+                            style={{ width: '48px', padding: '3px 4px', fontSize: '11px' }}
+                            placeholder="L"
+                            value={cargo.measuredLength || ''}
+                            min={0}
+                            step={10}
+                            title="첫 완성 파레트 실측 세로 외경(mm)"
+                            onChange={(e) =>
+                              handleCargoChange(
+                                cargo.id,
+                                'measuredLength',
+                                e.target.value === '' ? 0 : Math.max(0, Number(e.target.value) || 0)
+                              )
+                            }
+                          />
+                        </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <input

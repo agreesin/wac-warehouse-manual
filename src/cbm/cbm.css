@@ -1089,15 +1089,20 @@
 
 /* Card Header: Badge, Title, Subtitle */
 .cbm-pm-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
   gap: 4px;
   width: 100%;
 }
 
+.cbm-pm-badge-wrapper {
+  display: block !important;
+  margin-bottom: 2px;
+}
+
 .cbm-pm-badge {
-  display: inline-block;
+  display: inline-block !important;
   font-size: 11px;
   font-weight: 700;
   padding: 2px 8px;
@@ -1127,7 +1132,8 @@
 }
 
 .cbm-pm-title {
-  font-size: 14px;
+  display: block !important;
+  font-size: 14.5px;
   font-weight: 800;
   color: #f8fafc !important;
   line-height: 1.3;
@@ -1135,44 +1141,51 @@
 }
 
 .cbm-pm-sub {
-  font-size: 11.5px;
+  display: block !important;
+  font-size: 11px;
   color: #94a3b8 !important;
   line-height: 1.35;
+  margin-top: 2px;
 }
 
 /* Card Body & Stats */
 .cbm-pm-body {
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
   gap: 6px;
   margin-top: auto;
   width: 100%;
 }
 
 .cbm-pm-stat {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100%;
+  gap: 6px;
   font-size: 12px;
   color: #cbd5e1 !important;
   padding: 3px 0;
   border-bottom: 1px dashed rgba(148, 163, 184, 0.15);
+  box-sizing: border-box;
 }
 
 .cbm-pm-stat span {
+  display: inline-block !important;
   color: #94a3b8 !important;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .cbm-pm-stat strong {
+  display: inline-block !important;
   font-size: 13px;
   font-weight: 800;
   color: #f8fafc !important;
   text-align: right;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .cbm-pm-stat.highlight strong {
@@ -3527,6 +3540,204 @@
 .cbm-app.cbm-theme-light .cbm-overhang-panel-box {
   background: #f8fafc !important;
   border-color: #e2e8f0 !important;
+}
+
+/* =========================================================================
+   현장 공차 및 안전 기준 설정 (Step 2-A)
+   ========================================================================= */
+.cbm-policy-tolerance-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.2);
+}
+
+.cbm-policy-tolerance-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.cbm-policy-tolerance-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.cbm-policy-tolerance-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.cbm-policy-tolerance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .cbm-policy-tolerance-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .cbm-policy-tolerance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cbm-tolerance-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cbm-tolerance-item label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.cbm-tolerance-select {
+  width: 100%;
+  padding: 6px 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #f8fafc;
+  font-size: 12px;
+}
+
+/* =========================================================================
+   쇼링 BOM(자재 산출표) & 3단계 판정 배지 (Step 3)
+   ========================================================================= */
+.cbm-bom-container {
+  margin-top: 14px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cbm-bom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.cbm-bom-table th {
+  background: #1e293b;
+  color: #cbd5e1;
+  padding: 8px 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #334155;
+}
+
+.cbm-bom-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  color: #e2e8f0;
+}
+
+.cbm-bom-table tr:last-child td {
+  border-bottom: none;
+}
+
+.cbm-bom-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #1e293b;
+  color: #38bdf8;
+  border: 1px solid #38bdf8;
+}
+
+.cbm-ht-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(234, 88, 12, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(234, 88, 12, 0.5);
+}
+
+.cbm-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cbm-status-pill.status-safe {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.cbm-status-pill.status-warn {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.cbm-status-pill.status-danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* 라이트 테마 공차 & BOM 스타일 */
+.cbm-app.cbm-theme-light .cbm-policy-tolerance-section {
+  border-top-color: #e2e8f0;
+}
+
+.cbm-app.cbm-theme-light .cbm-policy-tolerance-title {
+  color: #0284c7 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-policy-tolerance-sub {
+  color: #64748b !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-tolerance-item label {
+  color: #334155 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-tolerance-select {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-bom-container {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-bom-table th {
+  background: #e2e8f0 !important;
+  color: #1e293b !important;
+  border-bottom-color: #cbd5e1 !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-bom-table td {
+  border-bottom-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cbm-app.cbm-theme-light .cbm-bom-badge {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-color: #93c5fd !important;
 }
 
 @media print {

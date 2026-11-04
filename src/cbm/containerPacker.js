@@ -258,9 +258,9 @@ export function computeStuffingBadge(container, cLength, effectiveDoubleStack, i
 }
 
 /**
- * 현장 적재 정밀 진단(도어 여유고, 전후 쇼링 여유, 좌우 유격, 도어측 낙하 방지 쇼링) 계산 헬퍼
+ * 현장 적재 정밀 진단(도어 여유고, 전후 쇼링 여유, 좌우 유격, 도어측 낙하 방지 쇼링, 자재 산출 BOM) 계산 헬퍼
  */
-export function computeFieldDiagnostics(container, containerSpec, cLength, cWidth, cHeight) {
+export function computeFieldDiagnostics(container, containerSpec, cLength, cWidth, cHeight, options = {}) {
   const maxStackH = container.placedPallets.reduce(
     (max, pp) => Math.max(max, pp.y + pp.pallet.totalHeight),
     0
@@ -284,11 +284,11 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
   const rearClearanceMm = Math.max(0, cLength - maxOccupiedX);
   let shoringText = '여유 공간 적정';
   if (rearClearanceMm <= 220) {
-    shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 바닥 전체 균등·밀착 배치로 전후 쏠림 및 쇼링 비용 최소화`;
+    shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 바닥 전체 밀착 배치로 전후 쏠림 및 쇼링 비용 최소화`;
   } else if (rearClearanceMm <= 900) {
-    shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 운송 중 밀림 방지를 위해 후미 쇼링목/라싱 벨트 권장`;
+    shoringText = `도어 쪽 잔여 ${rearClearanceMm}mm — 운송 중 밀림 방지를 위해 후미 쇼링목/래싱 벨트 권장`;
   } else {
-    shoringText = `도어 쪽 여유 ${(rearClearanceMm / 1000).toFixed(2)}m 확보 — 전방 밀착·고단 적재로 후미 바닥 여유 공간 확보됨`;
+    shoringText = `도어 쪽 여유 ${(rearClearanceMm / 1000).toFixed(2)}m 확보 — 전방 밀착 배치로 후미 바닥 여유 공간 확보됨`;
   }
 
   const tier1Pallets = container.placedPallets.filter((p) => p.tier === 1);
@@ -304,22 +304,54 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
     tier1Pallets.length > 0
       ? tier1Pallets.reduce((acc, pp) => acc + pp.width, 0) / tier1Pallets.length
       : 1100;
-  const lateralGapMm = Math.max(0, Math.round(cWidth - avgRowWidthZ * 2));
+
+  // 공차 설정 (사용자 설정 or 기본값)
+  const wrappingConfig = options.wrappingConfig || {};
+  const wrappingBulge = Number(wrappingConfig.wrappingBulgeMm) || 20;
+  const misalignment = Number(wrappingConfig.stackingMisalignmentMm) || 10;
+  const forkliftClearance = Number(wrappingConfig.forkliftClearanceMm) || 20;
+  const innerWidthOption = Number(wrappingConfig.containerInnerWidthOption) || cWidth;
+
+  const lateralGapMm = Math.max(0, Math.round(innerWidthOption - avgRowWidthZ * 2));
   let dunnageBagText = `좌우 여유 합계 약 ${lateralGapMm}mm (표준 유격)`;
   if (lateralGapMm >= 250) {
-    dunnageBagText = `좌우 유격 약 ${lateralGapMm}mm — 열(Row) 사이 에어백(Dunnage Bag) 충진 권장`;
+    dunnageBagText = `좌우 유격 약 ${lateralGapMm}mm — 열(Row) 사이 에어백(Dunnage Bag) 충진 필수`;
   } else if (lateralGapMm < 60) {
     dunnageBagText = `좌우 여유 ${lateralGapMm}mm — 타이트핏 (지게차 사이드쉬프트 정밀 진입 필요)`;
   }
 
-  // 도어(문) 쪽 최후미 파레트 높이 및 낙하(전도) 쇼링 필요성 진단
-  const doorThresholdX = Math.max(0, maxOccupiedX - 1300);
-  const doorPallets = container.placedPallets.filter((pp) => pp.x + pp.length >= doorThresholdX);
-  let maxContainerPalletH = 0;
-  for (const pp of container.placedPallets) {
-    if (pp.pallet.totalHeight > maxContainerPalletH) {
-      maxContainerPalletH = pp.pallet.totalHeight;
-    }
+  // 측면 여유 3단계 판정 (SAFE, WARN, DANGER)
+  const totalRequiredLateralMm = wrappingBulge * 2 + misalignment * 2 + forkliftClearance;
+  const netLateralClearanceMm = lateralGapMm - totalRequiredLateralMm;
+  let lateralStatus = 'SAFE';
+  let lateralStatusText = `가능 (내폭 ${innerWidthOption}mm 기준 적재 작업 여유 충분)`;
+  if (lateralGapMm < 40 || netLateralClearanceMm < -20) {
+    lateralStatus = 'DANGER';
+    lateralStatusText = `불가 (내폭 ${innerWidthOption}mm 기준 유격 부족으로 적입 불가 위험)`;
+  } else if (lateralGapMm >= 250 || netLateralClearanceMm < 20) {
+    lateralStatus = 'WARN';
+    lateralStatusText =
+      lateralGapMm >= 250
+        ? `주의 (좌우 유격 ${lateralGapMm}mm 과다 — 화물 전도 방지 에어백 충진 필수)`
+        : `주의 (좌우 여유 ${lateralGapMm}mm 협소 — 첫 열 실측 확인 및 지게차 조작 주의)`;
+  }
+
+  // 열(Column)별 파레트 그룹핑 (x 좌표 기준 정렬)
+  const uniqueXs = Array.from(new Set(tier1Pallets.map((p) => p.x))).sort((a, b) => a - b);
+  const numCols = uniqueXs.length;
+  const lastColX = uniqueXs[uniqueXs.length - 1] ?? 0;
+  const doorPallets = container.placedPallets.filter((pp) => pp.x === lastColX);
+
+  // 바로 앞 열(직전 열) 탐색 및 직전 열 기준 단차 산출
+  const prevColX = uniqueXs.length >= 2 ? uniqueXs[uniqueXs.length - 2] : null;
+  const prevColPallets =
+    prevColX !== null ? container.placedPallets.filter((pp) => pp.x === prevColX) : [];
+
+  let frontColMaxH = 0;
+  if (prevColPallets.length > 0) {
+    frontColMaxH = Math.max(...prevColPallets.map((pp) => pp.pallet.totalHeight));
+  } else {
+    frontColMaxH = Math.max(...container.placedPallets.map((pp) => pp.pallet.totalHeight));
   }
 
   let hasLowPalletAtDoor = false;
@@ -328,13 +360,19 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
 
   for (const dp of doorPallets) {
     const h = dp.pallet.totalHeight;
-    const diff = maxContainerPalletH - h;
+    const diff = frontColMaxH - h;
     if (h < minDoorPalletH) minDoorPalletH = h;
-    if (h < 1150 || diff >= 350) {
+    // 바로 앞 열과의 단차가 300mm 이상이거나, 높이가 1,150mm 미만인 경우
+    if (h < 1150 || diff >= 300) {
       hasLowPalletAtDoor = true;
       const pLabel = `P#${dp.pallet.index || dp.palletIndex}`;
       if (!lowDoorPalletDetails.some((d) => d.label === pLabel)) {
-        lowDoorPalletDetails.push({ label: pLabel, height: h, diff });
+        lowDoorPalletDetails.push({
+          label: pLabel,
+          height: h,
+          frontColMaxH,
+          diff,
+        });
       }
     }
   }
@@ -348,19 +386,131 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
   const hasSlidingRisk = rearClearanceMm >= 400;
   const hasRisk = hasHeightGapRisk || hasSlidingRisk;
 
-  // 길이 방향 래핑 공차 진단 (열 수 × 20mm vs 도어 잔여 길이)
-  const numCols = new Set(tier1Pallets.map((p) => p.x)).size;
-  const lengthWrappingToleranceMm = numCols * 20;
-  const hasLengthWrappingRisk = rearClearanceMm < lengthWrappingToleranceMm && numCols > 0;
-  const lengthWrappingWarning = hasLengthWrappingRisk
-    ? {
-        hasRisk: true,
-        numCols,
-        requiredMm: lengthWrappingToleranceMm,
-        rearClearanceMm,
-        text: `래핑 배부름 시 마지막 열 적입 불가 가능 (도어 쪽 잔여 ${rearClearanceMm}mm < 래핑 공차 ${lengthWrappingToleranceMm}mm [${numCols}열 × 20mm])`,
-      }
-    : null;
+  // 길이 방향 래핑 공차 진단 (열 수 × 래핑공차 vs 도어 잔여 길이)
+  const lengthWrappingToleranceMm = numCols * wrappingBulge;
+  const netLengthClearanceMm = rearClearanceMm - lengthWrappingToleranceMm;
+  let lengthStatus = 'SAFE';
+  let lengthStatusText = `가능 (길이 여유 +${rearClearanceMm}mm 확보)`;
+  if (rearClearanceMm < 0 || netLengthClearanceMm < -30) {
+    lengthStatus = 'DANGER';
+    lengthStatusText = `불가 (래핑 배부름 고려 시 도어 닫힘 불가 위험)`;
+  } else if (netLengthClearanceMm < 50) {
+    lengthStatus = 'WARN';
+    lengthStatusText = `주의 (도어 잔여 ${rearClearanceMm}mm < 래핑 공차 ${lengthWrappingToleranceMm}mm — 현장 실측 필수)`;
+  }
+
+  const lengthWrappingWarning =
+    lengthStatus !== 'SAFE' && numCols > 0
+      ? {
+          hasRisk: true,
+          status: lengthStatus,
+          numCols,
+          requiredMm: lengthWrappingToleranceMm,
+          rearClearanceMm,
+          text: `래핑 배부름 시 적입 공차 주의 (도어 잔여 ${rearClearanceMm}mm vs ${numCols}열 공차 ${lengthWrappingToleranceMm}mm)`,
+        }
+      : null;
+
+  // 쇼링 소요 자재 산출 (BOM / Material List)
+  const hasWideGapRows = tier1Pallets.some((p) => p.width <= 1050);
+  const shoringBOM = [];
+
+  if (hasSlidingRisk && rearClearanceMm >= 900) {
+    const palletStacks = Math.round(rearClearanceMm / 1100);
+    const palletCount = palletStacks >= 1 ? '10~12장 (2열 5~6단 스택)' : '5~6장';
+    shoringBOM.push({
+      category: '목재 블로킹',
+      name: '빈 목재 파레트 (ISPM 15 HT 열처리 인증)',
+      spec: '1100×1100mm 또는 1200×1000mm',
+      quantity: palletCount,
+      purpose: `문 앞 빈 공간(${(rearClearanceMm / 1000).toFixed(1)}m) 후방 끝단에 밀착 스택 적재하여 슬라이딩 차단`,
+      isHtCertified: true,
+    });
+  }
+
+  let airbagCount = 0;
+  const airbagDetails = [];
+  if (hasSlidingRisk && rearClearanceMm >= 800) {
+    airbagCount += 2;
+    airbagDetails.push('낮은 파레트와 후방 빈 파레트 사이 유격(약 330mm) 완충 2개');
+  }
+  if (hasWideGapRows) {
+    airbagCount += 4;
+    airbagDetails.push('T12 등 측면 유격(약 350mm) 열간 벌어짐 방지 4개');
+  }
+  if (airbagCount > 0) {
+    shoringBOM.push({
+      category: '완충재',
+      name: '듄네이지 에어백 (Dunnage Airbag Level 1~2)',
+      spec: '900×1200mm 또는 1000×1800mm',
+      quantity: `${airbagCount}개`,
+      purpose: airbagDetails.join(' / '),
+      isHtCertified: false,
+    });
+  }
+
+  let lashingStrapCount = 0;
+  const lashingDetails = [];
+  if (hasHeightGapRisk) {
+    lashingStrapCount += 2;
+    lashingDetails.push('단차면 앞 완적 열 높이 1,100mm 및 1,450mm 수평 래싱 2줄 (측벽 링 결속)');
+    lashingStrapCount += lowDoorPalletDetails.length;
+    lashingDetails.push(`낮은 파레트(${lowPalletLabelsOnly.join(', ')}) 톱오버 래싱 ${lowDoorPalletDetails.length}줄 (바닥 링 결속)`);
+  } else if (hasSlidingRisk) {
+    lashingStrapCount += 2;
+    lashingDetails.push('최후미 화물 열 전면 수평 래싱 2줄 (측벽 링 결속)');
+  }
+  if (lashingStrapCount > 0) {
+    shoringBOM.push({
+      category: '결속 벨트',
+      name: '고강도 화물 래싱 벨트 (Lashing Strap, 2~3톤급 라쳇 버클)',
+      spec: '폭 50mm, 길이 6~9m',
+      quantity: `${lashingStrapCount}줄`,
+      purpose: lashingDetails.join(' / '),
+      isHtCertified: false,
+    });
+  }
+
+  if (hasHeightGapRisk) {
+    shoringBOM.push({
+      category: '목재 보강',
+      name: '완충 판재 (합판 / 플라스틱 골판재)',
+      spec: '두께 12~15mm × 폭 2,300mm × 높이 1,200mm',
+      quantity: '1장',
+      purpose: '완적 열 앞면에 대어 수평 래싱 2줄 결속 시 박스 함몰 방지 및 압력 분산',
+      isHtCertified: true,
+    });
+  }
+
+  if (hasSlidingRisk) {
+    shoringBOM.push({
+      category: '목재 게이트',
+      name: '목재 도어 게이트 (ISPM 15 HT 열처리 각재)',
+      spec: '각재 90×90mm 또는 100×100mm (컨테이너 내폭 맞춤 가공)',
+      quantity: '1세트 (각재 4~5본)',
+      purpose: '컨테이너 도어 코너포스트 홈에 앵커링하여 최종 화물 밀림 물리적 차단',
+      isHtCertified: true,
+    });
+  }
+
+  const hasHigherPartial = lowDoorPalletDetails.some((p) => p.height >= 800);
+  shoringBOM.push({
+    category: '파레트 마감',
+    name: '코너보드(종이 앵글), PP 밴드 및 상단 방수 캡',
+    spec: '코너보드 50×50×4T, 스트레치 필름 데크 결속',
+    quantity: hasHigherPartial ? '코너보드 4개 + 캡 2개' : '상단 캡 2개',
+    purpose: `${lowPalletLabelsOnly.join(', ')} 데크 바닥까지 랩핑 결속 및 상단 캡 덮음${hasHigherPartial ? ' (P#38 코너보드/PP밴드 추가)' : ''}`,
+    isHtCertified: false,
+  });
+
+  shoringBOM.push({
+    category: '안전 표지',
+    name: '도착지 도어 개방 주의 경고 라벨 (Notice Sticker)',
+    spec: 'A4 방수 스티커',
+    quantity: '1매',
+    purpose: '도착지 작업자 확인용 "쇼링 있음, 개방 시 주의(Cargo Shored, Open with Care)" 문 부착',
+    isHtCertified: false,
+  });
 
   let doorShoringGuide = null;
   if (hasRisk) {
@@ -371,20 +521,43 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
 
     if (hasHeightGapRisk && hasSlidingRisk) {
       title = `도어측 화물 밀림 방지 블로킹 & 단차 쇼링 필수 [${lowPalletLabelsOnly.join(', ')}]`;
-      summary = `문 앞에 약 ${rearClearanceM}m의 빈 바닥 공간이 있고, 도어측 파레트 [${lowPalletDesc}]와의 단차가 있어 해상 운송 중 화물 후방 슬라이딩(미끄러짐) 및 문 개방 시 쏟아짐 위험이 큽니다.`;
-      actions.push(`[블로킹] 문 앞 빈 공간(${rearClearanceM}m) 밀림 방지: 목재 도어 게이트 또는 바닥 목재 블로킹(Chocking & Blocking)으로 빈 공간 고정`);
-      actions.push(`[단차 결속] 단차 공간은 빈 파레트나 필러로 높이를 맞춘 뒤 함께 결속하고, 화물 전면에 완충 판재 지지 및 수평 래싱 벨트/카고 안전망 시공`);
-      actions.push(`[에어백 주의] 듄네이지 에어백은 화물과 화물 사이 틈에만 사용하고, 컨테이너 문(Door)에 직접 닿지 않도록 시공`);
+      summary = `문 앞에 약 ${rearClearanceM}m의 빈 바닥 공간이 있고, 직전 열(높이 ${frontColMaxH}mm) 대비 도어측 파레트 [${lowPalletDesc}]와의 단차가 있어 운송 중 슬라이딩 및 문 개방 시 쏟아짐 위험이 큽니다.`;
+      actions.push(
+        `[파레트 결속] ${lowPalletLabelsOnly.join(', ')}은 랩핑을 데크 바닥까지 감고 상단 방수 캡 부착${hasHigherPartial ? ' (상대적으로 높은 P#38은 코너보드 4개 및 PP밴드 결속 추가)' : ''}`
+      );
+      actions.push(
+        `[단차면 래싱] 바로 앞 완적 열(${frontColMaxH}mm) 전면에 완충 판재(합판)를 대고, 높이 약 1,100mm와 1,450mm에 수평 래싱 2줄을 측벽 래싱 링에 결속`
+      );
+      actions.push(
+        `[낮은 파레트 톱오버] ${lowPalletLabelsOnly.join(', ')} 위로 벨트를 넘겨 양쪽 바닥 래싱 링에 거는 톱오버 래싱 시공 (전도 및 슬라이딩 동시 차단)`
+      );
+      actions.push(
+        `[문 앞 ${rearClearanceM}m 처리] 빈 목재 파레트 10~12장을 두 줄로 5~6단 스택 적재하여 문 끝에 붙이고, 낮은 파레트와의 유격(약 330mm)은 에어백(2개)으로 충진 후 코너포스트 각재 도어 게이트 1세트 시공`
+      );
+      actions.push(
+        `[수출 인증 및 마감] 문에 닿는 화물 없는지 확인 후 쇼링 사진 촬영, 외부에 '쇼링 있음, 개방 주의' 표지 부착 (수출 건은 목재 자재 ISPM 15 HT 열처리 마크 필수 확인)`
+      );
     } else if (hasSlidingRisk) {
       title = `도어측 화물 후방 미끄러짐 방지 목재 블로킹 필수 (빈 공간 ${rearClearanceM}m)`;
       summary = `컨테이너 문(Door) 앞에 약 ${rearClearanceM}m의 빈 바닥 공간이 있어, 해상 피칭이나 차량 급제동 시 화물이 문 쪽으로 밀려나는 슬라이딩(미끄러짐) 사고 위험이 있습니다.`;
-      actions.push(`[블로킹] 문 앞 빈 공간(${rearClearanceM}m) 밀림 방지: 목재 도어 게이트 또는 바닥 목재 블로킹(Chocking & Blocking)으로 빈 공간 차단 필수`);
-      actions.push(`[래싱 권장] 컨테이너 최후미 파레트 전면에 완충 판재 지지 및 수평 래싱(Horizontal Lashing) 벨트 결속 권장`);
+      actions.push(
+        `[블로킹] 문 앞 빈 공간(${rearClearanceM}m) 밀림 방지: 빈 파레트 스택 또는 목재 도어 게이트로 빈 공간 차단 필수`
+      );
+      actions.push(
+        `[래싱 권장] 최후미 파레트 전면에 완충 판재 지지 및 수평 래싱(Horizontal Lashing) 벨트 결속 권장`
+      );
+      actions.push(
+        `[수출 인증] 사용 목재 자재(빈 파레트, 각재)는 반드시 ISPM 15 HT 열처리 마크가 있는 자재 사용`
+      );
     } else {
       title = `도어 개방 시 낙하 방지 쇼링 필수 [${lowPalletLabelsOnly.join(', ')}]`;
-      summary = `문(Door) 쪽에 키가 낮은 파레트 [${lowPalletDesc}]가 배치되어, 앞쪽 높은 화물(${maxContainerPalletH}mm)과의 단차로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`;
-      actions.push(`[단차 결속] 단차 공간은 빈 파레트나 필러로 높이를 맞춘 뒤 함께 결속하고, 화물 전면에 완충 판재 지지 및 수평 래싱 벨트/카고 안전망 시공`);
-      actions.push(`[에어백 주의] 듄네이지 에어백은 화물과 화물 사이 틈에만 사용하고, 컨테이너 문(Door)에 직접 닿지 않도록 시공`);
+      summary = `문(Door) 쪽에 키가 낮은 파레트 [${lowPalletDesc}]가 배치되어, 바로 앞 완적 화물(${frontColMaxH}mm)과의 단차로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`;
+      actions.push(
+        `[단차 결속] 완적 열 전면에 완충 판재(합판)를 대고 높이 1,100mm/1,450mm에 수평 래싱 2줄 결속`
+      );
+      actions.push(
+        `[낮은 파레트 톱오버] ${lowPalletLabelsOnly.join(', ')} 위로 벨트를 넘겨 바닥 래싱 링에 톱오버 래싱 시공`
+      );
     }
 
     doorShoringGuide = {
@@ -396,13 +569,14 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       lowPalletDetails: lowDoorPalletDetails,
       lowPalletDesc,
       minHeightMm: minDoorPalletH,
-      maxHeightMm: maxContainerPalletH,
+      maxHeightMm: frontColMaxH,
       title,
       summary,
       action1: actions[0],
       action2: actions[1] || '',
       action3: actions[2] || '',
       actions,
+      bom: shoringBOM,
     };
   }
 
@@ -420,6 +594,11 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
     floorUtilizationPct,
     doorShoringGuide,
     lengthWrappingWarning,
+    lateralStatus,
+    lateralStatusText,
+    lengthStatus,
+    lengthStatusText,
+    shoringBOM,
   };
 }
 
@@ -653,7 +832,14 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
         }
         const rebuilt = [];
         const trailingPartials = [];
-        for (const [, list] of byCargoInCont.entries()) {
+        // 완적 파레트가 많은 주력 SKU 순서로 정렬하여 앞벽부터 밀착 배치 (예: 박스B 7열 -> 박스A 완적 1열 -> 문쪽 자투리 열)
+        const sortedCargoEntries = Array.from(byCargoInCont.entries()).sort((a, b) => {
+          const fullsA = a[1].filter((p) => !p.isPartial).length;
+          const fullsB = b[1].filter((p) => !p.isPartial).length;
+          if (fullsB !== fullsA) return fullsB - fullsA;
+          return b[1].length - a[1].length;
+        });
+        for (const [, list] of sortedCargoEntries) {
           const fulls = list.filter((p) => !p.isPartial);
           const parts = list.filter((p) => p.isPartial);
           fulls.sort((a, b) => b.totalWeight - a.totalWeight);
@@ -744,7 +930,8 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
       .reduce((acc, p, i) => (i % 2 === 0 ? acc + Math.max(p.width, p.length) : acc), 0);
     const needsTightFit =
       !fullFloorSpread || rawLengthSum + Math.max(0, estCols - 1) * 12 > cLength;
-    const colGapX = !fullFloorSpread ? 4 : needsTightFit ? 4 : 14;
+    // 실무 기준: 열 사이 간격 없이 앞벽부터 0mm 밀착 배치하여 잔여 길이를 도어 쪽에 집결시킴
+    const colGapX = 0;
 
     let idx = 0;
     const openTopSlots = [];
@@ -1052,8 +1239,8 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
     // 실무 적재 유형 뱃지
     c.stuffingBadge = computeStuffingBadge(c, cLength, effectiveDoubleStack, isConvenienceMode);
 
-    // 현장 적재 정밀 진단 (도어 여유고, 쇼링 여유, 유격, 도어측 낙하 방지 쇼링 가이드)
-    c.fieldDiagnostics = computeFieldDiagnostics(c, containerSpec, cLength, cWidth, cHeight);
+    // 현장 적재 정밀 진단 (도어 여유고, 쇼링 여유, 유격, 도어측 낙하 방지 쇼링 가이드, BOM)
+    c.fieldDiagnostics = computeFieldDiagnostics(c, containerSpec, cLength, cWidth, cHeight, options);
   }
 
   return {
