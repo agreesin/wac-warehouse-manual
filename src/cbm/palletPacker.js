@@ -179,12 +179,11 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         resolvedPallet.length
       );
 
-      // 비대칭으로 인한 허공 걸침 위험이 있을 경우 자동으로 'COLUMN'(수직 기둥 정렬) 추천
-      const recommendedStyle = cantileverCheck.hasRisk ? 'COLUMN' : 'INTERLOCK';
+      // 표준 적재 기본값: 코너보드 결속 및 박스 하중 지지력이 최고인 수직 기둥 정렬(COLUMN)을 기본 표준으로 적용
       const finalStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
-        (interlockLayers ? recommendedStyle : 'COLUMN');
+        'COLUMN';
 
       return {
         id: c.id || `cargo-${idx + 1}`,
@@ -344,7 +343,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const bMaxZ = bounds.maxZ + offsetZ;
 
     const itemStackStyle =
-      cargoItem.stackingStyle || (interlockLayers ? 'INTERLOCK' : 'COLUMN');
+      cargoItem.stackingStyle || 'COLUMN';
 
     if (
       itemStackStyle === 'CROSS_TIER' &&
@@ -969,12 +968,11 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         resolvedPallet.length
       );
 
-      // 비대칭 허공 걸침 위험 시 기둥식(COLUMN)을 기본 추천!
-      const recommendedStyle = cantileverCheck.hasRisk ? 'COLUMN' : 'INTERLOCK';
+      // 표준 적재 기본값: 수직 기둥 정렬(COLUMN)을 기본 표준으로 설정
       const curStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
-        (defaultInterlock ? recommendedStyle : 'COLUMN');
+        'COLUMN';
       const qty = Math.max(0, Math.floor(Number(c.quantity) || 0));
       const unitW = Math.max(0, Number(c.weight) || 0);
       const customMaxL = Number(c.maxLayers) > 0 ? Math.floor(Number(c.maxLayers)) : 999;
@@ -1039,13 +1037,9 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         if (stDef.id === 'COLUMN') {
           return {
             ...stDef,
-            label: cantileverCheck.hasRisk
-              ? '🏛️ 기둥식 수직 일자 정렬 (★ 비대칭 안전 추천)'
-              : stDef.label,
-            shortDesc: cantileverCheck.hasRisk
-              ? '1단 비대칭으로 인한 허공 걸침/무너짐을 방지하는 실무 정석 적재'
-              : stDef.shortDesc,
-            isRecommended: cantileverCheck.hasRisk,
+            label: '🏛️ 수직 기둥 정렬 (표준 권장)',
+            shortDesc: '네 모서리가 일치하여 코너보드 결속 및 박스 하중 지지력 극대화',
+            isRecommended: true,
           };
         }
         if (stDef.id === 'INTERLOCK') {
@@ -1053,10 +1047,10 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
             ...stDef,
             label: cantileverCheck.hasRisk
               ? '🧱 벽돌식 대칭 교차 (⚠️ 허공 걸침 주의)'
-              : stDef.label,
+              : '🧱 벽돌식 대칭 교차',
             shortDesc: cantileverCheck.hasRisk
               ? '비대칭 배열로 인해 짝수단 박스 일부가 허공에 뜸'
-              : stDef.shortDesc,
+              : '홀수단과 짝수단을 180° 대칭 교차하여 층간 결속',
             isWarning: cantileverCheck.hasRisk,
           };
         }

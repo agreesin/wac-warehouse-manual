@@ -617,7 +617,7 @@ export function Step2PalletResult({
               onClick={() => setShowStackingDetails((prev) => !prev)}
             >
               <span>
-                🧱 <strong>상자 쌓기 패턴 및 자세 설정</strong> (현재 AI 추천 최적 배열 적용 중)
+                🧱 <strong>상자 쌓기 패턴 및 자세 설정</strong> (현재 표준 수직 기둥 정렬 적용 중)
               </span>
               <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>
                 {showStackingDetails ? '▲ 설정 닫기' : '▼ 펼쳐서 배열/자세 변경하기'}
@@ -786,24 +786,22 @@ export function Step2PalletResult({
                                 marginBottom: '6px',
                               }}
                             >
-                              ② 층간 쌓기 방식 (교차 vs 기둥)
+                              ② 층간 쌓기 방식 (기둥식 vs 교차식)
                             </div>
-                            {activeCargoDiag.cantileverCheck?.hasRisk && (
-                              <div
-                                style={{
-                                  fontSize: '0.71rem',
-                                  color: '#fde047',
-                                  marginBottom: '6px',
-                                  padding: '4px 8px',
-                                  borderRadius: '6px',
-                                  background: 'rgba(245, 158, 11, 0.15)',
-                                  border: '1px solid rgba(245, 158, 11, 0.35)',
-                                  lineHeight: 1.4,
-                                }}
-                              >
-                                🛡️ <strong>실무 안전 진단:</strong> 1단 배열이 비대칭이어서, 층간 교차 시 박스가 공중에 뜨는 붕괴 위험을 방지하고자 <strong>[기둥식 수직 정렬]</strong>이 기본 추천되었습니다.
-                              </div>
-                            )}
+                            <div
+                              style={{
+                                fontSize: '0.71rem',
+                                color: '#cbd5e1',
+                                marginBottom: '6px',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                background: 'rgba(30, 41, 59, 0.7)',
+                                border: '1px solid rgba(148, 163, 184, 0.25)',
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              🛡️ 네 모서리가 반듯하게 일치하여 코너보드(종이 앵글) 결속 및 하중 지지력이 최고인 <strong>[수직 기둥 정렬]</strong>이 기본 표준으로 적용되어 있습니다.
+                            </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               {activeCargoDiag.stackStyleOptions.map((stOpt) => {
                                 const isSel = activeCargoDiag.currentStackStyle === stOpt.id;
@@ -949,10 +947,10 @@ export function Step2PalletResult({
           <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '8px', paddingBottom: '6px' }}>
             <div>
               <h2 style={{ color: '#fbbf24', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                📏 파레트 외곽 돌출(Overhang) 허용 설정
+                📏 파레트 외곽 돌출(Overhang) 보조 설정
               </h2>
               <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
-                파레트 외곽으로 약간 돌출 적재하여 <strong>파레트 수(40HC 소요 대수)를 줄일지</strong> 선택합니다. (컨테이너 내폭 2,352mm 2열 적재 시 안전 한계: T11 약 +25mm)
+                기본값은 파레트 규격에 맞춘 <strong>돌출 0mm (정사이즈 고수)</strong> 적재입니다. 특수한 경우 파레트 수를 절감하기 위해 보조 옵션으로 돌출을 선택할 수 있습니다.
               </p>
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -966,7 +964,7 @@ export function Step2PalletResult({
                   );
                 }}
               >
-                🔒 전 품목 0mm (정사이즈)
+                🔒 기본 정사이즈 유지 (0mm)
               </button>
               <button
                 type="button"
