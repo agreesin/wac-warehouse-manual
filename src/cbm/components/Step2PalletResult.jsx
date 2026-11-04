@@ -9,6 +9,33 @@ import { Pallet2DBlueprint } from './Pallet2DBlueprint';
 import { PalletStackingAccordion } from './PalletStackingAccordion';
 import { PalletOverhangPanel } from './PalletOverhangPanel';
 
+const PALLET_MODE_META = {
+  T11: {
+    badge: '국내 표준',
+    title: 'T11 (1100 × 1100)',
+    sub: '1,100 × 1,100 mm (국내 유통·제조)',
+    desc: '모든 품목을 T11 표준 규격으로 통일하여 적재합니다.',
+  },
+  T12: {
+    badge: '국제 표준',
+    title: 'T12 (1200 × 1000)',
+    sub: '1,200 × 1,000 mm (수출 및 범용)',
+    desc: '모든 품목을 T12 국제 규격으로 통일하여 적재합니다.',
+  },
+  EUR: {
+    badge: '유럽 규격',
+    title: 'EUR (1200 × 800)',
+    sub: '1,200 × 800 mm (유럽 EPAL 표준)',
+    desc: '모든 품목을 EUR 유럽 규격으로 통일하여 적재합니다.',
+  },
+  EXPORT_1200: {
+    badge: '수출 대형',
+    title: '1200 대형 (1200 × 1200)',
+    sub: '1,200 × 1,200 mm (대형 벌크 수출용)',
+    desc: '모든 품목을 1200 대형 규격으로 통일하여 적재합니다.',
+  },
+};
+
 export function Step2PalletResult({
   step2Ref,
   simResult,
@@ -102,8 +129,8 @@ export function Step2PalletResult({
           >
             <div className="cbm-pm-header">
               <span className="cbm-pm-badge mix-badge">추천 조합</span>
-              <strong className="cbm-pm-title">품목별 최적 사이즈 섞어 쓰기</strong>
-              <small className="cbm-pm-sub">박스별로 1100 또는 1200 최적 매칭</small>
+              <strong className="cbm-pm-title">품목별 최적 사이즈 혼용</strong>
+              <small className="cbm-pm-sub">박스별 T11 / T12 맞춤 배정</small>
             </div>
             <div className="cbm-pm-body">
               <div className="cbm-pm-stat highlight">
@@ -119,7 +146,7 @@ export function Step2PalletResult({
                 </strong>
               </div>
               <div className="cbm-pm-desc">
-                박스 크기에 맞게 T11/T12를 각각 배정하여 빈 공간을 최소화합니다.
+                박스 크기에 맞게 T11/T12를 배정하여 파레트 수량을 최소화합니다.
               </div>
             </div>
           </button>
@@ -128,6 +155,12 @@ export function Step2PalletResult({
           {simResult.palletSpecComparison?.map((spec) => {
             const isSelected = palletSelectionMode === spec.id;
             const hcEst = estimate40HcContainerNeeds(spec.totalPallets, spec.id);
+            const meta = PALLET_MODE_META[spec.id] || {
+              badge: spec.id,
+              title: spec.name,
+              sub: `${spec.width} × ${spec.length} mm`,
+              desc: `모든 품목을 ${spec.name} 단일 규격으로 통일하여 적재합니다.`,
+            };
             return (
               <button
                 key={spec.id}
@@ -136,13 +169,15 @@ export function Step2PalletResult({
                 onClick={() => setPalletSelectionMode(spec.id)}
               >
                 <div className="cbm-pm-header">
-                  <span className={`cbm-pm-badge ${spec.id === 'T11' ? 'std-badge' : ''}`}>
-                    {spec.id} {spec.id === 'T11' ? '국내표준' : spec.id === 'T12' ? '국제표준' : ''}
+                  <span
+                    className={`cbm-pm-badge ${
+                      spec.id === 'T11' ? 'std-badge' : spec.id === 'T12' ? 'int-badge' : ''
+                    }`}
+                  >
+                    {meta.badge}
                   </span>
-                  <strong className="cbm-pm-title">{spec.name}</strong>
-                  <small className="cbm-pm-sub">
-                    {spec.width} × {spec.length} mm ({spec.desc})
-                  </small>
+                  <strong className="cbm-pm-title">{meta.title}</strong>
+                  <small className="cbm-pm-sub">{meta.sub}</small>
                 </div>
                 <div className="cbm-pm-body">
                   <div className="cbm-pm-stat highlight">
@@ -157,9 +192,7 @@ export function Step2PalletResult({
                         : `${hcEst.containerCount}대 (1단 바닥 기준)`}
                     </strong>
                   </div>
-                  <div className="cbm-pm-desc">
-                    모든 품목을 {spec.name} 단일 규격으로 통일하여 적재합니다.
-                  </div>
+                  <div className="cbm-pm-desc">{meta.desc}</div>
                 </div>
               </button>
             );
@@ -203,14 +236,14 @@ export function Step2PalletResult({
                         className="cbm-color-dot"
                         style={{ background: cargo.color }}
                       />
-                      <strong>{cargo.name}</strong>
-                      <small>
-                        ({cargo.width}×{cargo.length}×{cargo.height}mm, {cargo.quantity}박스)
-                      </small>
+                      <strong className="cbm-mix-item-name">{cargo.name}</strong>
+                      <span className="cbm-mix-item-dim">
+                        {cargo.width}×{cargo.length}×{cargo.height}mm · {cargo.quantity}박스
+                      </span>
                     </div>
                     <div className="cbm-mix-item-control">
                       <select
-                        className="cbm-table-select"
+                        className="cbm-table-select cbm-mix-select"
                         value={cargo.palletSpecId || 'T11'}
                         onChange={(e) =>
                           handleCargoChange(cargo.id, 'palletSpecId', e.target.value)

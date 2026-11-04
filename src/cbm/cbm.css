@@ -738,29 +738,38 @@
 ========================================================================= */
 .cbm-pallet-mode-grid {
   display: grid;
-  grid-template-columns: 1.3fr repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1280px) {
   .cbm-pallet-mode-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .cbm-pallet-mode-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 .cbm-pallet-mode-card {
-  background: #0f172a;
+  background: #0f172a !important;
   border: 1.5px solid #334155;
   border-radius: 11px;
-  padding: 13px 15px;
+  padding: 13px 14px;
   text-align: left;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  color: #f8fafc;
+  justify-content: space-between;
+  gap: 10px;
+  color: #f8fafc !important;
   font-family: inherit;
   transition: all 0.15s ease-in-out;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .cbm-pallet-mode-card:hover {
@@ -769,15 +778,15 @@
 }
 
 .cbm-pallet-mode-card.active {
-  background: rgba(30, 58, 138, 0.25);
+  background: rgba(30, 58, 138, 0.3) !important;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 1px #3b82f6, 0 4px 16px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 1px #3b82f6, 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 
 .cbm-pallet-mode-card.mix-mode-card.active {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.18) !important;
   border-color: #f59e0b;
-  box-shadow: 0 0 0 1px #f59e0b, 0 4px 16px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 0 1px #f59e0b, 0 4px 16px rgba(245, 158, 11, 0.25);
 }
 
 /* Card Header: Badge, Title, Subtitle */
@@ -786,6 +795,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
+  width: 100%;
 }
 
 .cbm-pm-badge {
@@ -795,33 +805,40 @@
   padding: 2px 8px;
   border-radius: 999px;
   background: #1e293b;
-  color: #94a3b8;
+  color: #94a3b8 !important;
   border: 1px solid rgba(148, 163, 184, 0.25);
   line-height: 1.3;
 }
 
 .cbm-pm-badge.mix-badge {
   background: rgba(245, 158, 11, 0.22);
-  color: #fbbf24;
+  color: #fbbf24 !important;
   border-color: rgba(245, 158, 11, 0.5);
 }
 
 .cbm-pm-badge.std-badge {
   background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  color: #60a5fa !important;
   border-color: rgba(59, 130, 246, 0.45);
+}
+
+.cbm-pm-badge.int-badge {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.45);
 }
 
 .cbm-pm-title {
   font-size: 14px;
   font-weight: 800;
-  color: #f8fafc;
+  color: #f8fafc !important;
   line-height: 1.3;
+  margin: 2px 0 0 0;
 }
 
 .cbm-pm-sub {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: #94a3b8 !important;
   line-height: 1.35;
 }
 
@@ -829,23 +846,25 @@
 .cbm-pm-body {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   margin-top: auto;
+  width: 100%;
 }
 
 .cbm-pm-stat {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px;
   font-size: 12px;
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
   padding: 3px 0;
   border-bottom: 1px dashed rgba(148, 163, 184, 0.15);
 }
 
 .cbm-pm-stat span {
-  color: #94a3b8;
+  color: #94a3b8 !important;
   font-size: 11px;
   white-space: nowrap;
 }
@@ -853,24 +872,25 @@
 .cbm-pm-stat strong {
   font-size: 13px;
   font-weight: 800;
-  color: #f8fafc;
+  color: #f8fafc !important;
   text-align: right;
+  white-space: nowrap;
 }
 
 .cbm-pm-stat.highlight strong {
   font-size: 14.5px;
-  color: #38bdf8;
+  color: #38bdf8 !important;
 }
 
 .cbm-pallet-mode-card.mix-mode-card .cbm-pm-stat.highlight strong {
-  color: #fbbf24;
+  color: #fbbf24 !important;
 }
 
 .cbm-pm-desc {
   font-size: 11px;
-  color: #94a3b8;
+  color: #94a3b8 !important;
   line-height: 1.4;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 /* 40HC Floor Estimate Banner */
@@ -945,14 +965,16 @@
 }
 
 /* Multi-Pallet Mix Assignment Box */
+.cbm-mix-assigner-panel,
 .cbm-mix-assign-box {
   margin-top: 14px;
   background: #0f172a;
-  border: 1px solid #475569;
+  border: 1px solid #334155;
   border-radius: 11px;
   padding: 14px 16px;
 }
 
+.cbm-mix-panel-header,
 .cbm-mix-assign-head {
   display: flex;
   align-items: center;
@@ -964,23 +986,27 @@
   flex-wrap: wrap;
 }
 
+.cbm-mix-panel-header strong,
 .cbm-mix-assign-head strong {
   display: block;
-  font-size: 13.5px;
-  color: #fbbf24;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc !important;
   margin-bottom: 2px;
 }
 
+.cbm-mix-panel-header p,
 .cbm-mix-assign-head span {
   font-size: 12px;
-  color: #94a3b8;
+  color: #94a3b8 !important;
+  margin: 0;
 }
 
 .cbm-mix-items-grid,
 .cbm-mix-assign-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -992,9 +1018,8 @@
   border-radius: 9px;
   padding: 10px 14px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
@@ -1005,7 +1030,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  flex: 1 1 auto;
+  width: 100%;
 }
 
 .cbm-color-dot {
@@ -1016,37 +1041,53 @@
   flex-shrink: 0;
 }
 
+.cbm-mix-item-name,
 .cbm-mix-item-info strong {
-  font-size: 13px;
-  color: #f8fafc;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc !important;
+  white-space: nowrap;
+}
+
+.cbm-mix-item-dim,
+.cbm-mix-item-info small {
+  font-size: 11.5px;
+  color: #94a3b8 !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.cbm-mix-item-info small {
-  font-size: 11.5px;
-  color: #94a3b8;
-  white-space: nowrap;
 }
 
 .cbm-mix-item-control {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+}
+
+.cbm-mix-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: #0f172a !important;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #f8fafc !important;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
 .cbm-mix-layer-badge {
+  flex-shrink: 0;
   background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
+  color: #38bdf8 !important;
   font-size: 11.5px;
   font-weight: 700;
   padding: 4px 8px;
   border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 /* Weight & Pallet Breakdown Table */
