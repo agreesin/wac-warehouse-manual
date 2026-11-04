@@ -42,6 +42,15 @@ export function Step2PalletResult({
   simResult,
   palletSelectionMode,
   setPalletSelectionMode,
+  policyBasePallet = 'T11',
+  setPolicyBasePallet,
+  policyAllowedAlternates = ['T12'],
+  setPolicyAllowedAlternates,
+  policyOverhang = 0,
+  setPolicyOverhang,
+  policyMinEfficiency = 70,
+  setPolicyMinEfficiency,
+  companyPolicyResult,
   customMixComparison,
   cargos,
   setCargos,
@@ -68,7 +77,7 @@ export function Step2PalletResult({
       const pCount = customMixComparison?.totalPallets || simResult.summary.totalPallets;
       return {
         currentModePallets: pCount,
-        currentModeLabel: '품목별 복합 파레트 섞어 쓰기',
+        currentModeLabel: '회사 기준안 (품목별 맞춤 혼용)',
         currentModeHcEst: estimate40HcContainerNeeds(pCount, 'CUSTOM_MIX'),
       };
     }
@@ -83,6 +92,16 @@ export function Step2PalletResult({
 
   const mixPalletCount = customMixComparison?.totalPallets || simResult.summary.totalPallets;
   const mixHcEst = estimate40HcContainerNeeds(mixPalletCount, 'CUSTOM_MIX');
+
+  // 단일 규격 중 파레트 수 최소인 '최소 파레트안' 추출 및 컨테이너 대수 차이 계산
+  const minPalletSpec = useMemo(() => {
+    if (!simResult?.palletSpecComparison?.length) return null;
+    return [...simResult.palletSpecComparison].sort((a, b) => a.totalPallets - b.totalPallets)[0];
+  }, [simResult]);
+
+  const companyContainerCount = simResult.summary.totalContainers;
+  const minSpecContainerCount = minPalletSpec?.containerCount || minPalletSpec?.hcEstimate?.containerCount || 0;
+  const containerDiff = companyContainerCount - minSpecContainerCount;
 
   return (
     <section ref={step2Ref} className="cbm-step-section">
@@ -119,8 +138,113 @@ export function Step2PalletResult({
           <span className="cbm-badge">카드를 클릭하면 즉시 적용됩니다</span>
         </div>
 
+        {/* 파레트 운영 기준 설정 (회사 기준안 설정 영역) */}
+        <div className="cbm-policy-config-panel">
+          <div className="cbm-policy-config-head">
+            <div>
+              <strong>파레트 운영 기준 설정 (회사 기준안)</strong>
+              <p>기본 파레트 유지 원칙을 적용하며, 층 적재 효율이 기준에 미달하고 대체 규격 적용 시 파레트 수가 실제로 줄어드는 품목만 전환합니다.</p>
+            </div>
+            <button
+              type="button"
+              className="cbm-btn-xs primary"
+              onClick={handleAutoRecommendPalletMix}
+            >
+              회사 기준안 적용
+            </button>
+          </div>
+          <div className="cbm-policy-config-grid">
+            {/* 1. 기본 파레트 */}
+            <div className="cbm-policy-field">
+              <label className="cbm-policy-label">기본 파레트</label>
+              <select
+                className="cbm-table-select cbm-policy-select"
+                value={policyBasePallet}
+                onChange={(e) => {
+                  const newBase = e.target.value;
+                  if (setPolicyBasePallet) setPolicyBasePallet(newBase);
+                  if (policyAllowedAlternates.includes(newBase) && setPolicyAllowedAlternates) {
+                    setPolicyAllowedAlternates(policyAllowedAlternates.filter((id) => id !== newBase));
+                  }
+                }}
+              >
+                <option value="T11">T11 국내표준 (1100×1100)</option>
+                <option value="T12">T12 국제규격 (1200×1000)</option>
+                <option value="EUR">EUR 유럽규격 (1200×800)</option>
+                <option value="EXPORT_1200">1200 대형 (1200×1200)</option>
+              </select>
+            </div>
+
+            {/* 2. 대체 허용 규격 (복수 선택) */}
+            <div className="cbm-policy-field">
+              <label className="cbm-policy-label">대체 허용 규격 (복수 선택)</label>
+              <div className="cbm-policy-check-group">
+                {['T11', 'T12', 'EUR', 'EXPORT_1200']
+                  .filter((id) => id !== policyBasePallet)
+                  .map((id) => {
+                    const isChecked = policyAllowedAlternates.includes(id);
+                    return (
+                      <label key={id} className="cbm-policy-check-label">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (!setPolicyAllowedAlternates) return;
+                            if (e.target.checked) {
+                              setPolicyAllowedAlternates([...policyAllowedAlternates, id]);
+                            } else {
+                              setPolicyAllowedAlternates(policyAllowedAlternates.filter((x) => x !== id));
+                            }
+                          }}
+                        />
+                        <span>{id}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* 3. 허용 돌출 (mm) */}
+            <div className="cbm-policy-field">
+              <label className="cbm-policy-label">허용 돌출</label>
+              <div className="cbm-policy-input-box">
+                <input
+                  type="number"
+                  min={0}
+                  max={150}
+                  step={5}
+                  value={policyOverhang}
+                  onChange={(e) => setPolicyOverhang && setPolicyOverhang(Math.max(0, Number(e.target.value) || 0))}
+                  className="cbm-policy-number-input"
+                />
+                <span className="cbm-policy-unit">mm</span>
+              </div>
+            </div>
+
+            {/* 4. 전환 기준 층 적재 효율 (%) */}
+            <div className="cbm-policy-field">
+              <label className="cbm-policy-label">전환 기준 층 적재 효율</label>
+              <div className="cbm-policy-input-box">
+                <input
+                  type="number"
+                  min={10}
+                  max={95}
+                  step={1}
+                  value={policyMinEfficiency}
+                  onChange={(e) =>
+                    setPolicyMinEfficiency &&
+                    setPolicyMinEfficiency(Math.max(10, Math.min(100, Number(e.target.value) || 70)))
+                  }
+                  className="cbm-policy-number-input"
+                />
+                <span className="cbm-policy-unit">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="cbm-pallet-mode-grid">
-          {/* Card 0: Multi-Pallet Mix Mode (여러 파레트 사이즈 섞어 쓰기) */}
+          {/* Card 0: 회사 기준안 Mode */}
           <button
             type="button"
             className={`cbm-pallet-mode-card mix-mode-card ${
@@ -129,9 +253,9 @@ export function Step2PalletResult({
             onClick={() => setPalletSelectionMode('CUSTOM_MIX')}
           >
             <div className="cbm-pm-header">
-              <span className="cbm-pm-badge mix-badge">추천 조합</span>
-              <strong className="cbm-pm-title">품목별 최적 사이즈 혼용</strong>
-              <small className="cbm-pm-sub">박스별 T11 / T12 맞춤 배정</small>
+              <span className="cbm-pm-badge mix-badge">회사 기준안</span>
+              <strong className="cbm-pm-title">회사 기준안</strong>
+              <small className="cbm-pm-sub">기본 {policyBasePallet} 유지 · 기준 미달만 대체</small>
             </div>
             <div className="cbm-pm-body">
               <div className="cbm-pm-stat highlight">
@@ -146,8 +270,21 @@ export function Step2PalletResult({
                     : `${simResult.summary.totalContainers}대 (1단 바닥 기준)`}
                 </strong>
               </div>
+              {minPalletSpec && (
+                <div className={`cbm-pm-container-diff ${containerDiff !== 0 ? 'warn-diff' : 'match-diff'}`}>
+                  {containerDiff !== 0 ? (
+                    <span>
+                      최소 파레트안({minPalletSpec.name} {minPalletSpec.totalPallets}PLT) 대비 컨테이너 {Math.abs(containerDiff)}대 {containerDiff > 0 ? '추가' : '절감'}
+                    </span>
+                  ) : (
+                    <span>
+                      최소 파레트안({minPalletSpec.name} {minPalletSpec.totalPallets}PLT)과 동일한 컨테이너 {companyContainerCount}대 유지
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="cbm-pm-desc">
-                박스 크기에 맞게 T11/T12를 배정하여 파레트 수량을 최소화합니다.
+                기본 파레트 유지, 기준 미달 품목만 대체 규격 적용
               </div>
             </div>
           </button>
@@ -200,20 +337,43 @@ export function Step2PalletResult({
           })}
         </div>
 
+        {/* 회사 기준안 품목별 판정 사유 패널 */}
+        <div className="cbm-policy-decisions-panel">
+          <div className="cbm-policy-decisions-head">
+            <strong className="cbm-policy-decisions-title">회사 기준안 품목별 규격 판정 사유</strong>
+            <span className="cbm-policy-decisions-sub">
+              기본 {policyBasePallet} 유지 원칙 · 층 효율 {policyMinEfficiency}% 미달 및 수량 절감 품목만 대체 규격 적용
+            </span>
+          </div>
+          <div className="cbm-policy-decisions-list">
+            {companyPolicyResult?.decisions?.map((d) => (
+              <div
+                key={d.cargoId}
+                className={`cbm-policy-decision-item ${d.isAlternate ? 'is-switched' : 'is-maintained'}`}
+              >
+                <span className={`cbm-policy-status-badge ${d.isAlternate ? 'switched' : 'maintained'}`}>
+                  {d.isAlternate ? `${d.selectedSpecId} 전환` : `${d.selectedSpecId} 유지`}
+                </span>
+                <span className="cbm-policy-reason-text">{d.reason}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Multi-Pallet Mix Detailed SKU Assigner */}
         {palletSelectionMode === 'CUSTOM_MIX' && (
           <div className="cbm-mix-assigner-panel">
             <div className="cbm-mix-panel-header">
               <div>
                 <strong>품목별 파레트 규격 개별 매칭</strong>
-                <p>각 박스 크기에 맞는 파레트 규격을 직접 변경하거나 최적 매칭 버튼을 누르세요.</p>
+                <p>각 박스 크기에 맞는 파레트 규격을 직접 변경하거나 회사 기준안 적용 버튼을 누르세요.</p>
               </div>
               <button
                 type="button"
                 className="cbm-btn-xs primary"
                 onClick={handleAutoRecommendPalletMix}
               >
-                최적 규격 자동 매칭
+                회사 기준안 적용
               </button>
             </div>
             <div className="cbm-mix-items-grid">

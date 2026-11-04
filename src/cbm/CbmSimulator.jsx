@@ -6,6 +6,7 @@ import {
   DEFAULT_CARGOS,
   runFullSimulation,
   packCargosIntoPallets,
+  evaluateCompanyPolicy,
   autoRecommendPalletSpecs,
 } from './packingEngine';
 import {
@@ -84,6 +85,13 @@ export function CbmSimulator() {
   // =========================================================================
   // palletSelectionMode: 'T11' | 'T12' | 'EUR' | 'EXPORT_1200' | 'CUSTOM_MIX'
   const [palletSelectionMode, setPalletSelectionMode] = useState(() => savedState?.palletSelectionMode || 'CUSTOM_MIX');
+  
+  // 파레트 운영 기준 (회사 기준안 설정)
+  const [policyBasePallet, setPolicyBasePallet] = useState(() => savedState?.policyBasePallet || 'T11');
+  const [policyAllowedAlternates, setPolicyAllowedAlternates] = useState(() => savedState?.policyAllowedAlternates || ['T12']);
+  const [policyOverhang, setPolicyOverhang] = useState(() => savedState?.policyOverhang ?? 0);
+  const [policyMinEfficiency, setPolicyMinEfficiency] = useState(() => savedState?.policyMinEfficiency ?? 70);
+
   const [selectedPalletIdx, setSelectedPalletIdx] = useState(0);
   const [palletVisibleStep, setPalletVisibleStep] = useState(100);
   const [isPalletPlaying, setIsPalletPlaying] = useState(false);
@@ -204,6 +212,25 @@ export function CbmSimulator() {
     optimizeCoG,
   ]);
 
+  // 회사 기준안(Company Policy) 자동 판정 결과
+  const companyPolicyResult = useMemo(() => {
+    return evaluateCompanyPolicy({
+      cargos,
+      palletConfig,
+      basePalletId: policyBasePallet,
+      allowedAlternates: policyAllowedAlternates,
+      allowedOverhang: policyOverhang,
+      minEfficiency: policyMinEfficiency,
+    });
+  }, [
+    cargos,
+    palletConfig,
+    policyBasePallet,
+    policyAllowedAlternates,
+    policyOverhang,
+    policyMinEfficiency,
+  ]);
+
   // Custom Mix result count for comparison card in Step 2 (reuses simResult when CUSTOM_MIX is active)
   const customMixComparison = useMemo(() => {
     if (!step2Unlocked || !simResult) return null;
@@ -278,6 +305,10 @@ export function CbmSimulator() {
         overhang,
         unitMode,
         palletSelectionMode,
+        policyBasePallet,
+        policyAllowedAlternates,
+        policyOverhang,
+        policyMinEfficiency,
         selectedContainerId,
         stuffingStrategy,
         fullFloorSpread,
@@ -299,6 +330,10 @@ export function CbmSimulator() {
     overhang,
     unitMode,
     palletSelectionMode,
+    policyBasePallet,
+    policyAllowedAlternates,
+    policyOverhang,
+    policyMinEfficiency,
     selectedContainerId,
     stuffingStrategy,
     fullFloorSpread,
@@ -424,6 +459,10 @@ export function CbmSimulator() {
     setUnitMode('mm');
     setFullFloorSpread(true);
     setPalletSelectionMode('CUSTOM_MIX');
+    setPolicyBasePallet('T11');
+    setPolicyAllowedAlternates(['T12']);
+    setPolicyOverhang(0);
+    setPolicyMinEfficiency(70);
     setSelectedContainerId('40FT_HC');
     setStuffingStrategy('convenience');
     setOptimizeCoG(true);
@@ -436,13 +475,19 @@ export function CbmSimulator() {
   };
 
   const handleAutoRecommendPalletMix = () => {
-    const recommended = autoRecommendPalletSpecs(cargos, overhang);
-    setCargos(recommended);
+    const policyResult = evaluateCompanyPolicy({
+      cargos,
+      palletConfig,
+      basePalletId: policyBasePallet,
+      allowedAlternates: policyAllowedAlternates,
+      allowedOverhang: policyOverhang,
+      minEfficiency: policyMinEfficiency,
+    });
+    setCargos(policyResult.assignedCargos);
     setPalletSelectionMode('CUSTOM_MIX');
     setUploadNotice({
       type: 'success',
-      message:
-        '각 화물의 가로·세로 치수를 분석하여 돌출 없이 가장 효율적인 파레트 사이즈(1100×1100 / 1200×1000)를 품목별로 자동 매칭했습니다.',
+      message: `회사 기준안이 적용되었습니다. (기본 규격: ${policyBasePallet}, 전환 기준 효율: ${policyMinEfficiency}%)`,
     });
   };
 
@@ -738,6 +783,15 @@ export function CbmSimulator() {
           simResult={simResult}
           palletSelectionMode={palletSelectionMode}
           setPalletSelectionMode={setPalletSelectionMode}
+          policyBasePallet={policyBasePallet}
+          setPolicyBasePallet={setPolicyBasePallet}
+          policyAllowedAlternates={policyAllowedAlternates}
+          setPolicyAllowedAlternates={setPolicyAllowedAlternates}
+          policyOverhang={policyOverhang}
+          setPolicyOverhang={setPolicyOverhang}
+          policyMinEfficiency={policyMinEfficiency}
+          setPolicyMinEfficiency={setPolicyMinEfficiency}
+          companyPolicyResult={companyPolicyResult}
           customMixComparison={customMixComparison}
           cargos={cargos}
           setCargos={setCargos}

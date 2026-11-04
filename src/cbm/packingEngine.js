@@ -29,6 +29,7 @@ import {
 import {
   computePalletLocalCoG,
   packCargosIntoPallets,
+  evaluateCompanyPolicy,
   autoRecommendPalletSpecs,
   analyzeOverhangDiagnostics,
   analyzeCargoStackingOptions,
@@ -54,6 +55,7 @@ export {
   describeLayerOrientation,
   computePalletLocalCoG,
   packCargosIntoPallets,
+  evaluateCompanyPolicy,
   autoRecommendPalletSpecs,
   analyzeOverhangDiagnostics,
   analyzeCargoStackingOptions,

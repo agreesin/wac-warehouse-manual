@@ -1,5 +1,6 @@
 // Step 2: 파레트 적재 시뮬레이션, 돌출(Overhang) 사후 자동 감지 및 상자 적재 방식(패턴/교차/자세) 비교 분석
 import {
+  PALLET_PRESETS,
   CARGO_COLORS,
   PATTERN_DEFS,
   STACK_STYLE_DEFS,
@@ -799,31 +800,169 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
 }
 
 /**
- * 품목별 최적 파레트 규격(T11 1100x1100 vs T12 1200x1000) 자동 추천
+ * 회사 기준안(Company Policy) 기반 파레트 규격 자동 판정
+ * 1. 기본 파레트에 허용 돌출 이내로 적재
+ * 2. 기본 파레트 바닥 크기 초과 등 적재 불가 시 대체 규격으로 전환
+ * 3. 층 적재 효율 < minEfficiency이고 대체 규격 중 파레트 수가 실제로 줄어들 때만 그 규격으로 전환 (여러 개면 파레트 수 최소인 것)
+ * 4. 그 외에는 기본 파레트 유지
  */
-export function autoRecommendPalletSpecs(cargos, overhang = 0) {
-  return cargos.map((c) => {
-    const t11Count = computeBest2DLayer(
-      1100 + overhang,
-      1100 + overhang,
-      c.width,
-      c.length,
-      c.allowRotate !== false
-    ).length;
-    const t12Count = computeBest2DLayer(
-      1200 + overhang,
-      1000 + overhang,
-      c.width,
-      c.length,
-      c.allowRotate !== false
-    ).length;
+export function evaluateCompanyPolicy({
+  cargos,
+  palletConfig = {},
+  basePalletId = 'T11',
+  allowedAlternates = ['T12'],
+  allowedOverhang = 0,
+  minEfficiency = 70,
+  options = {},
+}) {
+  const baseSpec = PALLET_PRESETS[basePalletId] || PALLET_PRESETS.T11;
+  const baseW = baseSpec.width;
+  const baseL = baseSpec.length;
+  const baseArea = baseW * baseL;
 
-    const bestSpec = t12Count > t11Count ? 'T12' : 'T11';
+  const validAlternates = (Array.isArray(allowedAlternates) ? allowedAlternates : [allowedAlternates])
+    .filter((id) => id !== basePalletId && PALLET_PRESETS[id]);
+  const alternateSpecs = validAlternates.map((id) => PALLET_PRESETS[id]);
+
+  const decisions = cargos.map((cargo) => {
+    // 1. 기본 파레트 1층 배치 및 효율
+    const baseLayer = computeBest2DLayer(
+      baseW + allowedOverhang,
+      baseL + allowedOverhang,
+      cargo.width,
+      cargo.length,
+      cargo.allowRotate !== false
+    );
+    const baseBoxCount = baseLayer.length;
+    const boxFloorArea = (Number(cargo.width) || 0) * (Number(cargo.length) || 0);
+    const baseFloorAreaSum = baseBoxCount * boxFloorArea;
+    const baseEfficiency = baseArea > 0 ? Number(((baseFloorAreaSum / baseArea) * 100).toFixed(1)) : 0;
+
+    // 기본 파레트 적재 결과
+    const baseRes = packCargosIntoPallets(
+      [{ ...cargo, palletSpecId: basePalletId }],
+      { ...palletConfig, width: baseW, length: baseL },
+      { ...options, overhang: allowedOverhang }
+    );
+    const basePalletCount = baseRes.pallets.length;
+
+    // 2. 대체 허용 규격별 적재 계산
+    const altEvaluations = alternateSpecs
+      .map((altSpec) => {
+        const altLayer = computeBest2DLayer(
+          altSpec.width + allowedOverhang,
+          altSpec.length + allowedOverhang,
+          cargo.width,
+          cargo.length,
+          cargo.allowRotate !== false
+        );
+        const altBoxCount = altLayer.length;
+        const altArea = altSpec.width * altSpec.length;
+        const altFloorAreaSum = altBoxCount * boxFloorArea;
+        const altEff = altArea > 0 ? Number(((altFloorAreaSum / altArea) * 100).toFixed(1)) : 0;
+        const altRes = packCargosIntoPallets(
+          [{ ...cargo, palletSpecId: altSpec.id }],
+          { ...palletConfig, width: altSpec.width, length: altSpec.length },
+          { ...options, overhang: allowedOverhang }
+        );
+        return {
+          id: altSpec.id,
+          name: altSpec.name,
+          width: altSpec.width,
+          length: altSpec.length,
+          boxCount: altBoxCount,
+          efficiency: altEff,
+          palletCount: altRes.pallets.length,
+        };
+      })
+      .filter((a) => a.boxCount > 0);
+
+    let selectedSpecId = basePalletId;
+    let reason = '';
+
+    // [품목별 판정 4] 기본 파레트에 아예 안 들어가는 경우
+    if (baseBoxCount === 0) {
+      if (altEvaluations.length > 0) {
+        altEvaluations.sort((a, b) => a.palletCount - b.palletCount || b.efficiency - a.efficiency);
+        const bestAlt = altEvaluations[0];
+        selectedSpecId = bestAlt.id;
+        reason = `${cargo.name}: 기본 ${basePalletId} 적재 불가로 ${bestAlt.id} 전환 (${bestAlt.palletCount} PLT)`;
+      } else {
+        selectedSpecId = basePalletId;
+        reason = `${cargo.name}: 기본 및 대체 규격 모두 바닥 크기 초과`;
+      }
+    }
+    // [품목별 판정 2] 층 적재 효율 < minEfficiency
+    else if (baseEfficiency < minEfficiency) {
+      const effectiveAlts = altEvaluations.filter((a) => a.palletCount < basePalletCount);
+      if (effectiveAlts.length > 0) {
+        effectiveAlts.sort((a, b) => a.palletCount - b.palletCount || b.efficiency - a.efficiency);
+        const bestAlt = effectiveAlts[0];
+        selectedSpecId = bestAlt.id;
+        reason = `${cargo.name}: ${basePalletId} 효율 ${Math.round(baseEfficiency)}%, ${bestAlt.id} 전환 시 ${basePalletCount}에서 ${bestAlt.palletCount} PLT`;
+      } else {
+        selectedSpecId = basePalletId;
+        const altNames = alternateSpecs.map((s) => s.id).join('/');
+        const altCountInfo =
+          altEvaluations.length > 0 ? `${altNames}도 ${basePalletCount} PLT라 줄지 않음` : '대체 규격 없음';
+        reason = `${cargo.name}: ${basePalletId} 효율 ${Math.round(baseEfficiency)}%로 기준 미달이지만 ${altCountInfo}`;
+      }
+    }
+    // [품목별 판정 1, 3] 층 적재 효율 >= minEfficiency: 기본 유지
+    else {
+      selectedSpecId = basePalletId;
+      const betterAlts = altEvaluations.filter((a) => a.palletCount < basePalletCount);
+      if (betterAlts.length > 0) {
+        betterAlts.sort((a, b) => a.palletCount - b.palletCount);
+        const bestAlt = betterAlts[0];
+        const savings = basePalletCount - bestAlt.palletCount;
+        reason = `${cargo.name}: ${basePalletId} 효율 ${Math.round(baseEfficiency)}%로 유지 (${bestAlt.id} 사용 시 ${savings} PLT 절감 가능)`;
+      } else {
+        reason = `${cargo.name}: ${basePalletId} 효율 ${Math.round(baseEfficiency)}%로 유지`;
+      }
+    }
+
     return {
-      ...c,
-      palletSpecId: bestSpec,
+      cargoId: cargo.id,
+      cargoName: cargo.name,
+      selectedSpecId,
+      isAlternate: selectedSpecId !== basePalletId,
+      baseEfficiency,
+      basePalletCount,
+      reason,
     };
   });
+
+  const assignedCargos = cargos.map((c) => {
+    const dec = decisions.find((d) => d.cargoId === c.id);
+    return {
+      ...c,
+      palletSpecId: dec ? dec.selectedSpecId : basePalletId,
+    };
+  });
+
+  return {
+    basePalletId,
+    allowedAlternates: validAlternates,
+    allowedOverhang,
+    minEfficiency,
+    decisions,
+    assignedCargos,
+  };
+}
+
+/**
+ * 품목별 최적 파레트 규격 자동 추천 (회사 기준안 기본값 연계)
+ */
+export function autoRecommendPalletSpecs(cargos, overhang = 0) {
+  const policy = evaluateCompanyPolicy({
+    cargos,
+    basePalletId: 'T11',
+    allowedAlternates: ['T12'],
+    allowedOverhang: overhang,
+    minEfficiency: 70,
+  });
+  return policy.assignedCargos;
 }
 
 /**
