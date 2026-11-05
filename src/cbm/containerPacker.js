@@ -93,17 +93,17 @@ export function analyzeContainerCoG(container) {
   // IMO/ILO/UNECE CTU Code 권고 및 현장 안전 관리 기준:
   // 1. 전후 무게중심: CTU Code 권고는 컨테이너 길이 중앙(L/2)에서 ±5% 이내 안전, ±5~10% 주의, ±10% 초과 위험
   //    (보조 경험칙: 전·후반부 중량비 각 60% 이하)
-  // 2. 좌우 횡방향 균형: 사내 기준(설정값)에 따라 좌우 중심 편차 ±70mm 이내
+  // 2. 좌우 횡방향 균형: 권장 기준(가정값)에 따라 좌우 중심 편차 ±70mm 이내
   const absOffsetXPct = (Math.abs(offsetXFromContainerCenter) / cL) * 100;
   const isCtuLongitudinalSafe = absOffsetXPct <= 5.0; // ±5% 이내 안전
   const isCtuLongitudinalWarning = absOffsetXPct > 5.0 && absOffsetXPct <= 10.0; // ±5~10% 주의
   const isCtuLongitudinalDanger = absOffsetXPct > 10.0; // ±10% 초과 위험
-  const isLateralSafe = Math.abs(offsetZFromCenter) <= 70; // 사내 기준 ±70mm 이내
+  const isLateralSafe = Math.abs(offsetZFromCenter) <= 70; // 권장 기준 ±70mm 이내
 
   const limit5PctMm = Math.round(cL * 0.05);
   const limit10PctMm = Math.round(cL * 0.10);
   const longitudinalCriteriaText = `CTU Code 권고: 길이 중앙 ±5%(약 ±${limit5PctMm.toLocaleString()}mm) 이내 (현재 ${absOffsetXPct.toFixed(1)}% 편차, ${Math.abs(offsetXFromContainerCenter).toLocaleString()}mm 치우침 · 보조지표: 전 ${frontRatio}% : 후 ${rearRatio}%)`;
-  const lateralCriteriaText = `사내 기준 (설정값): 좌우 중심 편차 ±70mm 이내 (현재 ${Math.abs(offsetZFromCenter)}mm 편차, 좌 ${leftRatio}% : 우 ${rightRatio}%)`;
+  const lateralCriteriaText = `권장 기준 (가정값): 좌우 중심 편차 ±70mm 이내 (현재 ${Math.abs(offsetZFromCenter)}mm 편차, 좌 ${leftRatio}% : 우 ${rightRatio}%)`;
 
   let axleLoadNote = '';
   if (totalMass <= 10000) {
@@ -129,17 +129,17 @@ export function analyzeContainerCoG(container) {
       : `우측 ${Math.abs(offsetZFromCenter)}mm 편차`;
 
   let status = 'SAFE';
-  let statusText = '안전 (CTU Code 권고 ±5% 및 사내 기준 충족)';
+  let statusText = '안전 (CTU Code 권고 ±5% 및 좌우 균형 양호)';
 
   if (!isCtuLongitudinalSafe && !isLateralSafe) {
     status = isCtuLongitudinalDanger ? 'DANGER' : 'WARN';
-    statusText = `${isCtuLongitudinalDanger ? '위험' : '주의'} (전후 편차 ${absOffsetXPct.toFixed(1)}%로 ±5% 초과 · 좌우 편차 ${Math.abs(offsetZFromCenter)}mm로 사내 기준 ±70mm 초과)`;
+    statusText = `${isCtuLongitudinalDanger ? '위험' : '주의'} (전후 편차 ${absOffsetXPct.toFixed(1)}%로 ±5% 초과 · 좌우 편차 ${Math.abs(offsetZFromCenter)}mm로 권장 기준 ±70mm 초과)`;
   } else if (!isCtuLongitudinalSafe) {
     status = isCtuLongitudinalDanger ? 'DANGER' : 'WARN';
     statusText = `${isCtuLongitudinalDanger ? '위험 (CTU Code 권고 ±10% 초과 — 위험)' : '주의 (CTU Code 권고: 길이 중앙 ±5% 초과 및 ±10% 이내)'} — 중앙 편차 ${Math.abs(offsetXFromContainerCenter).toLocaleString()}mm (${absOffsetXPct.toFixed(1)}%)`;
   } else if (!isLateralSafe) {
     status = 'WARN';
-    statusText = `주의 (사내 기준 ±70mm 초과 — 현재 좌우 편차 ${Math.abs(offsetZFromCenter)}mm)`;
+    statusText = `주의 (권장 기준 ±70mm 초과 — 현재 좌우 편차 ${Math.abs(offsetZFromCenter)}mm)`;
   }
 
   return {
