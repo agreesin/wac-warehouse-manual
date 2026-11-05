@@ -46,27 +46,29 @@ export function PalletOverhangPanel({
           >
             돌출 없음 (0mm)
           </button>
-          <button
-            type="button"
-            className="cbm-btn-xs primary"
-            style={{ background: '#d97706', borderColor: '#f59e0b' }}
-            onClick={() => {
-              const oppMap = new Map(
-                simResult.overhangDiagnostics.map((d) => [
-                  d.cargoId,
-                  d.opportunity ? d.opportunity.requiredOverhangMm : 0,
-                ])
-              );
-              setCargos((prev) =>
-                prev.map((c) => ({
-                  ...c,
-                  allowedOverhang: oppMap.get(c.id) || 0,
-                }))
-              );
-            }}
-          >
-            감지된 돌출 일괄 적용
-          </button>
+          {simResult.overhangDiagnostics.some((d) => d.opportunity && d.opportunity.isViable) && (
+            <button
+              type="button"
+              className="cbm-btn-xs primary"
+              style={{ background: '#d97706', borderColor: '#f59e0b' }}
+              onClick={() => {
+                const oppMap = new Map(
+                  simResult.overhangDiagnostics.map((d) => [
+                    d.cargoId,
+                    d.opportunity && d.opportunity.isViable ? d.opportunity.requiredOverhangMm : 0,
+                  ])
+                );
+                setCargos((prev) =>
+                  prev.map((c) => ({
+                    ...c,
+                    allowedOverhang: oppMap.get(c.id) || 0,
+                  }))
+                );
+              }}
+            >
+              감지된 돌출 일괄 적용
+            </button>
+          )}
         </div>
       </div>
 
@@ -76,11 +78,14 @@ export function PalletOverhangPanel({
           const t12Alt = diag.t12Alternative;
           const isOvApplied = diag.appliedOverhang > 0 && diag.isOverhangActive;
           const cFit = diag.containerFit;
+          const isImpossible = isOvApplied && Boolean(cFit?.isCurrentOverhangImpossible);
 
           return (
             <div
               key={diag.cargoId}
-              className={`cbm-overhang-row ${isOvApplied ? 'active-overhang' : ''}`}
+              className={`cbm-overhang-row ${isOvApplied ? 'active-overhang' : ''} ${
+                isImpossible ? 'overhang-impossible-row' : ''
+              }`}
             >
               {/* 좌측 품목 기본 정보 */}
               <div className="cbm-overhang-row-left">
@@ -103,19 +108,27 @@ export function PalletOverhangPanel({
               <div className="cbm-overhang-row-mid" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                 <div>
                   {isOvApplied ? (
-                    <span style={{ color: '#fbbf24', fontWeight: 700 }}>
-                      [돌출 적용] {diag.current.ovDirectionText || `+${diag.current.maxOverhangMm}mm`} ({diag.current.totalPallets} PLT)
-                    </span>
-                  ) : opp && opp.savedPallets > 0 ? (
-                    opp.isViable ? (
-                      <span style={{ color: '#fde68a' }}>
-                        {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 <strong>{opp.savedPallets} PLT 절감 가능</strong> ({diag.strict.totalPallets} → {opp.totalPallets} PLT)
-                      </span>
+                    isImpossible ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ color: '#ef4444', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ background: '#ef4444', color: '#fff', fontSize: '10px', padding: '1px 6px', borderRadius: '3px', fontWeight: 800 }}>
+                            현장 불가
+                          </span>
+                          [돌출 +{diag.current.maxOverhangMm}mm 설정] {cFit?.impossibleReason || '현장 적입 불가'}
+                        </span>
+                        <span style={{ color: '#fca5a5', fontSize: '0.73rem' }}>
+                          ※ 허용한도(40mm)를 초과하거나 유격이 부족하여 적입 불가합니다. 돌출을 낮추거나 1200×1000 규격으로 변경하십시오.
+                        </span>
+                      </div>
                     ) : (
-                      <span style={{ color: '#f87171' }}>
-                        {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 {opp.savedPallets} PLT 절감 가능하나 <strong>[{opp.reason || '컨테이너 허용한도 초과로 현장 불가'}]</strong>
+                      <span style={{ color: '#fbbf24', fontWeight: 700 }}>
+                        [돌출 적용] {diag.current.ovDirectionText || `+${diag.current.maxOverhangMm}mm`} ({diag.current.totalPallets} PLT)
                       </span>
                     )
+                  ) : opp && opp.savedPallets > 0 ? (
+                    <span style={{ color: '#fde68a' }}>
+                      {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 <strong>{opp.savedPallets} PLT 절감 가능</strong> ({diag.strict.totalPallets} → {opp.totalPallets} PLT)
+                    </span>
                   ) : (
                     <span style={{ color: '#94a3b8' }}>
                       정사이즈(0mm) 유지 (돌출 절감 효과 없음)
@@ -123,7 +136,7 @@ export function PalletOverhangPanel({
                   )}
                 </div>
                 {/* 래핑 공차 및 컨테이너 벽면 간섭 실시간 진단 */}
-                {cFit && (isOvApplied || (opp && opp.savedPallets > 0 && opp.requiredOverhangMm > 25)) && (
+                {cFit && isOvApplied && !isImpossible && (
                   <div style={{ fontSize: '0.71rem', color: cFit.riskLevel === 'danger' ? '#fca5a5' : '#cbd5e1' }}>
                     {cFit.warningText}
                   </div>
@@ -215,12 +228,13 @@ export function PalletOverhangPanel({
                       width: '46px',
                       padding: '2px 4px',
                       borderRadius: '4px',
-                      border: '1px solid #475569',
-                      background: '#0f172a',
-                      color: '#f8fafc',
+                      border: isImpossible ? '1px solid #ef4444' : '1px solid #475569',
+                      background: isImpossible ? 'rgba(239, 68, 68, 0.2)' : '#0f172a',
+                      color: isImpossible ? '#fca5a5' : '#f8fafc',
                       fontSize: '0.74rem',
                       textAlign: 'right',
                     }}
+                    title={isImpossible ? cFit?.impossibleReason || '현장 적입 불가' : '직접 돌출 치수 입력(mm)'}
                   />
                   <span>mm</span>
                 </label>

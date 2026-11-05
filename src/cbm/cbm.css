@@ -2954,6 +2954,11 @@
   border-color: rgba(245, 158, 11, 0.5);
 }
 
+.cbm-overhang-row.overhang-impossible-row {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.55) !important;
+}
+
 .cbm-overhang-row-left {
   display: flex;
   align-items: center;

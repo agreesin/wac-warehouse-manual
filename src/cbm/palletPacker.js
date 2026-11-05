@@ -1499,8 +1499,6 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
             if (isViable) {
               opportunity = candOpp;
               break;
-            } else if (!opportunity) {
-              opportunity = candOpp;
             }
           }
         }
@@ -1523,6 +1521,14 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
       const remainingClearanceMm = containerInnerWidth - estimatedRowWidthWithWrap - forkliftClearance;
       const isOverSafeLimit = activeOv > safeOverhangLimitMm;
 
+      const isCurrentOverhangImpossible = curMaxOverhangMm > 40 || remainingClearanceMm < 30;
+      let impossibleReason = null;
+      if (curMaxOverhangMm > 40) {
+        impossibleReason = `돌출 ${curMaxOverhangMm}mm 과다 (현장 안전한도 40mm 초과)`;
+      } else if (remainingClearanceMm < 30) {
+        impossibleReason = `컨테이너 측면 잔여 여유 부족 (${remainingClearanceMm}mm < 최소 30mm)`;
+      }
+
       const containerFit = {
         containerInnerWidth,
         baseRowWidth,
@@ -1531,10 +1537,14 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
         estimatedRowWidthWithWrap,
         remainingClearanceMm,
         isOverSafeLimit,
-        riskLevel: remainingClearanceMm < 40 ? 'danger' : remainingClearanceMm < 80 ? 'warning' : 'safe',
+        isCurrentOverhangImpossible,
+        impossibleReason,
+        riskLevel: isCurrentOverhangImpossible || remainingClearanceMm < 40 ? 'danger' : remainingClearanceMm < 80 ? 'warning' : 'safe',
         warningText:
-          remainingClearanceMm < 40
-            ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 잔여 여유 ${remainingClearanceMm}mm (지게차 진입 시 내벽 주름 간섭 위험!)`
+          isCurrentOverhangImpossible
+            ? `[현장 불가] ${impossibleReason} — 적입 불가 및 운송 중 화물 손상 위험`
+            : remainingClearanceMm < 40
+            ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 잔여 여유 ${remainingClearanceMm}mm (지게차 진입 시 정밀 작업 필요)`
             : remainingClearanceMm < 80
             ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 여유 ${remainingClearanceMm}mm (정밀 진입 필요)`
             : `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 여유 ${remainingClearanceMm}mm (진입 여유 충분)`,

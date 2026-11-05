@@ -230,9 +230,15 @@ export function Step2PalletResult({
                   value={policyOverhang}
                   onChange={(e) => setPolicyOverhang && setPolicyOverhang(Math.max(0, Number(e.target.value) || 0))}
                   className="cbm-policy-number-input"
+                  style={policyOverhang > 40 ? { borderColor: '#ef4444', color: '#fca5a5' } : undefined}
                 />
                 <span className="cbm-policy-unit">mm</span>
               </div>
+              {policyOverhang > 40 && (
+                <span style={{ fontSize: '11px', color: '#f87171', display: 'block', marginTop: '3px' }}>
+                  ⚠️ 40mm 초과 시 현장 적입 불가
+                </span>
+              )}
             </div>
 
             {/* 4. 전환 기준 층 적재 효율 (%) */}
