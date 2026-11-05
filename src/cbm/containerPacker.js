@@ -439,8 +439,8 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       if (gap > maxColGapMm) maxColGapMm = gap;
       if (gap < minColGapMm) minColGapMm = gap;
 
-      // 문쪽 열(isDoorCol)은 문 개방 시 쏟아짐 위험으로 에어백 사용 금지! 내부 열만 에어백 대상으로 추가
-      if (!isDoorIncomplete && !isDoorCol && gap > maxLateralGapAllowed) {
+      // 문쪽 열(isDoorCol)은 문 개방 시 쏟아짐 위험으로 에어백 사용 금지! 단일열(isSingle)은 측면 블로킹 적용
+      if (!isDoorIncomplete && !isDoorCol && !isSingle && gap > maxLateralGapAllowed) {
         wideGapGroups.push({
           colIndex: cIdx + 1,
           gap,
@@ -536,7 +536,8 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
 
   const hasHeightGapRisk = hasLowPalletAtDoor;
   const hasSlidingRisk = rearClearanceMm >= 400;
-  const hasRisk = hasHeightGapRisk || hasSlidingRisk;
+  const hasLateralRisk = lateralStatus !== 'SAFE' || wideGapGroups.length > 0 || hasSingleRowCol || hasDoorIncompleteCol;
+  const hasRisk = hasHeightGapRisk || hasSlidingRisk || hasLateralRisk;
 
   // 길이 방향 판정: 적입 가능 여부와 후미 블로킹 필요 여부를 명확히 분리!
   let lengthStatus = 'SAFE';
@@ -647,6 +648,19 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
         isHtCertified: false,
       });
     }
+  }
+
+  // 3-A. 폭 방향 1열 중앙 적재 전용 측면 블로킹 (각재 또는 세운 빈 파레트)
+  if (hasSingleRowCol) {
+    const singleColsCount = colGapDetails.filter((c) => c.isSingle).length;
+    shoringBOM.push({
+      category: '측면 블로킹',
+      name: '중앙 단일열 측면 블로킹 (각재 또는 세운 빈 파레트)',
+      spec: '각재 90×90mm 또는 세운 목재 파레트',
+      quantity: `좌/우 각 ${singleColsCount}조 (총 ${singleColsCount * 2}조)`,
+      purpose: `폭 방향 1열 중앙 적재 구간(양옆 유격 각 약 ${Math.round(lateralGapMm / 2)}mm) 좌우 롤링 전도 방지용 측면 블로킹 시공 (단일열이므로 에어백 대신 각재/파레트 블로킹 적용)`,
+      isHtCertified: true,
+    });
   }
 
   // 3-B. 문쪽 미완성 열 측면 블로킹 (각재 또는 세운 빈 파레트)
@@ -771,7 +785,7 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       actions.push(
         `[수출 인증] 사용 천연 목재 자재(각재, 목재 파레트)는 반드시 ISPM 15 HT 열처리 마크가 있는 자재 사용 (합판 등 가공목재는 검역 면제)`
       );
-    } else {
+    } else if (hasHeightGapRisk) {
       title = `도어 개방 시 낙하 방지 쇼링 필수 [${lowPalletLabelsOnly.join(', ')}]`;
       summary = `문(Door) 쪽에 키가 낮은 파레트 [${lowPalletDesc}]가 배치되어, 바로 앞 완적 화물(${frontColMaxH}mm)과의 단차로 인해 목적지 도어 개방 시 작업자 쪽으로 쏟아지는 낙하 전도 사고(Door Spill) 위험이 큽니다.`;
       actions.push(
@@ -779,6 +793,36 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       );
       actions.push(
         `[낮은 파레트 톱오버] ${lowPalletLabelsOnly.join(', ')} 위로 벨트를 넘겨 바닥 래싱 링에 톱오버 래싱 시공 (전도 방지 목적)`
+      );
+    } else if (hasSingleRowCol) {
+      title = `중앙 단일열 적재 화물 좌우 전도 방지 측면 블로킹 안내`;
+      summary = `컨테이너 내폭(${cWidth}mm) 대비 화물이 1열 중앙 적재되어 양옆 유격(각 약 ${Math.round(lateralGapMm / 2)}mm)이 큽니다. 해상 롤링 시 전도를 방지하기 위해 양옆 각재 블로킹 또는 세운 빈 파레트 지지가 필수입니다.`;
+      actions.push(
+        `[측면 블로킹] 중앙 1열 배치 양옆 공간에 각재 블로킹 또는 세운 빈 파레트를 덧대어 좌우 롤링 물리적 차단 (에어백 미사용)`
+      );
+      actions.push(
+        `[밀착 적재] 길이 방향 12,000mm 만적 밀착 상태 유지 확인`
+      );
+      actions.push(
+        `[수출 인증] 사용 천연 목재 자재는 ISPM 15 HT 열처리 마크 확인 (합판 등 가공목재는 검역 면제)`
+      );
+    } else if (wideGapGroups.length > 0) {
+      title = `측면 유격(${lateralGapMm}mm) 화물 롤링 방지 듄네이지 에어백 충진 안내`;
+      summary = `컨테이너 폭 방향 측면 유격(${lateralGapMm}mm)이 기준(${maxLateralGapAllowed}mm)을 초과하여 운송 중 롤링(좌우 흔들림)으로 인한 화물 쏠림 및 손상 위험이 있습니다. 듄네이지 에어백을 열간 충진하여 간극을 지지합니다.`;
+      actions.push(
+        `[에어백 충진] 측면 유격 구간에 규격 듄네이지 에어백 충진 (백 폭은 틈의 3배 이상 규격 사용, 문 앞 마지막 열은 에어백 사용 금지)`
+      );
+      actions.push(
+        `[공기압 관리] 적정 게이지 압력(약 0.2~0.3 bar / 2.9~4.4 psi) 준수하여 과충진으로 인한 화물 파손 방지`
+      );
+      actions.push(
+        `[도어측 확인] 도어측 잔여 공간(${rearClearanceMm}mm) 밀착 상태 점검 및 마감`
+      );
+    } else if (hasDoorIncompleteCol && doorIncompleteColInfo) {
+      title = '도어측 미완성 열 화물 전도 방지 측면 블로킹 안내';
+      summary = `문쪽 마지막 열에 파레트 1개만 중앙 적재되어 양옆 유격(각 ${doorIncompleteColInfo.leftGapMm}mm)이 크므로 측면 블로킹 시공이 필수입니다.`;
+      actions.push(
+        `[측면 블로킹] 문쪽 미완성 열 폭 중앙 적재 (양옆 유격 각 ${doorIncompleteColInfo.leftGapMm}mm) — 각재 또는 세운 빈 파레트로 측면 블로킹 시공 (에어백 사용 금지)`
       );
     }
 
@@ -824,7 +868,7 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
         ],
         bom: shoringBOM,
       };
-    } else {
+    } else if (!doorShoringGuide.actions.some((a) => a.includes('문쪽 미완성 열'))) {
       doorShoringGuide.actions.unshift(
         `[측면 블로킹] 문쪽 미완성 열 폭 중앙 적재 (양옆 유격 각 ${doorIncompleteColInfo.leftGapMm}mm) — 각재 또는 세운 빈 파레트로 측면 블로킹 시공 (에어백 사용 금지)`
       );
@@ -1906,18 +1950,31 @@ export function computeAllocationPlans(pallets, containerSpec, options, primaryC
     let emptyPalletCount = 0;
     let sideBlockingCount = 0;
     let lashingStrapCount = 0;
+    let airbagCount = 0;
+    let hasBorderlineAirbag = false;
     containers.forEach((c) => {
       const bom = c.fieldDiagnostics?.shoringBOM || [];
       for (const item of bom) {
         if (item.name?.includes('각재 펜스')) fenceCount++;
         if (item.name?.includes('빈 목재 파레트')) {
           const match = item.quantity?.match(/(\d+)장/);
-          emptyPalletCount += match ? parseInt(match[1], 10) : 10;
+          emptyPalletCount += match ? parseInt(match[1], 10) : 4;
         }
-        if (item.category === '측면 블로킹') sideBlockingCount++;
+        if (item.category === '측면 블로킹' || item.name?.includes('측면 블로킹')) {
+          const match = item.quantity?.match(/총\s*(\d+)조/);
+          sideBlockingCount += match ? parseInt(match[1], 10) : 2;
+        }
         if (item.name?.includes('래싱 벨트')) {
           const match = item.quantity?.match(/(\d+)줄/);
           lashingStrapCount += match ? parseInt(match[1], 10) : 4;
+        }
+        if (item.name?.includes('에어백')) {
+          const match = item.quantity?.match(/(\d+)개/);
+          if (match) {
+            airbagCount += parseInt(match[1], 10);
+          } else if (item.quantity?.includes('실측')) {
+            hasBorderlineAirbag = true;
+          }
         }
       }
     });
@@ -1925,7 +1982,9 @@ export function computeAllocationPlans(pallets, containerSpec, options, primaryC
     const shoringParts = [];
     if (fenceCount > 0) shoringParts.push(`각재 펜스 ${fenceCount}세트`);
     if (emptyPalletCount > 0) shoringParts.push(`빈 파레트 ${emptyPalletCount}장`);
-    if (sideBlockingCount > 0) shoringParts.push(`측면 블로킹 ${sideBlockingCount * 2}조`);
+    if (sideBlockingCount > 0) shoringParts.push(`측면 블로킹 ${sideBlockingCount}조`);
+    if (airbagCount > 0) shoringParts.push(`에어백 ${airbagCount}개`);
+    else if (hasBorderlineAirbag) shoringParts.push('에어백 (실측 후)');
     if (lashingStrapCount > 0) shoringParts.push(`래싱 ${lashingStrapCount}줄`);
     const shoringSummary = shoringParts.length > 0 ? shoringParts.join(', ') : '기본 블로킹';
 

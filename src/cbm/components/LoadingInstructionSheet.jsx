@@ -244,15 +244,15 @@ function FloorPlanPrintSvg({ container }) {
   if (curBand) airbagBands.push(curBand);
 
   return (
-    <div style={{ width: '100%', border: '1.5px solid #000', padding: '5px 8px', background: '#fff', boxSizing: 'border-box' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '12px', fontWeight: 'bold' }}>
+    <div style={{ width: '100%', border: '1.5px solid #000', padding: '2px 5px', background: '#fff', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px', fontSize: '11.5px', fontWeight: 'bold' }}>
         <span>[ 평면 적재 배치도 ] — 왼쪽: 앞벽(Front) / 오른쪽: 도어(Door) / 위쪽: 우측(Right) / 아래쪽: 좌측(Left)</span>
         <span>범례: 일반[ □ ] | 단차 경고 대상[ 빗금/// ] | 각재 펜스[ 굵은선━━ ] | 문 앞 빈 공간({rearClearanceMm.toLocaleString()}mm)</span>
       </div>
 
       <svg
         viewBox={`-80 -80 ${cLen + 160} ${cWid + 160}`}
-        style={{ width: '100%', height: 'auto', maxHeight: '128px', display: 'block', background: '#fff' }}
+        style={{ width: '100%', height: 'auto', maxHeight: '92px', display: 'block', background: '#fff' }}
       >
         <defs>
           {/* 낮은 파레트(단차 경고) 빗금 패턴 */}
@@ -579,9 +579,9 @@ function ShoringCrossSectionSvg({ container }) {
   if (!hasHeightGap) {
     // 단차가 없는 경우: 문 앞 목재 각재 펜스 + 버팀목 개략도
     return (
-      <div style={{ width: '100%', border: '1px solid #000', padding: '6px 8px', background: '#fff', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '3px' }}>[ 문 앞 펜스·버팀목 시공 단면 안내 ]</div>
-        <svg viewBox="0 0 600 130" style={{ width: '100%', height: '78px', display: 'block' }}>
+      <div style={{ width: '100%', border: '1px solid #000', padding: '2px 5px', background: '#fff', boxSizing: 'border-box' }}>
+        <div style={{ fontSize: '11.5px', fontWeight: 'bold', marginBottom: '2px' }}>[ 문 앞 펜스·버팀목 시공 단면 안내 ]</div>
+        <svg viewBox="0 0 600 130" style={{ width: '100%', height: '56px', display: 'block' }}>
           <rect x="20" y="10" width="560" height="110" fill="#fff" stroke="#000" strokeWidth="4" />
           <line x1="20" y1="46" x2="580" y2="46" stroke="#000" strokeWidth="5" />
           <line x1="20" y1="84" x2="580" y2="84" stroke="#000" strokeWidth="5" />
@@ -601,13 +601,13 @@ function ShoringCrossSectionSvg({ container }) {
   const p2 = lowPallets[1] || { label: 'P#38', height: 850 };
 
   return (
-    <div style={{ width: '100%', border: '1px solid #000', padding: '6px 8px', background: '#fff', boxSizing: 'border-box' }}>
-      <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '3px', display: 'flex', justifyContent: 'space-between' }}>
+    <div style={{ width: '100%', border: '1px solid #000', padding: '2px 5px', background: '#fff', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: '11.5px', fontWeight: 'bold', marginBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
         <span>[ 도어측 단차 결속 단면도 (문에서 안쪽을 볼 때) ]</span>
-        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>수평 래싱 2줄: 높이 {lashH1.toLocaleString()}mm / {lashH2.toLocaleString()}mm</span>
+        <span style={{ fontSize: '11.5px', fontWeight: 'bold' }}>수평 래싱 2줄: 높이 {lashH1.toLocaleString()}mm / {lashH2.toLocaleString()}mm</span>
       </div>
 
-      <svg viewBox="0 0 720 180" style={{ width: '100%', height: '104px', display: 'block' }}>
+      <svg viewBox="0 0 720 180" style={{ width: '100%', height: '72px', display: 'block' }}>
         {/* 컨테이너 내벽 윤곽 */}
         <rect x="20" y="10" width="680" height="160" fill="#ffffff" stroke="#000000" strokeWidth="4" />
         <text x="30" y="32" fontSize="16" fill="#333" fontWeight="bold">내벽</text>
@@ -800,7 +800,7 @@ function SingleLoadingSheetPage({ container, totalContainers }) {
           </div>
 
           {/* 7. 적재 전후 확인 (체크칸) */}
-          <div className="cbm-ls-section-box" style={{ marginTop: '5px' }}>
+          <div className="cbm-ls-section-box" style={{ marginTop: '3px' }}>
             <div className="cbm-ls-section-head">
               <strong>[ 적재 전·후 필수 확인 체크리스트 ]</strong>
             </div>
@@ -838,7 +838,7 @@ function SingleLoadingSheetPage({ container, totalContainers }) {
           </div>
 
           {/* 6. 준비 자재 (예상 BOM) */}
-          <div className="cbm-ls-section-box" style={{ marginTop: '5px' }}>
+          <div className="cbm-ls-section-box" style={{ marginTop: '3px' }}>
             <div className="cbm-ls-section-head">
               <strong>[ 필요 쇼링 자재 목록 (BOM) ]</strong>
               <small>작업 전 도크 옆에 사전 불출</small>

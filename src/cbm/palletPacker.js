@@ -554,11 +554,11 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         resolvedPallet.length
       );
 
-      // 표준 적재 기본값: 코너보드 결속 및 박스 하중 지지력이 최고인 수직 기둥 정렬(COLUMN)을 기본 표준으로 적용
+      // 적재 방식 기본값: 교차 적재(인터로킹) 옵션 연동
       const finalStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
-        'COLUMN';
+        (interlockLayers ? 'INTERLOCK' : 'COLUMN');
 
       return {
         id: c.id || `cargo-${idx + 1}`,
@@ -636,11 +636,11 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         fullLayerWeight > 0
           ? Math.max(1, Math.floor(maxCargoWeight / fullLayerWeight))
           : maxLayersByH;
-      // 인터로킹/교차 적재 시 박스 압축강도 25% 저하 반영 및 품목별 강도 감소 계수 곱연산
+      // 인터로킹/교차 적재 시 박스 압축강도 저하(FBA 기준) 반영 및 품목별 강도 감소 계수 곱연산
+      const effectiveStackStyle =
+        item.stackingStyle || (interlockLayers ? 'INTERLOCK' : 'COLUMN');
       const baseStrengthFactor =
-        item.stackingStyle === 'INTERLOCK' ||
-        item.stackingStyle === 'CROSS_TIER' ||
-        (item.stackingStyle !== 'COLUMN' && interlockLayers)
+        effectiveStackStyle === 'INTERLOCK' || effectiveStackStyle === 'CROSS_TIER'
           ? INTERLOCK_STRENGTH_FACTOR
           : 1.0;
       const strengthFactor = baseStrengthFactor * (Number(item.strengthReductionFactor) > 0 ? Number(item.strengthReductionFactor) : 1.0);
@@ -775,7 +775,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const bMaxZ = bounds.maxZ + offsetZ;
 
     const itemStackStyle =
-      cargoItem.stackingStyle || 'COLUMN';
+      cargoItem.stackingStyle || (interlockLayers ? 'INTERLOCK' : 'COLUMN');
 
     if (
       itemStackStyle === 'CROSS_TIER' &&
@@ -1366,10 +1366,13 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
     const maxLayersByW =
       layerWeight > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerWeight)) : maxLayersByH;
 
-    // 인터로킹/교차 적재 시 박스 압축강도 25% 저하 반영
-    const strengthFactor = (item.stackingStyle === 'INTERLOCK' || item.stackingStyle === 'CROSS_TIER' || options.interlockLayers !== false)
-      ? INTERLOCK_STRENGTH_FACTOR
-      : 1.0;
+    // 인터로킹/교차 적재 시 박스 압축강도 저하(FBA 기준) 반영
+    const effectiveStackStyle =
+      item.stackingStyle || (options.interlockLayers !== false ? 'INTERLOCK' : 'COLUMN');
+    const strengthFactor =
+      effectiveStackStyle === 'INTERLOCK' || effectiveStackStyle === 'CROSS_TIER'
+        ? INTERLOCK_STRENGTH_FACTOR
+        : 1.0;
     const effectiveTopLoad = Number(item.maxTopLoad) > 0 ? Number(item.maxTopLoad) * strengthFactor : 0;
     const maxLayersByStrength =
       effectiveTopLoad > 0 && Number(item.weight) > 0
@@ -1641,11 +1644,11 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         resolvedPallet.length
       );
 
-      // 표준 적재 기본값: 수직 기둥 정렬(COLUMN)을 기본 표준으로 설정
+      // 적재 방식 기본값: 옵션의 교차 적재(인터로킹) 설정 연동
       const curStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
-        'COLUMN';
+        (defaultInterlock ? 'INTERLOCK' : 'COLUMN');
       const qty = Math.max(0, Math.floor(Number(c.quantity) || 0));
       const unitW = Math.max(0, Number(c.weight) || 0);
       const customMaxL = Number(c.maxLayers) > 0 ? Math.floor(Number(c.maxLayers)) : 999;

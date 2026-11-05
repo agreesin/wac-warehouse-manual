@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ThreeViewport } from '../ThreeViewport';
 import { ContainerFloorPlanSvg } from './ContainerFloorPlanSvg';
 import { ContainerDiagnosticsCard } from './ContainerDiagnosticsCard';
@@ -54,6 +54,71 @@ export function Step3ContainerResult({
     (activeContainers.length > (simResult?.containerResult?.containers?.length || 1) ||
       (activePlan?.incompleteColsCount || 0) > 0);
 
+  // 전체 호기 중 최악의 무게중심(CoG) 상태 집계 (1호기만 안전하고 2호기가 주의인 경우 왜곡 방지)
+  const fleetCoGSummary = useMemo(() => {
+    if (!activeContainers || activeContainers.length === 0) {
+      return { status: 'SAFE', color: '#6ee7b7', mainText: '정상 (균형)', subText: null };
+    }
+
+    let worstContainer = activeContainers[0];
+    let worstPriority = 0; // 0: SAFE, 1: WARN, 2: DANGER
+
+    const getPriority = (c) => {
+      const s = c.cog?.status;
+      if (s === 'DANGER') return 2;
+      if (s === 'WARN') return 1;
+      return 0;
+    };
+
+    activeContainers.forEach((c) => {
+      const p = getPriority(c);
+      if (p > worstPriority) {
+        worstPriority = p;
+        worstContainer = c;
+      } else if (p === worstPriority && worstPriority > 0) {
+        const cOffset = Math.abs(c.cog?.offsetXFromContainerCenter || 0);
+        const wOffset = Math.abs(worstContainer.cog?.offsetXFromContainerCenter || 0);
+        if (cOffset > wOffset) worstContainer = c;
+      }
+    });
+
+    const currentIdx = effectiveCurrentContainer?.index;
+    const worstIdx = worstContainer?.index;
+
+    if (worstPriority === 2) {
+      const worstMm = Math.abs(worstContainer.cog?.offsetXFromContainerCenter || 0);
+      return {
+        status: 'DANGER',
+        color: '#f87171',
+        mainText: `위험 (${worstIdx}호기 기준 초과)`,
+        subText:
+          activeContainers.length > 1 && currentIdx !== worstIdx
+            ? `(현재 ${currentIdx}호기 양호 · ${worstIdx}호기 ${worstMm.toLocaleString()}mm 편차)`
+            : null,
+      };
+    }
+    if (worstPriority === 1) {
+      const worstPct = worstContainer?.cog?.lengthRatioPct
+        ? Math.abs(worstContainer.cog.lengthRatioPct - 50).toFixed(1)
+        : '';
+      return {
+        status: 'WARN',
+        color: '#fbbf24',
+        mainText: `주의 (${worstIdx}호기 편차 ${worstPct}%)`,
+        subText:
+          activeContainers.length > 1 && currentIdx !== worstIdx
+            ? `(현재 ${currentIdx}호기는 안전 · ${worstIdx}호기 편차 주의)`
+            : null,
+      };
+    }
+    return {
+      status: 'SAFE',
+      color: '#6ee7b7',
+      mainText: `안전 (전체 ${activeContainers.length}대 양호)`,
+      subText: null,
+    };
+  }, [activeContainers, effectiveCurrentContainer]);
+
   return (
     <section ref={step3Ref} className="cbm-step-section">
       {/* Step 3 Header & Executive KPI Summary Pills */}
@@ -83,10 +148,15 @@ export function Step3ContainerResult({
             </strong>
           </div>
           <div className="cbm-mini-stat">
-            <span>무게중심(CoG) 상태</span>
-            <strong style={{ color: '#6ee7b7' }}>
-              {effectiveCurrentContainer?.cog?.statusText || '정상 (균형)'}
+            <span>전체 무게중심(CoG)</span>
+            <strong style={{ color: fleetCoGSummary.color }}>
+              {fleetCoGSummary.mainText}
             </strong>
+            {fleetCoGSummary.subText && (
+              <span style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
+                {fleetCoGSummary.subText}
+              </span>
+            )}
           </div>
           <button
             type="button"

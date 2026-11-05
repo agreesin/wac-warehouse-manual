@@ -508,7 +508,7 @@ export function Step1CargoInput({
                 lineHeight: 1.45,
               }}
             >
-              [주의] <strong>인터로킹 강도 저하:</strong> 상자 모서리가 맞닿지 않아 박스 압축강도(BCT)가 약 25% 저하(강도 계수 0.75)될 수 있습니다. 화물 테이블에서 계수(기본 1.0) 또는 상단 허용하중을 확인하십시오.
+              [주의] <strong>인터로킹 강도 저하:</strong> 상자 모서리가 맞닿지 않아 Fibre Box Association(FBA) 기준 박스 압축강도(BCT)가 35~60% 저하(실무 계수 0.65)될 수 있습니다. 화물 테이블에서 계수(기본 1.0) 또는 상단 허용하중을 확인하십시오.
             </div>
           )}
           <div className="cbm-radio-pair">

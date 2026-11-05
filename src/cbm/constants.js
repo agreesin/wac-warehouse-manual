@@ -115,8 +115,8 @@ export const DEFAULT_WRAPPING_CONFIG = {
   airbagEffectiveLengthMm: 1800, // 에어백 유효 길이 (mm, 기본 1800mm, 가정값)
 };
 
-// 인터로킹(벽돌식 교차 적재) 시 모서리 어긋남으로 인한 박스 압축강도(BCT) 감소 계수 (표준 0.75: 약 25% 강도 저하)
-export const INTERLOCK_STRENGTH_FACTOR = 0.75;
+// Fibre Box Association(FBA) 및 ASTM 기준: 교차 적재(인터로킹) 시 모서리 불일치로 인한 박스 압축강도(BCT) 저하 계수 (업계 연구 35~60% 저하 → 실무 권장 계수 0.65)
+export const INTERLOCK_STRENGTH_FACTOR = 0.65;
 
 export const ISO_MIN_INNER_WIDTH = 2330;
 export const STANDARD_INNER_WIDTH = 2352;
