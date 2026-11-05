@@ -723,7 +723,7 @@ export function CbmSimulator() {
               <span className="cbm-version-tag">3D 시뮬레이터</span>
             </h1>
             <p className="cbm-subtitle">
-              화물 치수·수량 입력 → 파레트 수량 산출 → 컨테이너 소요 대수 및 3D 적재 시각화
+              파레트 및 컨테이너 3D 적재 시뮬레이터
             </p>
           </div>
         </div>
@@ -735,7 +735,7 @@ export function CbmSimulator() {
             className="cbm-step-pill active"
             onClick={() => step1Ref.current?.scrollIntoView({ behavior: 'smooth' })}
           >
-            <span className="step-num">1</span> 화물·조건 입력
+            <span className="step-num">1</span> 화물 입력
           </button>
           <span className="step-arrow">→</span>
           <button
@@ -744,7 +744,7 @@ export function CbmSimulator() {
             disabled={!step2Unlocked}
             onClick={() => step2Ref.current?.scrollIntoView({ behavior: 'smooth' })}
           >
-            <span className="step-num">2</span> 파레트 산출·시각화
+            <span className="step-num">2</span> 파레트 적재
             {simResult && <strong>({simResult.summary.totalPallets} PLT)</strong>}
           </button>
           <span className="step-arrow">→</span>
@@ -754,7 +754,7 @@ export function CbmSimulator() {
             disabled={!step3Unlocked}
             onClick={() => step3Ref.current?.scrollIntoView({ behavior: 'smooth' })}
           >
-            <span className="step-num">3</span> 컨테이너 산출·시각화
+            <span className="step-num">3</span> 컨테이너 적재
             {step3Unlocked && simResult && (
               <strong>({simResult.summary.totalContainers}대)</strong>
             )}

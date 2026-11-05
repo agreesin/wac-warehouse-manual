@@ -26,12 +26,12 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
           marginBottom: '8px',
         }}
       >
-        현장 적입(Stuffing) · 도어 통과 · 쇼링/에어백 진단
+        현장 적재 및 쇼링 진단
       </div>
 
       <div className="cbm-cog-metrics-grid">
         <div className="cbm-cog-metric">
-          <span>도어 프레임 통과 여유 (유효고 {currentContainer.spec?.doorHeight || 2588}mm)</span>
+          <span>도어 통과 여유 (유효고 {currentContainer.spec?.doorHeight || 2588}mm)</span>
           <strong
             style={{
               color:
@@ -50,7 +50,7 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
 
         <div className="cbm-cog-metric">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>도어측 잔여 길이 & 길이 판정</span>
+            <span>도어 잔여 길이</span>
             {diag.lengthStatus && (
               <span
                 className={`cbm-policy-tag ${
@@ -78,7 +78,7 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
 
         <div className="cbm-cog-metric">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>측면 유격 & 폭 여유 판정</span>
+            <span>측면 유격 판정</span>
             {diag.lateralStatus && (
               <span
                 className={`cbm-policy-tag ${

@@ -28,10 +28,10 @@ export function PalletStackingAccordion({
         onClick={() => setShowStackingDetails((prev) => !prev)}
       >
         <span>
-          <strong>상자 쌓기 패턴 및 자세 설정</strong> (현재 표준 수직 기둥 정렬 적용 중)
+          <strong>상자 적재 패턴 및 자세 설정</strong>
         </span>
         <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>
-          {showStackingDetails ? '▲ 설정 닫기' : '▼ 펼쳐서 배열/자세 변경하기'}
+          {showStackingDetails ? '▲ 닫기' : '▼ 상세 설정'}
         </span>
       </button>
 

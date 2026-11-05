@@ -349,8 +349,8 @@ export function ProjectManagerModal({
         {/* 모달 헤더 */}
         <div className="cbm-modal-header">
           <div className="cbm-modal-title">
-            <span>프로젝트 저장 및 불러오기 (Project Manager)</span>
-            <span className="cbm-pm-badge">형식 v{PROJECT_FORMAT_VERSION}</span>
+            <span>프로젝트 저장 및 불러오기</span>
+            <span className="cbm-pm-badge">v{PROJECT_FORMAT_VERSION}</span>
           </div>
           <button type="button" className="cbm-modal-close-btn" onClick={onClose}>
             ×
@@ -359,7 +359,7 @@ export function ProjectManagerModal({
 
         {/* 중요 필수 안내 바 */}
         <div className="cbm-pm-notice-bar">
-          <strong>※ 주의 안내:</strong> 저장은 브라우저(localStorage)에 저장되며, 브라우저 캐시나 방문 기록을 지우면 사라지므로 중요한 건은 반드시 <strong>[JSON 내보내기]</strong>로 파일을 다운로드하여 영구 보관하세요.
+          <strong>※ 안내:</strong> 브라우저 데이터 삭제 시 저장 목록이 초기화되므로, 중요한 설정은 <strong>[JSON 내보내기]</strong>로 파일 보관을 권장합니다.
         </div>
 
         {/* 피드백 메시지 (성공 / 오류 알림) */}
@@ -383,7 +383,7 @@ export function ProjectManagerModal({
         <div className="cbm-pm-body">
           {/* 1. 현재 작업 내용 저장 및 파일 I/O 섹션 */}
           <div className="cbm-pm-section">
-            <h4 className="cbm-pm-section-title">현재 입력값(화물·조건·공차·컨테이너) 저장 및 내보내기</h4>
+            <h4 className="cbm-pm-section-title">현재 설정 저장 및 내보내기</h4>
             <div className="cbm-pm-save-bar">
               <input
                 type="text"

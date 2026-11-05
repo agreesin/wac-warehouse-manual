@@ -18,7 +18,7 @@ export function ContainerFloorPlanSvg({
       <div className="cbm-2d-floor-title">
         <span>
           {currentContainer.spec.name} #{currentContainer.index}호기 평면 배치도 (총{' '}
-          {currentContainer.placedPallets.length} 파레트 — 클릭 시 Step 2 이동)
+          {currentContainer.placedPallets.length} PLT)
         </span>
         <span>
           <strong style={{ color: isLight ? '#2563eb' : '#60a5fa' }}>■ 1100×1100</strong> |{' '}

@@ -21,11 +21,11 @@ export function AllocationComparisonTable({
             배분 최적화
           </span>
           <h3 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700, color: isLight ? '#0f172a' : '#f8fafc' }}>
-            컨테이너 호기별 파레트 배분 비교 & 대안 검토
+            호기별 파레트 배분 비교
           </h3>
         </div>
         <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-          행을 클릭하면 해당 배분의 3D 적재·평면도·쇼링 지시서로 즉시 전환됩니다
+          클릭 시 3D·평면도·지시서 전환
         </span>
       </div>
 

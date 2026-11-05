@@ -16,8 +16,7 @@ export function ContainerComparisonTable({
       {/* 3-B: 컨테이너 호기별 품목(SKU) 적재 명세표 & 최적 복합 배차 제안 */}
       <div className="cbm-card" style={{ marginTop: '16px' }}>
         <div className="cbm-card-header">
-          <h2>3-B. 컨테이너 호기별 적재 품목(SKU) 배분 명세표 & 실무 최적 배차 제안</h2>
-          <span className="cbm-badge">출고 및 선적 검수용</span>
+          <h2>3-B. 호기별 적재 명세 및 배차 제안</h2>
         </div>
 
         <div className="cbm-fleet-sku-grid" style={{ marginTop: 0 }}>
@@ -38,7 +37,7 @@ export function ContainerComparisonTable({
                 marginBottom: '8px',
               }}
             >
-              호기별 적재 품목(SKU) 명세표 ({simResult.selectedSpec.name})
+              호기별 적재 명세표 ({simResult.selectedSpec.name})
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {simResult.containerResult.containers.map((c) => (
@@ -120,7 +119,7 @@ export function ContainerComparisonTable({
                   marginBottom: '8px',
                 }}
               >
-                실무 최적 배차 조합 제안 (단독 배차 vs 혼합 배차 비교)
+                최적 배차 조합 제안
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {simResult.fleetRecommendations.map((rec) => (
@@ -174,8 +173,7 @@ export function ContainerComparisonTable({
       {/* 3-C: 컨테이너 종류별 규격 및 적재 가능량 상세 비교 */}
       <div className="cbm-card" style={{ marginTop: '16px' }}>
         <div className="cbm-card-header">
-          <h2>3-C. 컨테이너 종류별 적재 가능 파레트 수 & 규격 상세 비교</h2>
-          <span className="cbm-badge">카드를 클릭하면 해당 규격으로 즉시 전환됩니다</span>
+          <h2>3-C. 컨테이너 규격별 비교</h2>
         </div>
 
         <div className="cbm-container-3col-grid">

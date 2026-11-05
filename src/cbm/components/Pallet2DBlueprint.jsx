@@ -11,7 +11,7 @@ export function Pallet2DBlueprint({ theme = 'dark', currentPallet }) {
   return (
     <div className="cbm-pallet-blueprint-col">
       <div className="cbm-blueprint-box">
-        <h3>한 파레트 1층 평면 적재 도면 (상부 평면도)</h3>
+        <h3>1층 평면 적재 도면</h3>
         <p className="cbm-blueprint-sub">
           파레트: <strong>{currentPallet.width} × {currentPallet.length} mm</strong> | 1층:{' '}
           <strong>{currentPallet.layers[0]?.boxCount || 0}박스</strong>

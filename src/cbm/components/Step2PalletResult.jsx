@@ -13,26 +13,26 @@ const PALLET_MODE_META = {
   T11: {
     badge: '국내 표준',
     title: 'T11 (1100 × 1100)',
-    sub: '1,100 × 1,100 mm (국내 유통·제조)',
-    desc: '모든 품목을 T11 표준 규격으로 통일하여 적재합니다.',
+    sub: '1,100 × 1,100 mm',
+    desc: '전체 T11 단일 규격 적재',
   },
   T12: {
     badge: '국제 표준',
     title: 'T12 (1200 × 1000)',
-    sub: '1,200 × 1,000 mm (수출 및 범용)',
-    desc: '모든 품목을 T12 국제 규격으로 통일하여 적재합니다.',
+    sub: '1,200 × 1,000 mm',
+    desc: '전체 T12 단일 규격 적재',
   },
   EUR: {
     badge: '유럽 규격',
     title: 'EUR (1200 × 800)',
-    sub: '1,200 × 800 mm (유럽 EPAL 표준)',
-    desc: '모든 품목을 EUR 유럽 규격으로 통일하여 적재합니다.',
+    sub: '1,200 × 800 mm',
+    desc: '전체 EUR 단일 규격 적재',
   },
   EXPORT_1200: {
     badge: '1200×1200',
     title: '1200×1200',
-    sub: '1,200 × 1,200 mm (대형 벌크 수출용)',
-    desc: '모든 품목을 1200×1200 단일 규격으로 통일하여 적재합니다.',
+    sub: '1,200 × 1,200 mm',
+    desc: '전체 1200×1200 단일 규격 적재',
   },
 };
 
@@ -119,9 +119,9 @@ export function Step2PalletResult({
         <div className="cbm-section-banner-left">
           <span className="cbm-step-badge badge-amber">STEP 2</span>
           <div>
-            <h2>파레트 규격 선택 및 한 파레트 적재 시뮬레이션</h2>
+            <h2>파레트 규격 선택 및 3D 적재</h2>
             <p>
-              파레트 규격을 선택하면 총 파레트 수와 40HC 컨테이너 소요 대수, 그리고 한 파레트에 박스가 어떻게 쌓이는지 2D/3D로 즉시 시각화합니다.
+              파레트 규격별 소요량 및 1파레트 3D 적재 도면을 확인합니다.
             </p>
           </div>
         </div>
@@ -144,16 +144,15 @@ export function Step2PalletResult({
       {/* 2-A: Pallet Size Selection Cards (4 Uniform Presets + 1 Multi-Size Mix Card) */}
       <div className="cbm-card">
         <div className="cbm-card-header">
-          <h2>2-A. 파레트 사이즈 선택 (단일 사이즈 통일 vs 여러 사이즈 섞어 쓰기)</h2>
-          <span className="cbm-badge">카드를 클릭하면 즉시 적용됩니다</span>
+          <h2>2-A. 파레트 규격 선택</h2>
         </div>
 
         {/* 품목별 파레트 선택 기준 설정 패널 */}
         <div className="cbm-policy-config-panel">
           <div className="cbm-policy-config-head">
             <div>
-              <strong>품목별 파레트 선택 기준 (기본 유지 · 선별 대체)</strong>
-              <p>기본 파레트 유지 원칙을 적용하며, 층 적재 효율이 기준에 미달하고 대체 규격 적용 시 파레트 수가 실제로 줄어드는 품목만 전환합니다.</p>
+              <strong>품목별 파레트 선택 기준</strong>
+              <p>기본 파레트 유지를 원칙으로 하되, 층 적재 효율 개선 시에만 대체 규격으로 전환합니다.</p>
             </div>
             <button
               type="button"
@@ -261,8 +260,8 @@ export function Step2PalletResult({
           {wrappingConfig && setWrappingConfig && (
             <div className="cbm-policy-tolerance-section">
               <div className="cbm-policy-tolerance-head">
-                <span className="cbm-policy-tolerance-title">현장 안전 공차 및 컨테이너 유격 기준</span>
-                <span className="cbm-policy-tolerance-sub">래핑 배부름·어긋남·측면 진입 및 도어 인양 여유를 반영하여 측면 2열 및 도어 통과 안정성을 진단합니다.</span>
+                <span className="cbm-policy-tolerance-title">현장 안전 공차 설정</span>
+                <span className="cbm-policy-tolerance-sub">래핑 배부름·어긋남·진입 여유를 반영하여 적재 안정성을 진단합니다.</span>
               </div>
               <div className="cbm-policy-tolerance-grid">
                 <div className="cbm-tolerance-item">
@@ -391,7 +390,7 @@ export function Step2PalletResult({
                     }
                   >
                     <option value={2352}>표준 내폭 (2,352 mm)</option>
-                    <option value={2330}>ISO 최소 하한 (2,330 mm / 보수적)</option>
+                    <option value={2330}>ISO 최소 하한 (2,330 mm)</option>
                   </select>
                 </div>
               </div>
@@ -413,7 +412,7 @@ export function Step2PalletResult({
                 <span className="cbm-pm-badge mix-badge">품목별 사용</span>
               </div>
               <strong className="cbm-pm-title">품목별 파레트 사용</strong>
-              <small className="cbm-pm-sub">기본 {policyBasePallet} 유지 · 기준 미달만 대체</small>
+              <small className="cbm-pm-sub">기본 {policyBasePallet} 유지</small>
             </div>
             <div className="cbm-pm-body">
               <div className="cbm-pm-stat highlight">
@@ -442,7 +441,7 @@ export function Step2PalletResult({
                 </div>
               )}
               <div className="cbm-pm-desc">
-                기본 파레트 유지, 기준 미달 품목만 대체 규격 적용
+                기본 규격 유지 및 필요 품목만 대체
               </div>
             </div>
           </button>
@@ -570,10 +569,10 @@ export function Step2PalletResult({
                           handleCargoChange(cargo.id, 'palletSpecId', e.target.value)
                         }
                       >
-                        <option value="T11">1100 × 1100 mm (T11 표준)</option>
-                        <option value="T12">1200 × 1000 mm (T12 국제/돌출방지)</option>
-                        <option value="EUR">1200 × 800 mm (EUR 유럽)</option>
-                        <option value="EXPORT_1200">1200 × 1200 mm (수출 대형)</option>
+                        <option value="T11">1100 × 1100 mm (T11)</option>
+                        <option value="T12">1200 × 1000 mm (T12)</option>
+                        <option value="EUR">1200 × 800 mm (EUR)</option>
+                        <option value="EXPORT_1200">1200 × 1200 mm</option>
                       </select>
                       <span className="cbm-mix-layer-badge">1단 {layerCnt}박스</span>
                     </div>
@@ -585,16 +584,13 @@ export function Step2PalletResult({
         )}
       </div>
 
-      {/* 2-B: 파레트 적재 도면 (2D) 및 3D 시뮬레이션 */}
+      {/* 2-B: 파레트 적재 도면 및 3D 시각화 */}
       <div className="cbm-card">
         <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
           <div>
-            <h2>2-B. 파레트 적재 도면 (2D) 및 3D 시뮬레이션</h2>
-            <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#cbd5e1' }}>
-              선택한 파레트에 화물이 실제로 어떻게 적재되는지 2D 평면 도면과 3D 뷰어로 실시간 확인합니다.
-            </p>
+            <h2>2-B. 파레트 적재 도면 및 3D 시각화</h2>
           </div>
-          <span className="cbm-badge">3D 드래그: 회전 · 클릭 후 휠/Ctrl+휠: 확대/축소</span>
+          <span className="cbm-badge">드래그: 회전 · 휠: 확대/축소</span>
         </div>
 
         {/* Single Pallet Selector & 2D/3D Split Visualizer */}
@@ -676,7 +672,7 @@ export function Step2PalletResult({
                   checked={explodePalletLayers}
                   onChange={(e) => setExplodePalletLayers(e.target.checked)}
                 />
-                <span>층간 분리뷰(Explode)</span>
+                <span>층간 분리뷰</span>
               </label>
             </div>
 

@@ -61,9 +61,9 @@ export function Step3ContainerResult({
         <div className="cbm-section-banner-left">
           <span className="cbm-step-badge badge-emerald">STEP 3</span>
           <div>
-            <h2>컨테이너 3D 적재 시뮬레이션 & 필요 대수 산출</h2>
+            <h2>컨테이너 3D 적재 및 필요 대수 산출</h2>
             <p>
-              총 {simResult.summary.totalPallets}개 파레트의 컨테이너 3D 적재 배치와 무게중심(CoG), 규격별 필요 대수를 확인하세요.
+              컨테이너 3D 적재 배치, 무게중심(CoG) 및 소요 대수를 확인합니다.
             </p>
           </div>
         </div>
@@ -163,7 +163,7 @@ export function Step3ContainerResult({
                 onClick={() => setFullFloorSpread(true)}
                 title="1단적(평적)으로 바닥 전체에 파레트를 균등 간격으로 끝까지 배치하여 운송 중 쏠림 방지"
               >
-                빈 바닥 채움 (1단 평적)
+                빈 바닥 채움
               </button>
               <button
                 type="button"
@@ -171,7 +171,7 @@ export function Step3ContainerResult({
                 onClick={() => setFullFloorSpread(false)}
                 title="상단 적재 가능 파레트를 2단적으로 높게 쌓아 도어 쪽에 넓은 바닥 여유 공간 확보"
               >
-                바닥 공간 확보 (2단 밀착)
+                공간 확보 (2단적)
               </button>
             </div>
           </div>
@@ -235,7 +235,7 @@ export function Step3ContainerResult({
               className="cbm-guide-toggle-btn"
               onClick={() => setShowGuide((prev) => !prev)}
             >
-              ⓘ 실무 적재 가이드 {showGuide ? '▲ 닫기' : '▼ 자세히'}
+              ⓘ 적재 가이드 {showGuide ? '▲' : '▼'}
             </button>
           </div>
         </div>
@@ -549,14 +549,14 @@ export function Step3ContainerResult({
 
               <div className="cbm-cog-metrics-grid">
                 <div className="cbm-cog-metric">
-                  <span>좌우 밸런스 & 중앙 편차 (사내 기준)</span>
+                  <span>좌우 밸런스 및 편차</span>
                   <strong>
                     좌 {effectiveCurrentContainer.cog.leftRatio}% : 우 {effectiveCurrentContainer.cog.rightRatio}% ({effectiveCurrentContainer.cog.offsetDirZText})
                   </strong>
                   <small>{effectiveCurrentContainer.cog.lateralCriteriaText}</small>
                 </div>
                 <div className="cbm-cog-metric">
-                  <span>전후 밸런스 & 중앙 편차 (CTU Code 권고)</span>
+                  <span>전후 밸런스 및 편차</span>
                   <strong>
                     전 {effectiveCurrentContainer.cog.frontRatio}% : 후 {effectiveCurrentContainer.cog.rearRatio}% ({effectiveCurrentContainer.cog.offsetDirXText})
                   </strong>

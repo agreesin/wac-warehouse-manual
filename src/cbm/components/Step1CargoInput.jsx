@@ -32,9 +32,9 @@ export function Step1CargoInput({
         <div className="cbm-section-banner-left">
           <span className="cbm-step-badge">STEP 1</span>
           <div>
-            <h2>화물 정보 입력 및 적재 조건 설정</h2>
+            <h2>화물 및 적재 조건 입력</h2>
             <p>
-              견적을 산출할 화물 치수·수량·무게를 입력(또는 엑셀 업로드)하고, 1단적(평적)/2단적 여부와 혼적 허용 여부, 최대 적재 높이를 설정하세요.
+              화물 치수·수량 입력 및 컨테이너 적재 조건을 설정합니다.
             </p>
           </div>
         </div>
@@ -68,7 +68,7 @@ export function Step1CargoInput({
           onDrop={handleDrop}
         >
           <div className="cbm-card-header">
-            <h2>1-A. 화물(박스) 리스트 입력</h2>
+            <h2>1-A. 화물 목록 입력</h2>
             <div className="cbm-card-header-btns">
               <div
                 style={{
@@ -155,21 +155,18 @@ export function Step1CargoInput({
           </div>
 
           <div className="cbm-cargo-table-wrap">
-            <div className="cbm-table-scroll-hint">
-              <span>표를 좌우로 스크롤하여 치수·단수·회전 설정을 확인하세요</span>
-            </div>
             <table className="cbm-cargo-table">
               <thead>
                 <tr>
                   <th>색상</th>
-                  <th>화물명 (품목명)</th>
+                  <th>화물명</th>
                   <th>가로 ({unitMode})</th>
                   <th>세로 ({unitMode})</th>
                   <th>높이 ({unitMode})</th>
-                  <th>수량 (박스)</th>
-                  <th>박스단중 (kg)</th>
+                  <th>수량</th>
+                  <th>단중 (kg)</th>
                   <th title="품목별 최대 적재 단수 제한 (0: 높이 기준 자동)">단수제한</th>
-                  <th title="박스 상단 허용하중(kg) — 하단 박스가 견딜 수 있는 최대 하중 (인터로킹 시 압축강도 약 25% 저하 반영)">상단 허용하중(kg)</th>
+                  <th title="박스 상단 허용하중(kg) — 하단 박스가 견딜 수 있는 최대 하중 (인터로킹 시 압축강도 약 25% 저하 반영)">허용하중 (kg)</th>
                   <th title="이 품목이 실린 파레트는 2단 적재하지 않음 (위에 올리지도, 다른 파레트를 올리지도 않음)">2단적금지</th>
                   <th title="첫 완성 파레트 실측 외경(가로×세로 mm) — 입력 시 계산 규격 대신 실측 치수를 우선 적용하여 컨테이너 적재 유격을 정밀 계산합니다">실측외경(W×L)</th>
                   <th>회전허용</th>
@@ -428,12 +425,11 @@ export function Step1CargoInput({
         {/* Right Column: Stacking Rules & Height Limits */}
         <div className="cbm-card cbm-rule-card">
           <div className="cbm-card-header">
-            <h2>1-B. 어떻게 적재할지 조건(Rule) 선택</h2>
-            <span className="cbm-badge">적재 기준</span>
+            <h2>1-B. 적재 조건 설정</h2>
           </div>
 
           {/* Option 1: 1단적 vs 2단적 */}
-          <div className="cbm-field-label">① 컨테이너 단적(段積) 방식 선택 (1단적 vs 2단적)</div>
+          <div className="cbm-field-label">① 컨테이너 적재 방식</div>
           <div className="cbm-stack-mode-selector">
             <button
               type="button"
@@ -441,10 +437,10 @@ export function Step1CargoInput({
               onClick={() => setStackMode('single')}
             >
               <div className="cbm-stack-btn-top">
-                <strong>1단적 (Single Stack)</strong>
+                <strong>1단 평적</strong>
                 <span className="cbm-stack-tag">단일층</span>
               </div>
-              <p>바닥 1단 단일 평적 (화물 하중 부담 최소화 · 전도 위험 방지)</p>
+              <p>바닥 1단 평적 (화물 하중 부담 최소화)</p>
             </button>
 
             <button
@@ -453,10 +449,10 @@ export function Step1CargoInput({
               onClick={() => setStackMode('double_auto')}
             >
               <div className="cbm-stack-btn-top">
-                <strong>2단적 (Double Stack) — 높이 자동 맞춤</strong>
-                <span className="cbm-stack-tag highlight">2단적 자동</span>
+                <strong>2단적 (높이 자동)</strong>
+                <span className="cbm-stack-tag highlight">자동 분할</span>
               </div>
-              <p>화물 압축 강도 허용 시 컨테이너 높이에 맞춰 자동 분할 (공간 극대화)</p>
+              <p>컨테이너 높이에 맞춰 자동 분할 (공간 극대화)</p>
             </button>
 
             <button
@@ -465,10 +461,10 @@ export function Step1CargoInput({
               onClick={() => setStackMode('double_manual')}
             >
               <div className="cbm-stack-btn-top">
-                <strong>2단적 (Double Stack) — 지정 높이 유지</strong>
-                <span className="cbm-stack-tag">2단적 수동</span>
+                <strong>2단적 (지정 높이)</strong>
+                <span className="cbm-stack-tag">지정 높이</span>
               </div>
-              <p>지정 높이 유지, 적재 가능한 견고 화물만 2단적</p>
+              <p>설정된 높이 유지, 가능 화물만 2단적</p>
             </button>
           </div>
 
@@ -483,7 +479,7 @@ export function Step1CargoInput({
             }}
           >
             <div className="cbm-field-label" style={{ margin: 0 }}>
-              ② 한 파레트 내 화물 혼적 및 교차 적재(인터로킹)
+              ② 혼적 및 교차 적재
             </div>
             <label
               className="cbm-mini-check"
@@ -495,7 +491,7 @@ export function Step1CargoInput({
                 checked={interlockLayers}
                 onChange={(e) => setInterlockLayers(e.target.checked)}
               />
-              <span>홀·짝수단 교차 적재(인터로킹)</span>
+              <span>교차 적재 (인터로킹)</span>
             </label>
           </div>
 
@@ -521,22 +517,22 @@ export function Step1CargoInput({
               className={`cbm-radio-card ${!mixCargos ? 'active' : ''}`}
               onClick={() => setMixCargos(false)}
             >
-              <strong>품목별 단독 적재 (권장)</strong>
-              <span>품목별 독립 파레트 구성 (오배송 방지)</span>
+              <strong>품목별 단독 적재</strong>
+              <span>품목별 독립 파레트 구성</span>
             </button>
             <button
               type="button"
               className={`cbm-radio-card ${mixCargos ? 'active' : ''}`}
               onClick={() => setMixCargos(true)}
             >
-              <strong>다품종 잔량 혼적 허용</strong>
-              <span>완적 후 안전한 자투리 파레트만 합포장</span>
+              <strong>잔량 혼적 허용</strong>
+              <span>자투리 잔량 파레트 합포장</span>
             </button>
           </div>
 
           {/* Option 3: Height & Weight Numeric Inputs */}
           <div className="cbm-field-label" style={{ marginTop: '14px' }}>
-            ③ 파레트 높이(mm) 및 중량(kg) 제한 설정
+            ③ 파레트 높이 및 중량 한도
           </div>
           <div
             className="cbm-height-quick-bar"
@@ -552,7 +548,7 @@ export function Step1CargoInput({
               }}
             >
               <span>
-                최대 적재높이 드래그 조절 (<strong>10mm 단위</strong> · 파레트 포함):{' '}
+                최대 적재높이 (파레트 포함):{' '}
                 <strong style={{ color: '#60a5fa', fontSize: '14px' }}>
                   {effectivePalletConfig.maxTotalHeight.toLocaleString()}mm
                 </strong>{' '}
@@ -716,7 +712,7 @@ export function Step1CargoInput({
           1단계: 파레트 적재 계산
         </button>
         <div className="cbm-action-sub" style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '6px' }}>
-          입력된 {inputSummary.skuCount}종({inputSummary.totalBoxes.toLocaleString()}박스)의 파레트 소요량 산출 및 2D/3D 시각화 단계로 이동합니다.
+          파레트 소요량 산출 및 3D 시각화 단계로 이동합니다.
         </div>
       </div>
     </section>

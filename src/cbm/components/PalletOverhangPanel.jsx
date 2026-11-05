@@ -27,10 +27,10 @@ export function PalletOverhangPanel({
       <div className="cbm-card-header" style={{ flexWrap: 'wrap', gap: '8px', paddingBottom: '6px' }}>
         <div>
           <h2 style={{ color: '#fbbf24', fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            파레트 외곽 돌출(Overhang) 보조 설정
+            파레트 돌출(Overhang) 설정
           </h2>
           <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
-            기본값은 파레트 규격에 맞춘 <strong>돌출 0mm (정사이즈 고수)</strong> 적재입니다. 특수한 경우 파레트 수를 절감하기 위해 보조 옵션으로 돌출을 선택할 수 있습니다.
+            파레트 외곽 돌출 허용 여부를 설정하여 파레트당 적재 수량을 조정합니다.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -44,7 +44,7 @@ export function PalletOverhangPanel({
               );
             }}
           >
-            기본 정사이즈 유지 (0mm)
+            돌출 없음 (0mm)
           </button>
           <button
             type="button"
