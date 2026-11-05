@@ -112,7 +112,7 @@ export function PalletStackingAccordion({
                     marginBottom: '6px',
                   }}
                 >
-                  ① 한 층(1단) 평면 배열 모양 선택
+                  1. 한 층(1단) 평면 배열 모양 선택
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   {activeCargoDiag.patternOptions.map((opt) => {
@@ -189,7 +189,7 @@ export function PalletStackingAccordion({
                       marginBottom: '6px',
                     }}
                   >
-                    ② 층간 쌓기 방식 (기둥식 vs 교차식)
+                    2. 층간 쌓기 방식 (기둥식 vs 교차식)
                   </div>
                   <div
                     style={{
@@ -277,7 +277,7 @@ export function PalletStackingAccordion({
                       marginBottom: '6px',
                     }}
                   >
-                    ③ 상자 세움/눕힘 자세 (3면 회전)
+                    3. 상자 세움/눕힘 자세 (3면 회전)
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {activeCargoDiag.postureOptions.map((posOpt) => {

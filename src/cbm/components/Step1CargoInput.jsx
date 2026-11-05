@@ -429,7 +429,7 @@ export function Step1CargoInput({
           </div>
 
           {/* Option 1: 1단적 vs 2단적 */}
-          <div className="cbm-field-label">① 컨테이너 적재 방식</div>
+          <div className="cbm-field-label">1. 컨테이너 적재 방식</div>
           <div className="cbm-stack-mode-selector">
             <button
               type="button"
@@ -479,7 +479,7 @@ export function Step1CargoInput({
             }}
           >
             <div className="cbm-field-label" style={{ margin: 0 }}>
-              ② 혼적 및 교차 적재
+              2. 혼적 및 교차 적재
             </div>
             <label
               className="cbm-mini-check"
@@ -508,7 +508,7 @@ export function Step1CargoInput({
                 lineHeight: 1.45,
               }}
             >
-              ⚠️ <strong>인터로킹 강도 저하 주의:</strong> 상자 모서리가 맞닿지 않아 박스 압축강도(BCT)가 약 25% 저하(강도 계수 0.75)될 수 있습니다. 화물 테이블에서 계수(기본 1.0) 또는 상단 허용하중을 확인하십시오.
+              [주의] <strong>인터로킹 강도 저하:</strong> 상자 모서리가 맞닿지 않아 박스 압축강도(BCT)가 약 25% 저하(강도 계수 0.75)될 수 있습니다. 화물 테이블에서 계수(기본 1.0) 또는 상단 허용하중을 확인하십시오.
             </div>
           )}
           <div className="cbm-radio-pair">
@@ -532,7 +532,7 @@ export function Step1CargoInput({
 
           {/* Option 3: Height & Weight Numeric Inputs */}
           <div className="cbm-field-label" style={{ marginTop: '14px' }}>
-            ③ 파레트 높이 및 중량 한도
+            3. 파레트 높이 및 중량 한도
           </div>
           <div
             className="cbm-height-quick-bar"

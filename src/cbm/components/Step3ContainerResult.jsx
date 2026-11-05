@@ -270,13 +270,13 @@ export function Step3ContainerResult({
 
         {/* 도로 운송 중량 제한 안내 문구 */}
         <div style={{ marginTop: '8px', fontSize: '0.76rem', color: '#94a3b8', padding: '0 4px' }}>
-          ※ 도로 운송 중량 제한(축중 제한 등)을 고려해 회사의 실제 선적 중량 상한을 설정할 수 있습니다. (기본값: 컨테이너 제원 최대적재중량)
+          [안내] 도로 운송 중량 제한(축중 제한 등)을 고려해 회사의 실제 선적 중량 상한을 설정할 수 있습니다. (기본값: 컨테이너 제원 최대적재중량)
         </div>
 
         {/* 상한으로 인한 대수 증가 또는 미완성 열 발생 경고 */}
         {hasWeightLimitWarning && (
           <div className="cbm-weight-limit-alert" style={{ marginTop: '8px' }}>
-            <span style={{ fontWeight: 700, color: '#f59e0b' }}>⚠️ 중량 상한 안내:</span>
+            <span style={{ fontWeight: 700, color: '#f59e0b' }}>[안내] 중량 상한:</span>
             <span>
               호기당 중량 상한({Number(maxWeightPerContainerLimit).toLocaleString()}kg)을 맞추기 위해{' '}
               {activeContainers.length > (simResult?.containerResult?.containers?.length || 1)

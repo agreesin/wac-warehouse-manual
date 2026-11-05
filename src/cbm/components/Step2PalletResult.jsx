@@ -236,7 +236,7 @@ export function Step2PalletResult({
               </div>
               {policyOverhang > 50 && (
                 <span style={{ fontSize: '11px', color: '#f87171', display: 'block', marginTop: '3px' }}>
-                  ⚠️ 과다 돌출 시 컨테이너 길이/내폭 초과로 적입 불가 (주의)
+                  [주의] 과다 돌출 시 컨테이너 길이/내폭 초과로 적입 불가
                 </span>
               )}
             </div>
@@ -437,11 +437,11 @@ export function Step2PalletResult({
                 <div className={`cbm-pm-container-diff ${containerDiff !== 0 ? 'warn-diff' : 'match-diff'}`}>
                   {containerDiff !== 0 ? (
                     <span>
-                      최소 파레트안({minPalletSpec.name} {minPalletSpec.totalPallets}PLT) 대비 컨테이너 {Math.abs(containerDiff)}대 {containerDiff > 0 ? '추가' : '절감'}
+                      최소 파레트안({minPalletSpec.shortLabel || minPalletSpec.name} {minPalletSpec.totalPallets}PLT) 대비 컨테이너 {Math.abs(containerDiff)}대 {containerDiff > 0 ? '추가' : '절감'}
                     </span>
                   ) : (
                     <span>
-                      최소 파레트안({minPalletSpec.name} {minPalletSpec.totalPallets}PLT)과 동일한 컨테이너 {companyContainerCount}대 유지
+                      최소 파레트안({minPalletSpec.shortLabel || minPalletSpec.name} {minPalletSpec.totalPallets}PLT)과 동일한 컨테이너 {companyContainerCount}대 유지
                     </span>
                   )}
                 </div>

@@ -359,7 +359,7 @@ export function ProjectManagerModal({
 
         {/* 중요 필수 안내 바 */}
         <div className="cbm-pm-notice-bar">
-          <strong>※ 안내:</strong> 브라우저 데이터 삭제 시 저장 목록이 초기화되므로, 중요한 설정은 <strong>[JSON 내보내기]</strong>로 파일 보관을 권장합니다.
+          <strong>[안내]</strong> 브라우저 데이터 삭제 시 저장 목록이 초기화되므로, 중요한 설정은 <strong>[JSON 내보내기]</strong>로 파일 보관을 권장합니다.
         </div>
 
         {/* 피드백 메시지 (성공 / 오류 알림) */}

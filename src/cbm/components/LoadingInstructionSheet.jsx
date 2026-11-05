@@ -43,12 +43,10 @@ function buildGroupedSequenceRows(container) {
       (container.fieldDiagnostics?.hasDoorIncompleteCol && container.fieldDiagnostics?.doorIncompleteColInfo?.colIndex === colIdx)
     );
 
-    // 파레트 적재 방향 (가로 / 세로 / 정방향)
-    let orientation = pp.orientation || '';
-    if (!orientation) {
-      if (pp.length < pp.width) orientation = '가로';
-      else if (pp.length > pp.width) orientation = '세로';
-      else orientation = '정방향';
+    // 파레트 적재 방향 (가로 / 세로 / 정방향 대신 명확한 길이 방향 치수로 표현)
+    let orientation = '';
+    if (pp.length !== pp.width) {
+      orientation = `${pp.length.toLocaleString()}mm가 길이 방향`;
     }
 
     // 상단 2단적 화물 존재 여부 확인
@@ -147,8 +145,7 @@ function buildGroupedSequenceRows(container) {
         : `${first.pLabel} ~ ${last.pLabel} (총 ${count}개)`;
 
     const avgWeight = Math.round(g.items.reduce((s, it) => s + it.weightKg, 0) / count);
-    const orientTag =
-      g.orientation && g.orientation !== '정방향' ? ` [${g.orientation}]` : '';
+    const orientTag = g.orientation ? ` [${g.orientation}]` : '';
 
     let itemDesc = `${g.cargoName} (${g.specDesc})${orientTag}${g.hasTier2 ? ' [2단적]' : ''}`;
     if (g.isIncomplete) {
@@ -248,7 +245,7 @@ function FloorPlanPrintSvg({ container }) {
 
   return (
     <div style={{ width: '100%', border: '1.5px solid #000', padding: '5px 8px', background: '#fff', boxSizing: 'border-box' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '11px', fontWeight: 'bold' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px', fontSize: '12px', fontWeight: 'bold' }}>
         <span>[ 평면 적재 배치도 ] — 왼쪽: 앞벽(Front) / 오른쪽: 도어(Door) / 위쪽: 우측(Right) / 아래쪽: 좌측(Left)</span>
         <span>범례: 일반[ □ ] | 단차 경고 대상[ 빗금/// ] | 각재 펜스[ 굵은선━━ ] | 문 앞 빈 공간({rearClearanceMm.toLocaleString()}mm)</span>
       </div>
@@ -267,18 +264,36 @@ function FloorPlanPrintSvg({ container }) {
         {/* 컨테이너 외곽선 */}
         <rect x={0} y={0} width={cLen} height={cWid} fill="#ffffff" stroke="#000000" strokeWidth="40" rx="20" />
 
-        {/* 벽면 안내 라벨 */}
-        <text x={80} y={cWid / 2} textAnchor="start" dominantBaseline="middle" fill="#000" fontSize="220" fontWeight="bold">
-          [ 앞벽 / Front ]
+        {/* 벽면 안내 라벨 (화물과 겹치지 않도록 외곽 테두리선 정렬) */}
+        <text
+          x={40}
+          y={cWid / 2}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#444444"
+          fontSize="180"
+          fontWeight="bold"
+          transform={`rotate(-90 40 ${cWid / 2})`}
+        >
+          [ 앞벽 FRONT ]
         </text>
-        <text x={cLen - 80} y={cWid / 2} textAnchor="end" dominantBaseline="middle" fill="#000" fontSize="220" fontWeight="bold">
-          [ 도어 / Door ]
+        <text
+          x={cLen - 40}
+          y={cWid / 2}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="#444444"
+          fontSize="180"
+          fontWeight="bold"
+          transform={`rotate(90 ${cLen - 40} ${cWid / 2})`}
+        >
+          [ 도어 DOOR ]
         </text>
-        <text x={cLen / 2} y={120} textAnchor="middle" dominantBaseline="middle" fill="#666" fontSize="180">
-          ▲ 우측 벽면 (우)
+        <text x={cLen / 2} y={100} textAnchor="middle" dominantBaseline="middle" fill="#666666" fontSize="150" fontWeight="bold">
+          ▲ 우측 벽면 (Right)
         </text>
-        <text x={cLen / 2} y={cWid - 120} textAnchor="middle" dominantBaseline="middle" fill="#666" fontSize="180">
-          ▼ 좌측 벽면 (좌)
+        <text x={cLen / 2} y={cWid - 100} textAnchor="middle" dominantBaseline="middle" fill="#666666" fontSize="150" fontWeight="bold">
+          ▼ 좌측 벽면 (Left)
         </text>
 
         {/* 파레트 배치 슬롯 */}
@@ -347,7 +362,7 @@ function FloorPlanPrintSvg({ container }) {
                 fontSize="145"
                 fontWeight="600"
               >
-                {pp.pallet.totalHeight}mm{pp.orientation && pp.orientation !== '정방향' ? ` (${pp.orientation})` : ''}{isLow ? ' (!)' : ''}
+                {pp.pallet.totalHeight}mm{pp.length !== pp.width ? ` (${pp.length}L)` : ''}{isLow ? ' (!)' : ''}
               </text>
             </g>
           );
@@ -408,7 +423,7 @@ function FloorPlanPrintSvg({ container }) {
           );
         })}
 
-        {/* 열간 측면 유격 에어백 표기 (구간별 밴드로 표시) */}
+        {/* 열간 측면 유격 에어백 표기 (구간별 밴드로 표시, 화물 텍스트 침범 방지) */}
         {airbagBands.map((band, bIdx) => {
           const len = band.maxX - band.minX;
           const colRangeText =
@@ -420,14 +435,24 @@ function FloorPlanPrintSvg({ container }) {
             <g key={`airbag-band-${bIdx}`}>
               <rect
                 x={band.minX}
-                y={band.midZ - 75}
+                y={band.midZ - 50}
                 width={len}
-                height={150}
-                rx={45}
+                height={100}
+                rx={30}
+                fill="#f1f5f9"
+                stroke="#000000"
+                strokeWidth="14"
+                strokeDasharray="30,20"
+              />
+              <rect
+                x={band.minX + len / 2 - 800}
+                y={band.midZ - 42}
+                width={1600}
+                height={84}
                 fill="#ffffff"
                 stroke="#000000"
-                strokeWidth="18"
-                strokeDasharray="40,20"
+                strokeWidth="8"
+                rx="15"
               />
               <text
                 x={band.minX + len / 2}
@@ -435,65 +460,10 @@ function FloorPlanPrintSvg({ container }) {
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="#000000"
-                fontSize="150"
+                fontSize="110"
                 fontWeight="bold"
               >
-                에어백 충진 구역 ({colRangeText} 중앙 틈 {band.gap}mm)
-              </text>
-            </g>
-          );
-        })}
-
-        {/* 문쪽 미완성 열 측면 블로킹 (각재 또는 세운 빈 파레트) */}
-        {floorPallets.map((pp) => {
-          if (!pp.isSingleIncompleteCol) return null;
-          const leftGap = pp.leftGapMm || Math.floor((cWid - pp.width) / 2);
-          const rightGap = pp.rightGapMm || (cWid - (pp.z + pp.width));
-          return (
-            <g key={`print-side-block-${pp.slotIndex || pp.pallet.id}`}>
-              <rect
-                x={pp.x + 15}
-                y={15}
-                width={pp.length - 30}
-                height={Math.max(10, pp.z - 30)}
-                fill="none"
-                stroke="#000000"
-                strokeWidth="18"
-                strokeDasharray="40,20"
-                rx="15"
-              />
-              <text
-                x={pp.x + pp.length / 2}
-                y={pp.z / 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="#000000"
-                fontSize="140"
-                fontWeight="bold"
-              >
-                측면 블로킹 ({leftGap}mm)
-              </text>
-              <rect
-                x={pp.x + 15}
-                y={pp.z + pp.width + 15}
-                width={pp.length - 30}
-                height={Math.max(10, cWid - (pp.z + pp.width) - 30)}
-                fill="none"
-                stroke="#000000"
-                strokeWidth="18"
-                strokeDasharray="40,20"
-                rx="15"
-              />
-              <text
-                x={pp.x + pp.length / 2}
-                y={pp.z + pp.width + (cWid - (pp.z + pp.width)) / 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="#000000"
-                fontSize="140"
-                fontWeight="bold"
-              >
-                측면 블로킹 ({rightGap}mm)
+                에어백 충진 ({colRangeText}, 유격 {band.gap}mm)
               </text>
             </g>
           );
@@ -502,57 +472,96 @@ function FloorPlanPrintSvg({ container }) {
         {/* 마지막 열 뒤 각재 펜스 및 코너포스트 버팀목 */}
         {maxOccupiedX > 0 && maxOccupiedX < cLen && (
           <g>
+            {/* 문 앞 빈 공간 바탕 음영 영역 (컨테이너 내부에 정확히 위치) */}
+            <rect
+              x={maxOccupiedX + 40}
+              y={35}
+              width={cLen - maxOccupiedX - 75}
+              height={cWid - 70}
+              fill="#f8fafc"
+              stroke="#64748b"
+              strokeWidth="16"
+              strokeDasharray="40,25"
+              rx="10"
+            />
+
             {/* 각재 펜스 굵은 선 */}
             <line
-              x1={maxOccupiedX + 40}
+              x1={maxOccupiedX + 45}
               y1={40}
-              x2={maxOccupiedX + 40}
+              x2={maxOccupiedX + 45}
               y2={cWid - 40}
               stroke="#000000"
-              strokeWidth="90"
+              strokeWidth="80"
             />
-            <text
-              x={maxOccupiedX + 160}
-              y={cWid / 2 - 350}
-              textAnchor="start"
-              dominantBaseline="middle"
-              fill="#000000"
-              fontSize="190"
-              fontWeight="bold"
-            >
-              [ 각재 펜스 시공 위치 ]
-            </text>
 
             {/* 코너포스트 대각 버팀목 선 */}
             <line
-              x1={maxOccupiedX + 40}
-              y1={180}
-              x2={cLen - 40}
-              y2={80}
+              x1={maxOccupiedX + 45}
+              y1={220}
+              x2={cLen - 60}
+              y2={90}
               stroke="#000000"
-              strokeWidth="45"
+              strokeWidth="40"
               strokeDasharray="50,30"
             />
             <line
-              x1={maxOccupiedX + 40}
-              y1={cWid - 180}
-              x2={cLen - 40}
-              y2={cWid - 80}
+              x1={maxOccupiedX + 45}
+              y1={cWid - 220}
+              x2={cLen - 60}
+              y2={cWid - 90}
               stroke="#000000"
-              strokeWidth="45"
+              strokeWidth="40"
               strokeDasharray="50,30"
             />
-            <text
-              x={(maxOccupiedX + cLen) / 2}
-              y={cWid / 2 + 350}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#000000"
-              fontSize="170"
-              fontWeight="bold"
-            >
-              ← 문 앞 빈 공간 {rearClearanceMm.toLocaleString()}mm (목재 블로킹/버팀목) →
-            </text>
+
+            {/* 문 앞 빈 공간 텍스트 라벨 (공간 내부에 쏙 들어가도록 콤팩트 카드 배치) */}
+            <g transform={`translate(${(maxOccupiedX + cLen) / 2}, ${cWid / 2})`}>
+              <rect
+                x={-480}
+                y={-180}
+                width={960}
+                height={360}
+                fill="#ffffff"
+                fillOpacity={0.96}
+                stroke="#000000"
+                strokeWidth="12"
+                rx="15"
+              />
+              <text
+                x={0}
+                y={-90}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#000000"
+                fontSize="120"
+                fontWeight="bold"
+              >
+                [ 각재 펜스 시공 ]
+              </text>
+              <text
+                x={0}
+                y={10}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#000000"
+                fontSize="140"
+                fontWeight="900"
+              >
+                빈 공간 {rearClearanceMm.toLocaleString()}mm
+              </text>
+              <text
+                x={0}
+                y={105}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#444444"
+                fontSize="110"
+                fontWeight="bold"
+              >
+                (대각 버팀목 / 에어백 금지)
+              </text>
+            </g>
           </g>
         )}
       </svg>
@@ -570,15 +579,15 @@ function ShoringCrossSectionSvg({ container }) {
   if (!hasHeightGap) {
     // 단차가 없는 경우: 문 앞 목재 각재 펜스 + 버팀목 개략도
     return (
-      <div style={{ width: '100%', height: '85px', border: '1px solid #000', padding: '4px', background: '#fff', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '2px' }}>[ 문 앞 펜스·버팀목 시공 단면 안내 ]</div>
-        <svg viewBox="0 0 600 180" style={{ width: '100%', height: '62px' }}>
-          <rect x="20" y="20" width="560" height="140" fill="#fff" stroke="#000" strokeWidth="4" />
-          <line x1="20" y1="65" x2="580" y2="65" stroke="#000" strokeWidth="6" />
-          <line x1="20" y1="115" x2="580" y2="115" stroke="#000" strokeWidth="6" />
-          <text x="300" y="42" textAnchor="middle" fontSize="16" fontWeight="bold">상단 각재 (내폭 맞춤)</text>
-          <text x="300" y="90" textAnchor="middle" fontSize="16" fontWeight="bold">중단 각재 (내폭 맞춤)</text>
-          <text x="300" y="140" textAnchor="middle" fontSize="16" fontWeight="bold">하단 각재 + 코너포스트 버팀목 6본 결속</text>
+      <div style={{ width: '100%', border: '1px solid #000', padding: '6px 8px', background: '#fff', boxSizing: 'border-box' }}>
+        <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '3px' }}>[ 문 앞 펜스·버팀목 시공 단면 안내 ]</div>
+        <svg viewBox="0 0 600 130" style={{ width: '100%', height: '78px', display: 'block' }}>
+          <rect x="20" y="10" width="560" height="110" fill="#fff" stroke="#000" strokeWidth="4" />
+          <line x1="20" y1="46" x2="580" y2="46" stroke="#000" strokeWidth="5" />
+          <line x1="20" y1="84" x2="580" y2="84" stroke="#000" strokeWidth="5" />
+          <text x="300" y="30" textAnchor="middle" fontSize="19" fontWeight="bold">상단 각재 (내폭 맞춤 Chock)</text>
+          <text x="300" y="68" textAnchor="middle" fontSize="19" fontWeight="bold">중단 각재 (내폭 맞춤 Chock)</text>
+          <text x="300" y="106" textAnchor="middle" fontSize="19" fontWeight="bold">하단 각재 + 코너포스트 대각 버팀목 결속</text>
         </svg>
       </div>
     );
@@ -592,65 +601,66 @@ function ShoringCrossSectionSvg({ container }) {
   const p2 = lowPallets[1] || { label: 'P#38', height: 850 };
 
   return (
-    <div style={{ width: '100%', height: '115px', border: '1px solid #000', padding: '4px 6px', background: '#fff', boxSizing: 'border-box' }}>
-      <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+    <div style={{ width: '100%', border: '1px solid #000', padding: '6px 8px', background: '#fff', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '3px', display: 'flex', justifyContent: 'space-between' }}>
         <span>[ 도어측 단차 결속 단면도 (문에서 안쪽을 볼 때) ]</span>
-        <span style={{ fontSize: '10.5px' }}>수평 래싱 2줄: 높이 {lashH1.toLocaleString()}mm / {lashH2.toLocaleString()}mm</span>
+        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>수평 래싱 2줄: 높이 {lashH1.toLocaleString()}mm / {lashH2.toLocaleString()}mm</span>
       </div>
 
-      <svg viewBox="0 0 720 220" style={{ width: '100%', height: '92px' }}>
+      <svg viewBox="0 0 720 180" style={{ width: '100%', height: '104px', display: 'block' }}>
         {/* 컨테이너 내벽 윤곽 */}
-        <rect x="30" y="10" width="660" height="200" fill="#ffffff" stroke="#000000" strokeWidth="4" />
-        <text x="40" y="30" fontSize="12" fill="#666">컨테이너 내벽</text>
+        <rect x="20" y="10" width="680" height="160" fill="#ffffff" stroke="#000000" strokeWidth="4" />
+        <text x="30" y="32" fontSize="16" fill="#333" fontWeight="bold">내벽</text>
+        <text x="690" y="32" textAnchor="end" fontSize="16" fill="#333" fontWeight="bold">내벽</text>
 
         {/* 배경: 바로 앞 완적 열 (1620mm) */}
-        <rect x="70" y="35" width="580" height="175" fill="#e5e5e5" stroke="#000000" strokeWidth="2" strokeDasharray="6,4" />
-        <text x="360" y="55" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#000">
+        <rect x="65" y="25" width="590" height="145" fill="#f1f5f9" stroke="#000000" strokeWidth="2" strokeDasharray="6,4" />
+        <text x="360" y="46" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#000">
           바로 앞 완적 열 전면 (높이 1,620 mm)
         </text>
 
         {/* 완충 판재 (합판) */}
-        <line x1="80" y1="70" x2="640" y2="70" stroke="#000" strokeWidth="5" />
-        <text x="360" y="85" textAnchor="middle" fontSize="12" fill="#000" fontWeight="bold">
+        <line x1="75" y1="62" x2="645" y2="62" stroke="#000" strokeWidth="6" />
+        <text x="360" y="78" textAnchor="middle" fontSize="16" fill="#000" fontWeight="bold">
           [완충 판재] 합판 12T 지지면
         </text>
 
         {/* 수평 래싱 2줄 */}
-        <line x1="30" y1="60" x2="690" y2="60" stroke="#000" strokeWidth="3" />
-        <text x="685" y="54" textAnchor="end" fontSize="11" fontWeight="bold">수평래싱2: 1,450mm ▶</text>
+        <line x1="20" y1="52" x2="700" y2="52" stroke="#000" strokeWidth="3" />
+        <text x="675" y="46" textAnchor="end" fontSize="15" fontWeight="bold">상단 래싱 1,450mm ▶</text>
 
-        <line x1="30" y1="100" x2="690" y2="100" stroke="#000" strokeWidth="3" />
-        <text x="685" y="94" textAnchor="end" fontSize="11" fontWeight="bold">수평래싱1: 1,150mm ▶</text>
+        <line x1="20" y1="92" x2="700" y2="92" stroke="#000" strokeWidth="3" />
+        <text x="675" y="86" textAnchor="end" fontSize="15" fontWeight="bold">하단 래싱 1,150mm ▶</text>
 
         {/* 전경 좌측: 낮은 파레트 1 (P#23, 570mm) */}
-        <rect x="100" y="145" width="220" height="65" fill="#ffffff" stroke="#000000" strokeWidth="3" />
-        <text x="210" y="172" textAnchor="middle" fontSize="13" fontWeight="bold">
+        <rect x="90" y="115" width="230" height="55" fill="#ffffff" stroke="#000000" strokeWidth="3" />
+        <text x="205" y="138" textAnchor="middle" fontSize="17" fontWeight="bold">
           {p1.label} ({p1.height}mm)
         </text>
-        <text x="210" y="195" textAnchor="middle" fontSize="11" fill="#333">
-          단차 -{1620 - p1.height}mm (빗금)
+        <text x="205" y="158" textAnchor="middle" fontSize="14" fill="#111" fontWeight="bold">
+          단차 -{1620 - p1.height}mm
         </text>
 
         {/* 전경 우측: 낮은 파레트 2 (P#38, 850mm) */}
-        <rect x="400" y="125" width="220" height="85" fill="#ffffff" stroke="#000000" strokeWidth="3" />
-        <text x="510" y="157" textAnchor="middle" fontSize="13" fontWeight="bold">
+        <rect x="400" y="100" width="230" height="70" fill="#ffffff" stroke="#000000" strokeWidth="3" />
+        <text x="515" y="125" textAnchor="middle" fontSize="17" fontWeight="bold">
           {p2.label} ({p2.height}mm)
         </text>
-        <text x="510" y="180" textAnchor="middle" fontSize="11" fill="#333">
-          단차 -{1620 - p2.height}mm (빗금)
+        <text x="515" y="148" textAnchor="middle" fontSize="14" fill="#111" fontWeight="bold">
+          단차 -{1620 - p2.height}mm
         </text>
 
         {/* 톱오버 래싱 벨트 곡선 */}
-        <path d="M 80 210 Q 210 120 340 210" fill="none" stroke="#000" strokeWidth="3" strokeDasharray="4,3" />
-        <path d="M 380 210 Q 510 100 640 210" fill="none" stroke="#000" strokeWidth="3" strokeDasharray="4,3" />
+        <path d="M 70 170 Q 205 90 340 170" fill="none" stroke="#000" strokeWidth="3" strokeDasharray="5,3" />
+        <path d="M 380 170 Q 515 70 650 170" fill="none" stroke="#000" strokeWidth="3" strokeDasharray="5,3" />
 
         {/* 바닥 래싱 링 마크 */}
-        <circle cx="80" cy="205" r="4" fill="#000" />
-        <circle cx="340" cy="205" r="4" fill="#000" />
-        <circle cx="380" cy="205" r="4" fill="#000" />
-        <circle cx="640" cy="205" r="4" fill="#000" />
-        <text x="360" y="120" textAnchor="middle" fontSize="11" fontWeight="bold">
-          ▲ 톱오버 래싱 벨트 (바닥 링 결속, 전도 방지) ▲
+        <circle cx="70" cy="165" r="5" fill="#000" />
+        <circle cx="340" cy="165" r="5" fill="#000" />
+        <circle cx="380" cy="165" r="5" fill="#000" />
+        <circle cx="650" cy="165" r="5" fill="#000" />
+        <text x="360" y="108" textAnchor="middle" fontSize="15" fontWeight="bold">
+          ▲ 톱오버 래싱 벨트 (전도 방지) ▲
         </text>
       </svg>
     </div>
@@ -738,7 +748,7 @@ function SingleLoadingSheetPage({ container, totalContainers }) {
         <span><strong>화물 총중량:</strong> {container.totalWeight.toLocaleString()} kg</span>
         <span><strong>적재 방식:</strong> {stackTypeDesc}</span>
         <span><strong>품목 구성:</strong> {skuSummary}</span>
-        <span className="cbm-ls-coord-rule">※ 좌우 기준: 문 앞에서 안쪽을 바라볼 때 (상단: 우측 / 하단: 좌측)</span>
+        <span className="cbm-ls-coord-rule">[좌우 기준] 문 앞에서 안쪽을 바라볼 때 (상단: 우측 / 하단: 좌측)</span>
       </div>
 
       {/* 3. 평면 배치도 (가로로 넓게) */}
@@ -799,7 +809,7 @@ function SingleLoadingSheetPage({ container, totalContainers }) {
               <div>□ 2. 컨테이너 내폭 실측 기록: 문쪽 [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] mm &nbsp;/&nbsp; 중앙 [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] mm</div>
               <div>□ 3. 첫 번째 열(Front) 적재 후 좌우 작업 여유 실측: 좌우 [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] mm</div>
               <div>□ 4. 도어 외부에 "쇼링 완료, 문 개방 시 화물 낙하 주의" 표지 부착</div>
-              <div>□ 5. 단계별 현장 사진 촬영 완료: ① 앞벽 첫 열 &nbsp; ② 중간 적재 &nbsp; ③ 최종 쇼링 시공 &nbsp; ④ 씰(Seal) 체결</div>
+              <div>□ 5. 단계별 현장 사진 촬영 완료: 1) 앞벽 첫 열 &nbsp; 2) 중간 적재 &nbsp; 3) 최종 쇼링 시공 &nbsp; 4) 씰(Seal) 체결</div>
             </div>
           </div>
         </div>
@@ -849,14 +859,14 @@ function SingleLoadingSheetPage({ container, totalContainers }) {
                     <td style={{ fontWeight: 'bold' }}>{b.name.split(' (')[0]}</td>
                     <td>{b.spec}</td>
                     <td style={{ fontWeight: 'bold' }}>{b.quantity}</td>
-                    <td style={{ fontSize: '11px' }}>{b.purpose.split('(')[0]}</td>
+                    <td style={{ fontSize: '12px' }}>{b.purpose.split('(')[0]}</td>
                     <td style={{ textAlign: 'center', fontSize: '13px' }}>□</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div className="cbm-ls-ht-notice">
-              ※ 수출 건은 반드시 <strong>ISPM 15 (HT) 열처리 검역 마크</strong>가 각인된 목재 자재(각재·파레트)만 사용하십시오. (가공목재인 합판은 검역 면제)
+              [주의] 수출 건은 반드시 <strong>ISPM 15 (HT) 열처리 검역 마크</strong>가 각인된 목재 자재(각재·파레트)만 사용하십시오. (가공목재인 합판은 검역 면제)
             </div>
           </div>
         </div>

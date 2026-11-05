@@ -72,7 +72,7 @@ export const PALLET_PRESETS = {
   },
   EXPORT_1200: {
     id: 'EXPORT_1200',
-    name: '1200×1200 (1200 × 1200)',
+    name: '1200×1200 정사각형',
     shortLabel: '1200×1200',
     width: 1200,
     length: 1200,

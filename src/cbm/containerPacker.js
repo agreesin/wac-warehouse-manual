@@ -1949,16 +1949,21 @@ export function computeAllocationPlans(pallets, containerSpec, options, primaryC
 
   const primCounts = primaryContainers.map((c) => c.placedPallets.length);
   const primCountsStr = primCounts.join(' / ');
+  const actualIncompleteCols = primaryContainers.reduce(
+    (acc, c) => acc + (c.fieldDiagnostics?.hasDoorIncompleteCol ? 1 : 0),
+    0
+  );
+  const pcts = primaryContainers.map((c) => `${Math.round((c.totalWeight / maxWeightLimit) * 100)}%`).join(', ');
+
   let primReason = '';
   if (isCustomWeightLimit) {
-    primReason = `호기당 중량 상한(${maxWeightLimit.toLocaleString()}kg) 준수 및 모든 열 2개씩 완적 (미완성 열 0개)`;
+    primReason = `호기당 중량 상한(${maxWeightLimit.toLocaleString()}kg) 준수 및 모든 열 완적 (미완성 열 0개)`;
   } else if (colCap === 1) {
     primReason = `폭 방향 1열 중앙 적재 전용 규격 (열 용량 1개 단위 완전 충진)`;
-  } else if (totalPallets % colCap === 0) {
-    const pcts = primaryContainers.map((c) => `${Math.round((c.totalWeight / maxWeightLimit) * 100)}%`).join(', ');
-    primReason = `모든 열 2개씩 채움, 중량 여유 충분 (최대 적재중량의 ${pcts})`;
+  } else if (actualIncompleteCols === 0) {
+    primReason = `모든 열/블록 완적 (미완성 열 0개), 중량 여유 충분 (최대 적재중량의 ${pcts})`;
   } else {
-    primReason = `미완성 열 최소화 (1호기 완적 ${primCounts[0]}개, 마지막 호기 문쪽 1열만 미완성 1개)`;
+    primReason = `미완성 열 최소화 (1호기 완적 ${primCounts[0]}개, 문쪽 미완성 열 ${actualIncompleteCols}개)`;
   }
 
   const planA = extractPlanMetrics(
