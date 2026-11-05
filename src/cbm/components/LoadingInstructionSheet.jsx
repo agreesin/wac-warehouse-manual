@@ -210,8 +210,8 @@ function FloorPlanPrintSvg({ container }) {
   const maxOccupiedX = floorPallets.reduce((max, pp) => Math.max(max, pp.x + pp.length), 0);
   const colGaps = container.fieldDiagnostics?.colGapDetails || [];
 
-  // 측면 유격 > 150mm 인 열들을 연속된 구간(Zone)으로 묶어 깨끗하게 에어백 밴드로 표시
-  const wideCols = colGaps.filter((cg) => cg.gap > 150 && !cg.isSingle && cg.pallets.length >= 2);
+  // 측면 유격 > 150mm 인 열들을 연속된 구간(Zone)으로 묶어 깨끗하게 에어백 밴드로 표시 (도어 열은 에어백 금지)
+  const wideCols = colGaps.filter((cg) => cg.gap > 150 && !cg.isSingle && !cg.isDoorCol && cg.pallets.length >= 2);
   const airbagBands = [];
   let curBand = null;
   for (const cg of wideCols) {
@@ -686,13 +686,23 @@ function SingleLoadingSheetPage({ container, totalContainers }) {
     : '공칭 파레트 폭에 맞춰 포크 진입';
 
   // 쇼링 액션 단계 5개
-  const shoringSteps = doorGuide?.actions?.slice(0, 5) || [
-    '앞벽부터 파레트 간격 없이 전방 밀착 적재 완료',
-    `문 앞 빈 공간(${fieldDiag.rearClearanceMm ?? 0}mm) 실측 확인`,
-    '마지막 열 뒤에 각재 펜스를 세우고 코너포스트까지 버팀목 6본 시공',
-    '남는 틈에 빈 파레트를 세워서 끼우고 각재로 조임 (문 앞 에어백 사용 금지)',
-    '컨테이너 도어 닫힘 간섭 여부 확인 후 잠금',
-  ];
+  const rearClr = fieldDiag.rearClearanceMm ?? 0;
+  const defaultShoring = rearClr >= 600
+    ? [
+        '앞벽부터 파레트 간격 없이 전방 밀착 적재 완료',
+        `문 앞 빈 공간(${rearClr}mm) 실측 확인`,
+        '마지막 열 뒤에 각재 펜스를 세우고 코너포스트까지 대각 버팀목 시공',
+        '코너포스트 지지 확인 및 화물 유동 여부 검수 (문 앞 에어백 사용 금지)',
+        '컨테이너 도어 닫힘 간섭 여부 확인 후 잠금',
+      ]
+    : [
+        '앞벽부터 파레트 간격 없이 전방 밀착 적재 완료',
+        `문 앞 빈 틈(${rearClr}mm) 실측 확인`,
+        '세운 빈 파레트 2~4장을 끼우고 각재로 단단히 조임 (문 앞 에어백 금지)',
+        '화물 유동 여부 검수',
+        '컨테이너 도어 닫힘 간섭 여부 확인 후 잠금',
+      ];
+  const shoringSteps = doorGuide?.actions?.slice(0, 5) || defaultShoring;
 
   return (
     <div className="cbm-loading-sheet-page">
@@ -846,7 +856,7 @@ function SingleLoadingSheetPage({ container, totalContainers }) {
               </tbody>
             </table>
             <div className="cbm-ls-ht-notice">
-              ※ 수출 건은 반드시 <strong>ISPM 15 (HT) 열처리 검역 마크</strong>가 각인된 목재 자재(각재·파레트)만 사용하십시오.
+              ※ 수출 건은 반드시 <strong>ISPM 15 (HT) 열처리 검역 마크</strong>가 각인된 목재 자재(각재·파레트)만 사용하십시오. (가공목재인 합판은 검역 면제)
             </div>
           </div>
         </div>

@@ -117,7 +117,7 @@ export function PalletOverhangPanel({
                           [돌출 +{diag.current.maxOverhangMm}mm 설정] {cFit?.impossibleReason || '현장 적입 불가'}
                         </span>
                         <span style={{ color: '#fca5a5', fontSize: '0.73rem' }}>
-                          ※ 허용한도(40mm)를 초과하거나 유격이 부족하여 적입 불가합니다. 돌출을 낮추거나 1200×1000 규격으로 변경하십시오.
+                          ※ 컨테이너 내부 길이/내폭 및 공차 한도를 초과하여 적입 불가합니다. 돌출을 낮추거나 1200×1000 규격으로 변경하십시오.
                         </span>
                       </div>
                     ) : (

@@ -71,7 +71,7 @@ export function analyzeContainerCoG(container) {
 
   const maxOccupiedX = container.placedPallets.reduce(
     (max, pp) => Math.max(max, pp.x + pp.length),
-    cL
+    0
   );
   const cogX = Number((momentX / totalMass).toFixed(0));
   const cogY = Number((momentY / totalMass).toFixed(0));
@@ -142,6 +142,22 @@ export function analyzeContainerCoG(container) {
     statusText = `주의 (권장 기준 ±70mm 초과 — 현재 좌우 편차 ${Math.abs(offsetZFromCenter)}mm)`;
   }
 
+  let cogTradeoffNote = null;
+  if (!isCtuLongitudinalSafe && offsetXFromContainerCenter < 0) {
+    const forwardMm = Math.abs(offsetXFromContainerCenter);
+    const rearClearanceMm = Math.max(0, cL - maxOccupiedX);
+    cogTradeoffNote = {
+      hasTradeoff: true,
+      forwardMm,
+      offsetPct: absOffsetXPct.toFixed(1),
+      title: `전방 무게중심 편차(${absOffsetXPct.toFixed(1)}% / ${forwardMm.toLocaleString()}mm 치우침) 원인 및 안전 트레이드오프`,
+      cause: `현재 호기는 ${container.placedPallets?.length || 0} PLT가 적재되어 도어 측에 약 ${(rearClearanceMm / 1000).toFixed(1)}m의 빈 바닥 공간이 발생합니다. 앞벽부터 밀착 적재 시 화물의 기하학적 중심이 전방으로 치우치는 물리적 현상입니다. (후방 열의 무거운 화물이 하중을 분산하여 전방 편차를 완화하고 있습니다)`,
+      alternativeOption: `앞벽 쪽에 빈 파레트/완충재를 대거나 키 낮은 파레트(850mm)를 전방에 배치하면 전후 무게중심 편차를 약 2.5~4.5% 수준으로 낮출 수 있습니다. (전방 축하중 약 300mm 완화)`,
+      tradeoffRisk: `그러나 앞벽 쪽에 빈 공간이나 낮은 단차(850mm → 1,620mm)가 생기면, 차량 급제동(감속도 0.8G) 시 뒤쪽의 높고 무거운 화물이 앞으로 쏠려 무너지거나 전도·파손될 위험이 극히 큽니다.`,
+      conclusion: `따라서 급제동 안전을 위해 현 배치의 '앞벽 밀착 적재'를 유지하고, 도어 측 빈 공간(${(rearClearanceMm / 1000).toFixed(1)}m)을 목재 각재 펜스와 버팀목으로 견고하게 마감 차단하는 것이 현장 안전 표준 수칙에 부합합니다.`,
+    };
+  }
+
   return {
     cogX,
     cogY,
@@ -164,6 +180,7 @@ export function analyzeContainerCoG(container) {
     rightRatio,
     status,
     statusText,
+    cogTradeoffNote,
   };
 }
 
@@ -375,7 +392,8 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       }
       if (gap > maxColGapMm) maxColGapMm = gap;
 
-      if (gap > maxLateralGapAllowed) {
+      const isDoorCol = cIdx === uniqueXs.length - 1;
+      if (gap > maxLateralGapAllowed && !isDoorCol) {
         wideGapGroups.push({
           colIndex: cIdx + 1,
           gap,
@@ -387,6 +405,7 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       colGapDetails.push({
         colIndex: cIdx + 1,
         gap,
+        isDoorCol,
         isSingle: isRemnantSingle,
         leftGapMm: isRemnantSingle ? Math.floor(gap / 2) : Math.floor(standardGap / 3),
         rightGapMm: isRemnantSingle ? Math.ceil(gap / 2) : Math.ceil(standardGap / 3),
@@ -420,7 +439,8 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       if (gap > maxColGapMm) maxColGapMm = gap;
       if (gap < minColGapMm) minColGapMm = gap;
 
-      if (!isDoorIncomplete && gap > maxLateralGapAllowed) {
+      // 문쪽 열(isDoorCol)은 문 개방 시 쏟아짐 위험으로 에어백 사용 금지! 내부 열만 에어백 대상으로 추가
+      if (!isDoorIncomplete && !isDoorCol && gap > maxLateralGapAllowed) {
         wideGapGroups.push({
           colIndex: cIdx + 1,
           gap,
@@ -433,6 +453,7 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       colGapDetails.push({
         colIndex: cIdx + 1,
         gap,
+        isDoorCol,
         isSingle: isSingle || isDoorIncomplete,
         isDoorIncomplete,
         leftGapMm: (isSingle || isDoorIncomplete) ? Math.floor(gap / 2) : 0,
@@ -551,40 +572,45 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
     lowDoorPalletDetails.length > 0
       ? Math.max(...lowDoorPalletDetails.map((p) => p.height))
       : Math.round(frontColMaxH * 0.5);
+  // 도어에 직접 면하는 마지막 열의 최고 높이 (문 앞 펜스 단수 산출 기준)
+  const lastColMaxH = doorPallets.length > 0
+    ? Math.max(...doorPallets.map((pp) => pp.pallet.totalHeight))
+    : frontColMaxH;
+
   const upperLashH = Math.floor((frontColMaxH - 150) / 50) * 50;
   const lowerLashH = Math.floor(((maxLowPalletH + upperLashH) / 2) / 50) * 50;
 
   // 쇼링 소요 자재 산출 (BOM / Material List)
   const shoringBOM = [];
 
-  // 1. 각재 펜스 및 코너포스트 버팀목 (밀림 방지)
-  if (hasSlidingRisk) {
-    const fenceTiers = Math.max(1, Math.ceil(frontColMaxH / 600));
+  // 1. 문 앞 빈 공간 밀림 차단 자재 (길이에 따라 펜스 또는 세운 빈 파레트 중 택일)
+  // - 600mm 이상: 각재 펜스 1세트 + 코너포스트 버팀목 (빈 파레트 중복 투입 배제)
+  // - 150mm ~ 600mm 미만: 세운 빈 목재 파레트 2~4장 (단거리 틈새 메움)
+  // - 150mm 미만: 도어 밀착 상태로 마감 블로킹 불필요
+  if (rearClearanceMm >= 600) {
+    // 펜스 단수는 앞 열이 아니라 막아야 할 '마지막 열 높이(lastColMaxH)' 기준으로 계산!
+    const fenceTiers = Math.max(1, Math.ceil(lastColMaxH / 600));
     const bracingCount = 2 * fenceTiers;
     shoringBOM.push({
       category: '목재 게이트',
       name: '각재 펜스 및 코너포스트 버팀목 (ISPM 15 HT 열처리 각재)',
       spec: `각재 90×90mm 또는 100×100mm (${fenceTiers}단 가공)`,
       quantity: `${fenceTiers}단 펜스 1세트 + 버팀목 ${bracingCount}본`,
-      purpose: `마지막 열 뒤에 각재 펜스를 세우고 문쪽 코너포스트까지 버팀목을 대어 문 앞 빈 공간(${rearClearanceMm}mm) 화물 밀림 물리적 차단 (문 근처 에어백 사용 금지)`,
+      purpose: `마지막 열(높이 ${lastColMaxH}mm) 뒤에 각재 펜스를 세우고 문쪽 코너포스트까지 버팀목을 대어 문 앞 빈 공간(${rearClearanceMm}mm) 화물 밀림 물리적 차단`,
       isHtCertified: true,
     });
-  }
-
-  // 2. 빈 목재 파레트 (세워서 끼우고 각재로 조임)
-  if (hasSlidingRisk && rearClearanceMm >= 600) {
-    const palletCount = Math.max(4, Math.ceil(rearClearanceMm / 150) * 2);
+  } else if (rearClearanceMm >= 150) {
     shoringBOM.push({
       category: '목재 블로킹',
-      name: '빈 목재 파레트 (ISPM 15 HT 열처리 인증)',
+      name: '세운 빈 목재 파레트 (ISPM 15 HT 열처리 인증)',
       spec: '1100×1100mm 또는 1200×1000mm',
-      quantity: `${palletCount}장`,
-      purpose: `문 앞 빈 공간(${(rearClearanceMm / 1000).toFixed(1)}m)에 파레트를 세워서 끼우고 각재로 조여 밀림 차단 (눕혀 쌓기 금지)`,
+      quantity: '2~4장',
+      purpose: `문 앞 빈 공간(${rearClearanceMm}mm)에 파레트를 세워서 끼우고 각재로 조여 밀림 차단`,
       isHtCertified: true,
     });
   }
 
-  // 3. 듄네이지 에어백 (측면 유격 구간에만 충진, 문 앞 제외)
+  // 2. 듄네이지 에어백 (측면 유격 구간에만 충진, 문 앞 제외)
   // 백 폭은 틈의 3배 규격(300mm 틈이면 폭 900mm급, 350mm 틈이면 폭 1200mm급)
   if (wideGapGroups.length > 0) {
     // 틈 크기별(300mm 초과 vs 이하)로 세분화하여 산출
@@ -607,14 +633,17 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
 
     if (mediumGaps.length > 0) {
       const totalLen = mediumGaps.reduce((sum, g) => sum + g.colLen, 0);
-      const bagCount = Math.max(1, Math.ceil(totalLen / airbagEffLen));
+      const isBorderlineOnly = mediumGaps.every((g) => g.gap <= 165);
+      const bagCount = isBorderlineOnly ? 2 : Math.max(1, Math.ceil(totalLen / airbagEffLen));
       const gapDesc = mediumGaps.map((g) => `${g.label || `${g.colIndex}열`}(${g.gap}mm)`).join(', ');
       shoringBOM.push({
         category: '완충재',
         name: '듄네이지 에어백 (Dunnage Airbag Level 1)',
         spec: '폭 600~900mm급 (900×1200mm 또는 600×1200mm)',
-        quantity: `${bagCount}개`,
-        purpose: `측면 유격 150~300mm 구간[${gapDesc}, 총 ${(totalLen / 1000).toFixed(1)}m] 열간 완충 (CTU Code 권고 15cm 초과 구간, 문 앞 미사용)`,
+        quantity: isBorderlineOnly ? '첫 열 실측 후 결정 (예비 1~2개)' : `${bagCount}개`,
+        purpose: isBorderlineOnly
+          ? `측면 유격 150~165mm 구간[${gapDesc}] — 래핑 후 첫 열 실측에 따라 충진 여부 결정 (실측 150mm 초과 시만 충진, 문 앞 미사용)`
+          : `측면 유격 150~300mm 구간[${gapDesc}, 총 ${(totalLen / 1000).toFixed(1)}m] 열간 완충 (문 앞 미사용)`,
         isHtCertified: false,
       });
     }
@@ -662,12 +691,13 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
   // 5. 완충 판재
   if (hasHeightGapRisk) {
     shoringBOM.push({
-      category: '목재 보강',
+      category: '완충 판재',
       name: '완충 판재 (합판 / 플라스틱 골판재)',
       spec: '두께 12~15mm × 폭 2,300mm × 높이 1,200mm',
       quantity: '1장',
-      purpose: '완적 열 앞면에 대어 수평 래싱 2줄 결속 시 박스 함몰 방지 및 압력 분산',
-      isHtCertified: true,
+      purpose: '완적 열 앞면에 대어 수평 래싱 2줄 결속 시 박스 함몰 방지 및 압력 분산 (가공목재로 ISPM 15 검역 면제)',
+      isHtCertified: false,
+      isPlywoodExempt: true,
     });
   }
 
@@ -711,23 +741,35 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       actions.push(
         `[낮은 파레트 톱오버] ${lowPalletLabelsOnly.join(', ')} 위로 벨트를 넘겨 양쪽 바닥 래싱 링에 거는 톱오버 래싱 시공 (전도 방지 목적)`
       );
+      if (rearClearanceMm >= 600) {
+        actions.push(
+          `[문 앞 ${rearClearanceM}m 밀림 차단] 마지막 열 뒤에 목재 각재 펜스를 세우고 문쪽 코너포스트까지 대각 버팀목 시공 (문 근처 에어백 사용 금지, 펜스와 버팀목으로 물리적 차단)`
+        );
+      } else if (rearClearanceMm >= 150) {
+        actions.push(
+          `[문 앞 단거리 틈새 차단] 문 앞 빈 틈(${rearClearanceMm}mm)에 세운 빈 파레트 2~4장을 끼우고 각재로 조여 밀림 차단 (문 근처 에어백 사용 금지)`
+        );
+      }
       actions.push(
-        `[문 앞 ${rearClearanceM}m 밀림 차단] 마지막 열 뒤에 목재 각재 펜스를 세우고 문쪽 코너포스트까지 버팀목 시공 (문 근처 에어백 미사용 원칙, 빈 공간은 빈 파레트를 세워서 끼우고 각재로 조임)`
-      );
-      actions.push(
-        `[수출 인증 및 마감] 문에 닿는 화물 없는지 확인 후 쇼링 사진 촬영, 외부에 '쇼링 있음, 개방 주의' 표지 부착 (수출 건은 목재 자재 ISPM 15 HT 열처리 마크 필수 확인)`
+        `[수출 인증 및 마감] 문에 닿는 화물 없는지 확인 후 쇼링 사진 촬영, 외부에 '쇼링 있음, 개방 주의' 표지 부착 (수출 건은 천연 목재 자재 ISPM 15 HT 열처리 마크 필수 확인, 가공목재인 합판은 검역 면제)`
       );
     } else if (hasSlidingRisk) {
       title = `도어측 화물 후방 미끄러짐 방지 목재 블로킹 필수 (빈 공간 ${rearClearanceM}m)`;
       summary = `컨테이너 문(Door) 앞에 약 ${rearClearanceM}m의 빈 바닥 공간이 있어, 해상 피칭이나 차량 급제동 시 화물이 문 쪽으로 밀려나는 슬라이딩(미끄러짐) 사고 위험이 있습니다.`;
-      actions.push(
-        `[블로킹] 마지막 열 뒤에 각재 펜스를 세우고 코너포스트까지 버팀목을 대어 문 앞 빈 공간(${rearClearanceM}m) 밀림 물리적 차단 (빈 파레트를 세워서 끼우고 각재로 조임)`
-      );
+      if (rearClearanceMm >= 600) {
+        actions.push(
+          `[블로킹] 마지막 열 뒤에 각재 펜스를 세우고 코너포스트까지 대각 버팀목을 대어 문 앞 빈 공간(${rearClearanceM}m) 밀림 물리적 차단 (에어백 사용 금지, 버팀목 지지)`
+        );
+      } else if (rearClearanceMm >= 150) {
+        actions.push(
+          `[블로킹] 문 앞 빈 틈(${rearClearanceMm}mm)에 세운 빈 파레트 2~4장을 끼우고 각재로 조여 밀림 차단 (에어백 사용 금지)`
+        );
+      }
       actions.push(
         `[래싱 권장] 최후미 파레트 전면에 완충 판재 지지 및 수평 래싱(Horizontal Lashing) 벨트 결속 권장`
       );
       actions.push(
-        `[수출 인증] 사용 목재 자재(빈 파레트, 각재)는 반드시 ISPM 15 HT 열처리 마크가 있는 자재 사용`
+        `[수출 인증] 사용 천연 목재 자재(각재, 목재 파레트)는 반드시 ISPM 15 HT 열처리 마크가 있는 자재 사용 (합판 등 가공목재는 검역 면제)`
       );
     } else {
       title = `도어 개방 시 낙하 방지 쇼링 필수 [${lowPalletLabelsOnly.join(', ')}]`;

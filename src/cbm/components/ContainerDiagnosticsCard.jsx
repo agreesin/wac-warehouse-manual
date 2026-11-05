@@ -188,7 +188,9 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
                           {item.isHtCertified ? (
                             <span className="cbm-ht-badge">ISPM 15 HT 필수</span>
                           ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '11px' }}>일반</span>
+                            <span style={{ color: '#94a3b8', fontSize: '11px' }}>
+                              {item.isPlywoodExempt ? '해당 없음 (가공목재 면제)' : '해당 없음'}
+                            </span>
                           )}
                         </td>
                       </tr>

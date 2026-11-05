@@ -1455,8 +1455,8 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
           const netLengthClearance = 12032 - (totalLoadLength + estCols * (wrappingBulge + misalignment));
 
           // 폭 여유 및 길이 방향 여유 판정:
-          // 폭 잔여 여유가 30mm 미만이거나 길이 잔여 여유가 50mm 미만이거나 돌출이 40mm 초과면 현장 적입 불가
-          const isViable = lateralClearance >= 30 && netLengthClearance >= 50 && exactOvMm <= 40;
+          // 실제 불가 원인은 컨테이너 내부 길이/내폭 및 공차 여유 부족(또는 파레트 지지한계 초과)임
+          const isViable = lateralClearance >= 30 && netLengthClearance >= 50 && exactOvMm <= 60;
 
           // 실제 파레트 절감 효과가 있는 경우 기회로 기록 (현장 불가 시 버튼 숨김용 isViable 플래그 포함)
           if (savedPallets > 0 || strictBounds.count === 0) {
@@ -1488,11 +1488,11 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
               lateralClearance,
               netLengthClearance,
               reason: !isViable
-                ? exactOvMm > 40
-                  ? `돌출 ${exactOvMm}mm 과다(한도 40mm 초과)로 현장 불가`
-                  : netLengthClearance < 50
-                  ? `컨테이너 길이 여유 부족(${netLengthClearance}mm)으로 현장 불가`
-                  : `컨테이너 측면 여유 부족(${lateralClearance}mm)으로 현장 불가`
+                ? netLengthClearance < 50
+                  ? `컨테이너 내부 길이(12,032mm) 대비 화물 적재길이(${totalLoadLength}mm) 및 래핑 공차 초과로 적입 불가`
+                  : lateralClearance < 30
+                  ? `컨테이너 내폭(${containerInnerWidth}mm) 대비 열 폭(${candRowWidth}mm) 및 측면 공차 초과로 적입 불가`
+                  : `돌출 ${exactOvMm}mm 과다(파레트 외곽 지지력 상실 및 전도 위험)로 현장 불가`
                 : '적입 가능',
             };
 
@@ -1521,12 +1521,12 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
       const remainingClearanceMm = containerInnerWidth - estimatedRowWidthWithWrap - forkliftClearance;
       const isOverSafeLimit = activeOv > safeOverhangLimitMm;
 
-      const isCurrentOverhangImpossible = curMaxOverhangMm > 40 || remainingClearanceMm < 30;
+      const isCurrentOverhangImpossible = curMaxOverhangMm > 60 || remainingClearanceMm < 30;
       let impossibleReason = null;
-      if (curMaxOverhangMm > 40) {
-        impossibleReason = `돌출 ${curMaxOverhangMm}mm 과다 (현장 안전한도 40mm 초과)`;
-      } else if (remainingClearanceMm < 30) {
+      if (remainingClearanceMm < 30) {
         impossibleReason = `컨테이너 측면 잔여 여유 부족 (${remainingClearanceMm}mm < 최소 30mm)`;
+      } else if (curMaxOverhangMm > 60) {
+        impossibleReason = `돌출 ${curMaxOverhangMm}mm 과다 (파레트 외곽 지지 한계 초과 및 전도 위험)`;
       }
 
       const containerFit = {

@@ -222,7 +222,11 @@ export function Step3ContainerResult({
 
           {/* 5) CoG 체크박스 & 실무 가이드 토글 */}
           <div className="cbm-ribbon-group" style={{ marginLeft: 'auto' }}>
-            <label className="cbm-mini-check" style={{ margin: 0 }}>
+            <label
+              className="cbm-mini-check"
+              style={{ margin: 0 }}
+              title="컨테이너 내 파레트 무게중심을 정렬합니다. 작업 편의성 모드에서는 품목(SKU) 블록을 유지하며 완적/무거운 파레트를 앞벽에 안정 배치하고 자투리를 도어 측으로 정돈합니다."
+            >
               <input
                 type="checkbox"
                 checked={optimizeCoG}
@@ -244,11 +248,13 @@ export function Step3ContainerResult({
         {showGuide && (
           <div className="cbm-guide-drawer">
             <div className="cbm-guide-card">
-              <h4>적재 전략 실무 가이드</h4>
+              <h4>적재 전략 및 CoG 밸런싱 실무 가이드</h4>
               <div>
-                • <strong>작업 편의성 우선 (권장):</strong> 단일 품목으로 1대를 채울 수 있는 물량은 1호기를 100% 전용 완적(FCL)하여 지게차 왕복 동선을 줄이고 도착지 소팅(분류) 작업을 생략합니다. (2단적 진행 시에도 1호기에 2단적을 집중 완적하고 2호기는 안전한 1단적 평적으로 끝냅니다)
+                • <strong>작업 편의성 우선 (권장):</strong> 단일 품목으로 1대를 채울 수 있는 물량은 1호기를 100% 전용 완적(FCL)하여 지게차 왕복 동선을 줄이고 도착지 소팅(분류) 작업을 생략합니다.
                 <br />
                 • <strong>균등 밸런스 우선:</strong> 전 호기에 각 품목과 중량을 균등하게 나누어 실어 호기간 중량/부피 편차를 최소화합니다.
+                <br />
+                • <strong>CoG 밸런싱 & 안전 트레이드오프:</strong> 컨테이너 무게중심(L/2) 편차를 줄이도록 정렬합니다. 단, 잔여 화물이 적은 호기(2호기 등)에서 도어 측 빈 공간(2.1m)으로 인한 전방 편차(-7.4%) 해소를 위해 앞벽을 띄우거나 저단 파레트를 앞벽에 두면, 차량 급제동(0.8G) 시 뒤쪽 화물이 앞으로 전도·붕괴될 위험이 커지므로 '앞벽 밀착 적재 + 후방 목재 펜스 차단'이 안전 수칙상 표준입니다.
               </div>
             </div>
             <div className="cbm-guide-card">
@@ -546,6 +552,55 @@ export function Step3ContainerResult({
                   </span>
                 </p>
               </div>
+
+              {/* CoG 기준 초과 시 원인 분석 & 트레이드오프 비교 안내 */}
+              {effectiveCurrentContainer.cog.cogTradeoffNote && (
+                <div
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.08)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    fontSize: '0.78rem',
+                    color: '#fef3c7',
+                    lineHeight: 1.45,
+                    marginBottom: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ background: '#f59e0b', color: '#000', fontSize: '10px', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                      CoG 밸런스 분석 & 트레이드오프
+                    </span>
+                    <strong style={{ color: '#fbbf24', fontSize: '0.82rem' }}>
+                      {effectiveCurrentContainer.cog.cogTradeoffNote.title}
+                    </strong>
+                  </div>
+                  <div style={{ marginBottom: '6px', color: '#e2e8f0' }}>
+                    <strong>• 발생 원인:</strong> {effectiveCurrentContainer.cog.cogTradeoffNote.cause}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '6px' }}>
+                    <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 8px', borderRadius: '6px', border: '1px solid #334155' }}>
+                      <span style={{ color: '#38bdf8', fontWeight: 700, display: 'block', marginBottom: '2px', fontSize: '0.76rem' }}>
+                        대안 검토 (앞벽 이격 / 저단 배치)
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                        {effectiveCurrentContainer.cog.cogTradeoffNote.alternativeOption}
+                      </span>
+                    </div>
+                    <div style={{ background: 'rgba(239, 68, 68, 0.12)', padding: '6px 8px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                      <span style={{ color: '#f87171', fontWeight: 700, display: 'block', marginBottom: '2px', fontSize: '0.76rem' }}>
+                        현장 리스크 (급제동 전도 위험)
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#fca5a5' }}>
+                        {effectiveCurrentContainer.cog.cogTradeoffNote.tradeoffRisk}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ color: '#a7f3d0', fontSize: '0.75rem', fontWeight: 600 }}>
+                    ▶ 결론 및 권장: {effectiveCurrentContainer.cog.cogTradeoffNote.conclusion}
+                  </div>
+                </div>
+              )}
 
               <div className="cbm-cog-metrics-grid">
                 <div className="cbm-cog-metric">
