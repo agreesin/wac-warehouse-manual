@@ -29,10 +29,10 @@ const PALLET_MODE_META = {
     desc: '모든 품목을 EUR 유럽 규격으로 통일하여 적재합니다.',
   },
   EXPORT_1200: {
-    badge: '수출 대형',
-    title: '1200 대형 (1200 × 1200)',
+    badge: '1200×1200',
+    title: '1200×1200',
     sub: '1,200 × 1,200 mm (대형 벌크 수출용)',
-    desc: '모든 품목을 1200 대형 규격으로 통일하여 적재합니다.',
+    desc: '모든 품목을 1200×1200 단일 규격으로 통일하여 적재합니다.',
   },
 };
 
@@ -73,22 +73,30 @@ export function Step2PalletResult({
   wrappingConfig,
   setWrappingConfig,
 }) {
-  // 현재 선택된 파레트 규격에 대한 40HC 컨테이너 바닥 완적 기준 소요 대수 실시간 계산
+  // 현재 선택된 파레트 규격에 대한 40HC 컨테이너 바닥 완적 기준 소요 대수 실시간 계산 (3단계와 100% 동일 배치 함수 결과 반영)
   const { currentModePallets, currentModeLabel, currentModeHcEst } = useMemo(() => {
     if (palletSelectionMode === 'CUSTOM_MIX') {
       const pCount = customMixComparison?.totalPallets || simResult.summary.totalPallets;
+      const actualCont = simResult.summary.totalContainers;
       return {
         currentModePallets: pCount,
-        currentModeLabel: '표준 운영안 (기본 규격 유지 · 선별 혼용)',
-        currentModeHcEst: estimate40HcContainerNeeds(pCount, 'CUSTOM_MIX'),
+        currentModeLabel: '품목별 파레트 사용 (기본 규격 유지 · 선별 혼용)',
+        currentModeHcEst: {
+          ...estimate40HcContainerNeeds(pCount, 'CUSTOM_MIX'),
+          containerCount: actualCont,
+        },
       };
     }
     const spec = simResult.palletSpecComparison?.find((s) => s.id === palletSelectionMode);
     const pCount = spec ? spec.totalPallets : simResult.summary.totalPallets;
+    const actualCont = spec?.containerCount || simResult.summary.totalContainers;
     return {
       currentModePallets: pCount,
       currentModeLabel: spec ? `${spec.name} (${spec.width}×${spec.length}mm)` : palletSelectionMode,
-      currentModeHcEst: estimate40HcContainerNeeds(pCount, palletSelectionMode),
+      currentModeHcEst: {
+        ...estimate40HcContainerNeeds(pCount, palletSelectionMode),
+        containerCount: actualCont,
+      },
     };
   }, [palletSelectionMode, customMixComparison, simResult]);
 
@@ -140,11 +148,11 @@ export function Step2PalletResult({
           <span className="cbm-badge">카드를 클릭하면 즉시 적용됩니다</span>
         </div>
 
-        {/* 파레트 표준 운영 기준 설정 패널 */}
+        {/* 품목별 파레트 선택 기준 설정 패널 */}
         <div className="cbm-policy-config-panel">
           <div className="cbm-policy-config-head">
             <div>
-              <strong>파레트 표준 운영 기준 (기본 유지 · 선별 대체)</strong>
+              <strong>품목별 파레트 선택 기준 (기본 유지 · 선별 대체)</strong>
               <p>기본 파레트 유지 원칙을 적용하며, 층 적재 효율이 기준에 미달하고 대체 규격 적용 시 파레트 수가 실제로 줄어드는 품목만 전환합니다.</p>
             </div>
             <button
@@ -152,7 +160,7 @@ export function Step2PalletResult({
               className="cbm-btn-xs primary"
               onClick={handleAutoRecommendPalletMix}
             >
-              표준 운영안 적용
+              품목별 파레트 적용
             </button>
           </div>
           <div className="cbm-policy-config-grid">
@@ -173,7 +181,7 @@ export function Step2PalletResult({
                 <option value="T11">T11 국내표준 (1100×1100)</option>
                 <option value="T12">T12 국제규격 (1200×1000)</option>
                 <option value="EUR">EUR 유럽규격 (1200×800)</option>
-                <option value="EXPORT_1200">1200 대형 (1200×1200)</option>
+                <option value="EXPORT_1200">수출용 (1200×1200)</option>
               </select>
             </div>
 
@@ -181,25 +189,30 @@ export function Step2PalletResult({
             <div className="cbm-policy-field">
               <label className="cbm-policy-label">대체 허용 규격 (복수 선택)</label>
               <div className="cbm-policy-check-group">
-                {['T11', 'T12', 'EUR', 'EXPORT_1200']
-                  .filter((id) => id !== policyBasePallet)
-                  .map((id) => {
-                    const isChecked = policyAllowedAlternates.includes(id);
+                {[
+                  { id: 'T11', label: '1100×1100 (T11)' },
+                  { id: 'T12', label: '1200×1000 (T12)' },
+                  { id: 'EUR', label: '1200×800 (EUR)' },
+                  { id: 'EXPORT_1200', label: '수출용 (1200×1200)' },
+                ]
+                  .filter((item) => item.id !== policyBasePallet)
+                  .map((item) => {
+                    const isChecked = policyAllowedAlternates.includes(item.id);
                     return (
-                      <label key={id} className="cbm-policy-check-label">
+                      <label key={item.id} className="cbm-policy-check-label">
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={(e) => {
                             if (!setPolicyAllowedAlternates) return;
                             if (e.target.checked) {
-                              setPolicyAllowedAlternates([...policyAllowedAlternates, id]);
+                              setPolicyAllowedAlternates([...policyAllowedAlternates, item.id]);
                             } else {
-                              setPolicyAllowedAlternates(policyAllowedAlternates.filter((x) => x !== id));
+                              setPolicyAllowedAlternates(policyAllowedAlternates.filter((x) => x !== item.id));
                             }
                           }}
                         />
-                        <span>{id}</span>
+                        <span>{item.label}</span>
                       </label>
                     );
                   })}
@@ -249,7 +262,7 @@ export function Step2PalletResult({
             <div className="cbm-policy-tolerance-section">
               <div className="cbm-policy-tolerance-head">
                 <span className="cbm-policy-tolerance-title">현장 안전 공차 및 컨테이너 유격 기준</span>
-                <span className="cbm-policy-tolerance-sub">래핑 배부름·어긋남·인양 여유를 반영하여 측면 2열 및 길이 방향 폐쇄 안정성을 진단합니다.</span>
+                <span className="cbm-policy-tolerance-sub">래핑 배부름·어긋남·측면 진입 및 도어 인양 여유를 반영하여 측면 2열 및 도어 통과 안정성을 진단합니다.</span>
               </div>
               <div className="cbm-policy-tolerance-grid">
                 <div className="cbm-tolerance-item">
@@ -295,18 +308,68 @@ export function Step2PalletResult({
                 </div>
 
                 <div className="cbm-tolerance-item">
-                  <label>지게차 인양/도어 여유</label>
+                  <label>
+                    지게차 측면 진입 여유 <small style={{ fontSize: '10.5px', color: '#94a3b8' }}>(가정값, 실측 시 교체)</small>
+                  </label>
                   <div className="cbm-policy-input-box">
                     <input
                       type="number"
                       min={0}
-                      max={50}
+                      max={60}
                       step={5}
-                      value={wrappingConfig.forkliftClearanceMm ?? 20}
+                      value={wrappingConfig.forkliftLateralClearanceMm ?? wrappingConfig.forkliftClearanceMm ?? 20}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        setWrappingConfig({
+                          ...wrappingConfig,
+                          forkliftLateralClearanceMm: val,
+                          forkliftClearanceMm: val,
+                        });
+                      }}
+                      className="cbm-policy-number-input"
+                    />
+                    <span className="cbm-policy-unit">mm</span>
+                  </div>
+                </div>
+
+                <div className="cbm-tolerance-item">
+                  <label>
+                    지게차 도어 인양 여유 <small style={{ fontSize: '10.5px', color: '#94a3b8' }}>(가정값, 실측 시 교체)</small>
+                  </label>
+                  <div className="cbm-policy-input-box">
+                    <input
+                      type="number"
+                      min={40}
+                      max={150}
+                      step={10}
+                      value={wrappingConfig.forkliftLiftingClearanceMm ?? 100}
                       onChange={(e) =>
                         setWrappingConfig({
                           ...wrappingConfig,
-                          forkliftClearanceMm: Math.max(0, Number(e.target.value) || 0),
+                          forkliftLiftingClearanceMm: Math.max(0, Number(e.target.value) || 0),
+                        })
+                      }
+                      className="cbm-policy-number-input"
+                    />
+                    <span className="cbm-policy-unit">mm</span>
+                  </div>
+                </div>
+
+                <div className="cbm-tolerance-item">
+                  <label>
+                    에어백 유효 길이 <small style={{ fontSize: '10.5px', color: '#94a3b8' }}>(가정값, 실측 시 교체)</small>
+                  </label>
+                  <div className="cbm-policy-input-box">
+                    <input
+                      type="number"
+                      min={1000}
+                      max={2400}
+                      step={100}
+                      value={wrappingConfig.airbagEffectiveLengthMm ?? 1800}
+                      onChange={(e) =>
+                        setWrappingConfig({
+                          ...wrappingConfig,
+                          airbagEffectiveLengthMm: Math.max(500, Number(e.target.value) || 1800),
                         })
                       }
                       className="cbm-policy-number-input"
@@ -337,7 +400,7 @@ export function Step2PalletResult({
         </div>
 
         <div className="cbm-pallet-mode-grid">
-          {/* Card 0: 표준 운영안 Mode */}
+          {/* Card 0: 품목별 파레트 사용 Mode */}
           <button
             type="button"
             className={`cbm-pallet-mode-card mix-mode-card ${
@@ -347,9 +410,9 @@ export function Step2PalletResult({
           >
             <div className="cbm-pm-header">
               <div className="cbm-pm-badge-wrapper">
-                <span className="cbm-pm-badge mix-badge">표준 운영안</span>
+                <span className="cbm-pm-badge mix-badge">품목별 사용</span>
               </div>
-              <strong className="cbm-pm-title">표준 운영안</strong>
+              <strong className="cbm-pm-title">품목별 파레트 사용</strong>
               <small className="cbm-pm-sub">기본 {policyBasePallet} 유지 · 기준 미달만 대체</small>
             </div>
             <div className="cbm-pm-body">
@@ -434,10 +497,10 @@ export function Step2PalletResult({
           })}
         </div>
 
-        {/* 표준 운영안 품목별 판정 사유 패널 */}
+        {/* 품목별 파레트 판정 사유 패널 */}
         <div className="cbm-policy-decisions-panel">
           <div className="cbm-policy-decisions-head">
-            <strong className="cbm-policy-decisions-title">표준 운영안 품목별 규격 판정 사유</strong>
+            <strong className="cbm-policy-decisions-title">품목별 파레트 규격 판정 사유</strong>
             <span className="cbm-policy-decisions-sub">
               기본 {policyBasePallet} 유지 원칙 · 층 효율 {policyMinEfficiency}% 미달 및 수량 절감 품목만 대체 규격 적용
             </span>
@@ -463,14 +526,14 @@ export function Step2PalletResult({
             <div className="cbm-mix-panel-header">
               <div>
                 <strong>품목별 파레트 규격 개별 매칭</strong>
-                <p>각 박스 크기에 맞는 파레트 규격을 직접 변경하거나 표준 운영안 적용 버튼을 누르세요.</p>
+                <p>각 박스 크기에 맞는 파레트 규격을 직접 변경하거나 품목별 파레트 적용 버튼을 누르세요.</p>
               </div>
               <button
                 type="button"
                 className="cbm-btn-xs primary"
                 onClick={handleAutoRecommendPalletMix}
               >
-                표준 운영안 적용
+                품목별 파레트 적용
               </button>
             </div>
             <div className="cbm-mix-items-grid">
@@ -786,6 +849,7 @@ export function Step2PalletResult({
         setCargos={setCargos}
         handleCargoChange={handleCargoChange}
         setPalletSelectionMode={setPalletSelectionMode}
+        wrappingConfig={wrappingConfig}
       />
 
       {/* Step 2 -> Step 3 Action Button Bar */}

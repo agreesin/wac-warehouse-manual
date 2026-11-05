@@ -5,6 +5,7 @@ import {
   PATTERN_DEFS,
   STACK_STYLE_DEFS,
   POSTURE_DEFS,
+  INTERLOCK_STRENGTH_FACTOR,
 } from './constants.js';
 import {
   resolveCargoBoxDimsByPosture,
@@ -58,9 +59,120 @@ export function computePalletLocalCoG(pallet) {
 }
 
 /**
- * 자투리 잔여 층(Partial Layer) 박스 대칭 배치 헬퍼
- * - 완적 템플릿의 박스들 중 선택된 박스들의 중심이 파레트 중심(midX, midZ)에 가장 가깝도록 n개를 선택
- * - 파레트 중심 기준 대칭성과 무게중심 편차 최소화를 보장하여 한쪽 구석 쏠림 원천 방지
+ * 두 박스가 서로 인접(Edge-sharing 또는 Corner-touching)하는지 기하학적 검사
+ * - inter-box 간극 허용오차(eps=12mm)를 반영하여 실제 포장 시 밀착된 상태 판정
+ */
+function areBoxesAdjacent(a, b) {
+  const eps = 12;
+  const aMaxX = a.x + a.w;
+  const aMaxZ = a.z + a.l;
+  const bMaxX = b.x + b.w;
+  const bMaxZ = b.z + b.l;
+
+  const xOverlap = Math.min(aMaxX, bMaxX) - Math.max(a.x, b.x);
+  const zOverlap = Math.min(aMaxZ, bMaxZ) - Math.max(a.z, b.z);
+
+  // 모서리 맞닿음(한 축은 실질적 겹침 >= 15mm, 다른 축은 접촉 |gap| <= eps)
+  if (xOverlap >= 15 && Math.abs(zOverlap) <= eps) return true;
+  if (zOverlap >= 15 && Math.abs(xOverlap) <= eps) return true;
+  // 코너 접촉
+  if (xOverlap >= -eps && zOverlap >= -eps && (xOverlap >= 0 || zOverlap >= 0)) return true;
+
+  return false;
+}
+
+/**
+ * 선택된 박스 인덱스 집합이 그래프 상에서 단일 연결 컴포넌트(Connected Component)를 이루는지 검사
+ */
+function isSubsetConnected(indices, adjList) {
+  if (indices.length <= 1) return true;
+  const set = new Set(indices);
+  const visited = new Set();
+  const queue = [indices[0]];
+  visited.add(indices[0]);
+
+  while (queue.length > 0) {
+    const curr = queue.shift();
+    for (const neighbor of adjList[curr]) {
+      if (set.has(neighbor) && !visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+  return visited.size === indices.length;
+}
+
+/**
+ * 자투리 블록 후보 평가 및 비용(Cost) 산출
+ * - 밀도(Density, 구멍 없음): 빈 공간 발생 시 극단적 페널티 (U자 계곡형 원천 방지)
+ * - 외곽 둘레(Perimeter): 정사각형/직사각형에 가까운 밀집 블록 선호
+ * - 파레트 중심 편차(distToCenter): 파레트 무게중심과 정합
+ * - 내부 접촉면(Contacts): 운송 및 래핑 시 붕괴 방지용 내부 결속력
+ */
+function scoreCandidate(indices, template, targetMidX, targetMidZ, adjList) {
+  const k = indices.length;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minZ = Infinity,
+    maxZ = -Infinity;
+  let sumCx = 0,
+    sumCz = 0;
+  let totalBoxArea = 0;
+
+  for (const idx of indices) {
+    const b = template[idx];
+    if (b.x < minX) minX = b.x;
+    if (b.x + b.w > maxX) maxX = b.x + b.w;
+    if (b.z < minZ) minZ = b.z;
+    if (b.z + b.l > maxZ) maxZ = b.z + b.l;
+    sumCx += b.x + b.w / 2;
+    sumCz += b.z + b.l / 2;
+    totalBoxArea += b.w * b.l;
+  }
+
+  const spanW = maxX - minX;
+  const spanL = maxZ - minZ;
+  const bboxArea = spanW * spanL;
+
+  // 1. 밀도 (Box 면적 합 / 바운딩박스 면적) -> 1.0이면 빈 공간 없는 완벽한 직사각형 블록
+  const density = bboxArea > 0 ? Math.min(1.0, totalBoxArea / bboxArea) : 1.0;
+
+  // 2. 외곽 둘레 (Perimeter)
+  const perimeter = spanW + spanL;
+
+  // 3. 파레트 중심과의 편차 (mm)
+  const cogX = sumCx / k;
+  const cogZ = sumCz / k;
+  const distToCenter = Math.hypot(cogX - targetMidX, cogZ - targetMidZ);
+
+  // 4. 내부 인접 접촉면 수
+  let contacts = 0;
+  const set = new Set(indices);
+  for (const idx of indices) {
+    for (const neighbor of adjList[idx]) {
+      if (neighbor > idx && set.has(neighbor)) {
+        contacts++;
+      }
+    }
+  }
+
+  // 비용 산출 (작을수록 최선)
+  const densityPenalty = (1.0 - density) * 6000;
+  const perimeterPenalty = perimeter * 1.5;
+  const centerDistPenalty = distToCenter * 1.0;
+  const contactBonus = contacts * 40;
+
+  const cost = densityPenalty + perimeterPenalty + centerDistPenalty - contactBonus;
+
+  return { cost, indices };
+}
+
+/**
+ * 자투리 잔여 층(Partial Layer) 박스 밀집 직사각형 블록(Adjacent Compact Block) 배치 헬퍼
+ * - 실무 물류 표준 준수: 잔여 박스를 양 가장자리로 분산 배치하지 않고, 항상 서로 맞닿는 연속 덩어리로 구성
+ * - 래핑(Wrapping) 및 톱오버 래싱 시 함몰/전도 방지
+ * - 단일 연결 컴포넌트(Connected Component) 보장 및 파레트 중심 부근 배치
  */
 export function pickBalancedSubset(template, takeCount, palletW, palletL) {
   if (!template || template.length === 0 || takeCount <= 0) return [];
@@ -68,51 +180,255 @@ export function pickBalancedSubset(template, takeCount, palletW, palletL) {
 
   const midX = palletW / 2;
   const midZ = palletL / 2;
-  const k = takeCount;
 
-  // 후보 풀이 큰 경우(20개 초과) 중심에서 너무 먼 박스는 사전 정리
-  let pool = template;
-  if (pool.length > 20) {
-    pool = [...template]
-      .sort((a, b) => {
-        const da = Math.hypot(a.x + a.w / 2 - midX, a.z + a.l / 2 - midZ);
-        const db = Math.hypot(b.x + b.w / 2 - midX, b.z + b.l / 2 - midZ);
-        return da - db;
-      })
-      .slice(0, Math.min(pool.length, k + 8));
-  }
-
-  let bestSubset = null;
-  let bestScore = Infinity;
-
-  function search(start, chosen, sumX, sumZ) {
-    const needed = k - chosen.length;
-    if (needed === 0) {
-      const avgX = sumX / k;
-      const avgZ = sumZ / k;
-      const distFromCenter = Math.hypot(avgX - midX, avgZ - midZ);
-      if (distFromCenter < bestScore - 1e-6) {
-        bestScore = distFromCenter;
-        bestSubset = [...chosen];
+  if (takeCount === 1) {
+    let best = template[0];
+    let bestD = Infinity;
+    for (const b of template) {
+      const d = Math.hypot(b.x + b.w / 2 - midX, b.z + b.l / 2 - midZ);
+      if (d < bestD) {
+        bestD = d;
+        best = b;
       }
-      return;
     }
+    return [best];
+  }
 
-    if (pool.length - start < needed) return;
+  const N = template.length;
 
-    for (let i = start; i < pool.length; i++) {
-      const b = pool[i];
-      const bx = b.x + b.w / 2;
-      const bz = b.z + b.l / 2;
-      chosen.push(b);
-      search(i + 1, chosen, sumX + bx, sumZ + bz);
-      chosen.pop();
+  // 1. 인접 그래프 (Adjacency List) 구성
+  const adjList = Array.from({ length: N }, () => []);
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      if (areBoxesAdjacent(template[i], template[j])) {
+        adjList[i].push(j);
+        adjList[j].push(i);
+      }
     }
   }
 
-  search(0, [], 0, 0);
+  // 중심 거리 기준 정렬
+  const boxDistances = template.map((b, idx) => ({
+    idx,
+    dist: Math.hypot(b.x + b.w / 2 - midX, b.z + b.l / 2 - midZ),
+  }));
+  boxDistances.sort((a, b) => a.dist - b.dist);
 
-  return bestSubset || template.slice(0, takeCount);
+  // 조합 탐색 상한(Item 12): 위치 수 N이 기준(36개 초과, 예: 100×100 박스는 T11에 121개)을 넘으면
+  // 브라우저 프리징을 방지하기 위해 파레트 중심 기준 대칭 위치 쌍을 중심에서 가까운 순서로 고르는 방식으로 고속 대체
+  if (N > 36) {
+    const sorted = [...boxDistances];
+    const chosenIndices = [];
+    const used = new Set();
+
+    for (let i = 0; i < sorted.length; i++) {
+      const idxA = sorted[i].idx;
+      if (used.has(idxA)) continue;
+      const bA = template[idxA];
+      const targetX = 2 * midX - (bA.x + bA.w / 2);
+      const targetZ = 2 * midZ - (bA.z + bA.l / 2);
+
+      let bestPartner = -1;
+      let minPartnerDist = Infinity;
+      for (let j = i + 1; j < sorted.length; j++) {
+        const idxB = sorted[j].idx;
+        if (used.has(idxB)) continue;
+        const bB = template[idxB];
+        const d = Math.hypot(bB.x + bB.w / 2 - targetX, bB.z + bB.l / 2 - targetZ);
+        if (d < minPartnerDist) {
+          minPartnerDist = d;
+          bestPartner = idxB;
+        }
+      }
+
+      if (chosenIndices.length + 2 <= takeCount && bestPartner !== -1 && minPartnerDist < Math.max(bA.w, bA.l) * 2) {
+        used.add(idxA);
+        used.add(bestPartner);
+        chosenIndices.push(idxA, bestPartner);
+      } else if (chosenIndices.length + 1 <= takeCount) {
+        used.add(idxA);
+        chosenIndices.push(idxA);
+      }
+      if (chosenIndices.length >= takeCount) break;
+    }
+
+    for (const item of sorted) {
+      if (chosenIndices.length >= takeCount) break;
+      if (!used.has(item.idx)) {
+        used.add(item.idx);
+        chosenIndices.push(item.idx);
+      }
+    }
+    return chosenIndices.map((idx) => template[idx]);
+  }
+
+  const candidateMap = new Map();
+  const registerCandidate = (indices) => {
+    if (indices.length !== takeCount) return;
+    if (!isSubsetConnected(indices, adjList)) return;
+    const sortedKey = indices
+      .slice()
+      .sort((a, b) => a - b)
+      .join(',');
+    if (candidateMap.has(sortedKey)) return;
+    const scored = scoreCandidate(indices, template, midX, midZ, adjList);
+    candidateMap.set(sortedKey, scored);
+  };
+
+  // 2. 전략 A: 직사각형 서브그리드(Subgrid Window) 탐색
+  const sampleLimit = Math.min(N, 20);
+  for (let i = 0; i < sampleLimit; i++) {
+    const idxA = boxDistances[i].idx;
+    const a = template[idxA];
+    for (let j = i; j < sampleLimit; j++) {
+      const idxB = boxDistances[j].idx;
+      const b = template[idxB];
+
+      const winMinX = Math.min(a.x, b.x) - 5;
+      const winMaxX = Math.max(a.x + a.w, b.x + b.w) + 5;
+      const winMinZ = Math.min(a.z, b.z) - 5;
+      const winMaxZ = Math.max(a.z + a.l, b.z + b.l) + 5;
+
+      const inside = [];
+      for (let m = 0; m < N; m++) {
+        const box = template[m];
+        const cx = box.x + box.w / 2;
+        const cz = box.z + box.l / 2;
+        if (cx >= winMinX && cx <= winMaxX && cz >= winMinZ && cz <= winMaxZ) {
+          inside.push(m);
+        }
+      }
+
+      if (inside.length === takeCount) {
+        registerCandidate(inside);
+      } else if (inside.length === takeCount + 1 && inside.length <= N) {
+        // 1개 초과 시 외곽 박스 제거해보기
+        for (let dropIdx = 0; dropIdx < inside.length; dropIdx++) {
+          const sub = inside.filter((_, k) => k !== dropIdx);
+          registerCandidate(sub);
+        }
+      }
+    }
+  }
+
+  // 3. 전략 B: 다중 시드(Multi-seed) 영역 확장(Region Growing)
+  const seedCount = Math.min(N, 10);
+  for (let s = 0; s < seedCount; s++) {
+    const seedIdx = boxDistances[s].idx;
+
+    // 모드 1: 컴팩트 Bounding Box 확장 최소화
+    {
+      const cluster = [seedIdx];
+      const visited = new Set([seedIdx]);
+      let minX = template[seedIdx].x;
+      let maxX = template[seedIdx].x + template[seedIdx].w;
+      let minZ = template[seedIdx].z;
+      let maxZ = template[seedIdx].z + template[seedIdx].l;
+
+      while (cluster.length < takeCount) {
+        const frontier = new Set();
+        for (const cIdx of cluster) {
+          for (const neighbor of adjList[cIdx]) {
+            if (!visited.has(neighbor)) {
+              frontier.add(neighbor);
+            }
+          }
+        }
+        if (frontier.size === 0) break;
+
+        let bestNext = -1;
+        let bestCost = Infinity;
+
+        for (const fIdx of frontier) {
+          const b = template[fIdx];
+          const newMinX = Math.min(minX, b.x);
+          const newMaxX = Math.max(maxX, b.x + b.w);
+          const newMinZ = Math.min(minZ, b.z);
+          const newMaxZ = Math.max(maxZ, b.z + b.l);
+          const perimeter = newMaxX - newMinX + (newMaxZ - newMinZ);
+          const dCenter = Math.hypot(b.x + b.w / 2 - midX, b.z + b.l / 2 - midZ);
+          const cost = perimeter * 2 + dCenter;
+          if (cost < bestCost) {
+            bestCost = cost;
+            bestNext = fIdx;
+          }
+        }
+
+        if (bestNext === -1) break;
+        visited.add(bestNext);
+        cluster.push(bestNext);
+        const b = template[bestNext];
+        minX = Math.min(minX, b.x);
+        maxX = Math.max(maxX, b.x + b.w);
+        minZ = Math.min(minZ, b.z);
+        maxZ = Math.max(maxZ, b.z + b.l);
+      }
+      if (cluster.length === takeCount) {
+        registerCandidate(cluster);
+      }
+    }
+
+    // 모드 2: 무게중심 파레트 중심 인력(Center-pull)
+    {
+      const cluster = [seedIdx];
+      const visited = new Set([seedIdx]);
+      let sumCx = template[seedIdx].x + template[seedIdx].w / 2;
+      let sumCz = template[seedIdx].z + template[seedIdx].l / 2;
+
+      while (cluster.length < takeCount) {
+        const frontier = new Set();
+        for (const cIdx of cluster) {
+          for (const neighbor of adjList[cIdx]) {
+            if (!visited.has(neighbor)) {
+              frontier.add(neighbor);
+            }
+          }
+        }
+        if (frontier.size === 0) break;
+
+        let bestNext = -1;
+        let bestDist = Infinity;
+
+        for (const fIdx of frontier) {
+          const b = template[fIdx];
+          const nextCx = (sumCx + b.x + b.w / 2) / (cluster.length + 1);
+          const nextCz = (sumCz + b.z + b.l / 2) / (cluster.length + 1);
+          const dCenter = Math.hypot(nextCx - midX, nextCz - midZ);
+          if (dCenter < bestDist) {
+            bestDist = dCenter;
+            bestNext = fIdx;
+          }
+        }
+
+        if (bestNext === -1) break;
+        visited.add(bestNext);
+        cluster.push(bestNext);
+        sumCx += template[bestNext].x + template[bestNext].w / 2;
+        sumCz += template[bestNext].z + template[bestNext].l / 2;
+      }
+      if (cluster.length === takeCount) {
+        registerCandidate(cluster);
+      }
+    }
+  }
+
+  // 후보 중 최소 비용 선택
+  if (candidateMap.size > 0) {
+    let bestCandidate = null;
+    let minCost = Infinity;
+    for (const c of candidateMap.values()) {
+      if (c.cost < minCost) {
+        minCost = c.cost;
+        bestCandidate = c;
+      }
+    }
+    if (bestCandidate) {
+      return bestCandidate.indices.map((idx) => template[idx]);
+    }
+  }
+
+  // 절대적 Fallback: 중심에서 가장 가까운 박스 k개
+  return boxDistances.slice(0, takeCount).map((item) => template[item.idx]);
 }
 
 /**
@@ -267,10 +583,16 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         allowedOverhang: itemOv,
         color: c.color || CARGO_COLORS[idx % CARGO_COLORS.length],
         allowRotate: c.allowRotate !== false,
+        strengthReductionFactor: Number(c.strengthReductionFactor) > 0 ? Number(c.strengthReductionFactor) : 1.0,
         palletSpecId: resolvedPallet.specId,
         palletSpecName: resolvedPallet.specName,
-        palletW: resolvedPallet.width,
-        palletL: resolvedPallet.length,
+        palletW: resolvedPallet.nominalWidth || resolvedPallet.width,
+        palletL: resolvedPallet.nominalLength || resolvedPallet.length,
+        nominalWidth: resolvedPallet.nominalWidth || resolvedPallet.width,
+        nominalLength: resolvedPallet.nominalLength || resolvedPallet.length,
+        measuredWidth: resolvedPallet.measuredWidth,
+        measuredLength: resolvedPallet.measuredLength,
+        hasMeasured: resolvedPallet.hasMeasured,
       };
     })
     .filter((c) => c.quantity > 0 && c.width > 0 && c.length > 0 && c.height > 0);
@@ -314,9 +636,19 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         fullLayerWeight > 0
           ? Math.max(1, Math.floor(maxCargoWeight / fullLayerWeight))
           : maxLayersByH;
+      // 인터로킹/교차 적재 시 박스 압축강도 25% 저하 반영 및 품목별 강도 감소 계수 곱연산
+      const baseStrengthFactor =
+        item.stackingStyle === 'INTERLOCK' ||
+        item.stackingStyle === 'CROSS_TIER' ||
+        (item.stackingStyle !== 'COLUMN' && interlockLayers)
+          ? INTERLOCK_STRENGTH_FACTOR
+          : 1.0;
+      const strengthFactor = baseStrengthFactor * (Number(item.strengthReductionFactor) > 0 ? Number(item.strengthReductionFactor) : 1.0);
+      const effectiveTopLoad =
+        item.maxTopLoad > 0 ? item.maxTopLoad * strengthFactor : 0;
       const maxLayersByStrength =
-        item.maxTopLoad > 0 && item.weight > 0
-          ? Math.max(1, Math.floor(1 + item.maxTopLoad / item.weight))
+        effectiveTopLoad > 0 && item.weight > 0
+          ? Math.max(1, Math.floor(1 + effectiveTopLoad / item.weight))
           : 999;
       const customMaxL = item.maxLayers > 0 ? item.maxLayers : 999;
       const maxFullLayersPerPallet = Math.max(
@@ -342,13 +674,29 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
 
   const pallets = [];
 
-  const createEmptyPallet = (index, pW, pL, specId, specName) => ({
+  const createEmptyPallet = (
+    index,
+    pW,
+    pL,
+    specId,
+    specName,
+    nominalW,
+    nominalL,
+    measuredW,
+    measuredL,
+    hasMeasured
+  ) => ({
     id: `pallet-${index}`,
     index,
     palletSpecId: specId,
     palletSpecName: specName,
     width: pW,
     length: pL,
+    nominalWidth: nominalW || pW,
+    nominalLength: nominalL || pL,
+    measuredWidth: measuredW || null,
+    measuredLength: measuredL || null,
+    hasMeasured: Boolean(hasMeasured),
     baseHeight: baseH,
     maxTotalHeight: maxTotalH,
     tareWeight,
@@ -372,12 +720,24 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const isEvenLayer = pallet.layers.length % 2 === 1;
 
     if (!isFull && prevLayer && prevLayer.cargoId === cargoItem.id) {
-      // 기둥 적재 안정성을 위해 완적 템플릿의 위치를 유지하며, 파레트 중심 대비 대칭인 박스들을 최적 선택
-      const positionedTpl = template.map((p) => ({
-        ...p,
-        x: p.x + meta.fullOffsetX,
-        z: p.z + meta.fullOffsetZ,
-      }));
+      // 기둥 적재 안정성을 위해 바로 아래층의 실제 박스 위치를 기준으로 선정 (100% 수직 지지 및 인접 밀집 블록 형성)
+      const prevBoxes = pallet.boxes.filter(
+        (b) => b.layerIndex === pallet.layers.length - 1
+      );
+      const positionedTpl =
+        prevBoxes.length === template.length
+          ? prevBoxes.map((b) => ({
+              x: b.x,
+              z: b.z,
+              w: b.w,
+              l: b.l,
+              rotated: b.rotated,
+            }))
+          : template.map((p) => ({
+              ...p,
+              x: p.x + meta.fullOffsetX,
+              z: p.z + meta.fullOffsetZ,
+            }));
       const chosen = pickBalancedSubset(positionedTpl, takeCount, pallet.width, pallet.length);
       let lMinX = Infinity,
         lMaxX = 0,
@@ -529,7 +889,12 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         item.palletW,
         item.palletL,
         item.palletSpecId,
-        item.palletSpecName
+        item.palletSpecName,
+        item.nominalWidth,
+        item.nominalLength,
+        item.measuredWidth,
+        item.measuredLength,
+        item.hasMeasured
       );
       fullPallet.primaryCargoId = item.id;
       fullPallet.primaryCargoName = item.name;
@@ -549,7 +914,12 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
             item.palletW,
             item.palletL,
             item.palletSpecId,
-            item.palletSpecName
+            item.palletSpecName,
+            item.nominalWidth,
+            item.nominalLength,
+            item.measuredWidth,
+            item.measuredLength,
+            item.hasMeasured
           );
           remPallet.primaryCargoId = item.id;
           remPallet.primaryCargoName = item.name;
@@ -626,7 +996,12 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
           firstCand.palletW,
           firstCand.palletL,
           firstCand.palletSpecId,
-          firstCand.palletSpecName
+          firstCand.palletSpecName,
+          firstCand.nominalWidth,
+          firstCand.nominalLength,
+          firstCand.measuredWidth,
+          firstCand.measuredLength,
+          firstCand.hasMeasured
         );
         currentPallet.primaryCargoId = firstCand.id;
         currentPallet.primaryCargoName = firstCand.name;
@@ -800,7 +1175,7 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
 }
 
 /**
- * 표준 운영안(Standard Operational Policy) 기반 파레트 규격 자동 판정
+ * 품목별 파레트 사용(기본 규격 유지 · 선별 대체) 자동 판정
  * 1. 기본 파레트에 허용 돌출 이내로 적재
  * 2. 기본 파레트 바닥 크기 초과 등 적재 불가 시 대체 규격으로 전환
  * 3. 층 적재 효율 < minEfficiency이고 대체 규격 중 파레트 수가 실제로 줄어들 때만 그 규격으로 전환 (여러 개면 파레트 수 최소인 것)
@@ -952,7 +1327,7 @@ export function evaluateCompanyPolicy({
 }
 
 /**
- * 품목별 최적 파레트 규격 자동 추천 (표준 운영안 기본값 연계)
+ * 품목별 최적 파레트 규격 자동 추천 (품목별 파레트 사용 기본값 연계)
  */
 export function autoRecommendPalletSpecs(cargos, overhang = 0) {
   const policy = evaluateCompanyPolicy({
@@ -975,6 +1350,13 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
   const maxCargoWeight = Number(palletConfig.maxWeight) || 1000;
   const defaultOv = Math.max(0, Number(options.overhang) || 0);
 
+  // 공차 설정
+  const wrappingConfig = options.wrappingConfig || {};
+  const wrappingBulge = Number(wrappingConfig.wrappingBulgeMm) || 20;
+  const misalignment = Number(wrappingConfig.stackingMisalignmentMm) || 10;
+  const forkliftClearance = Number(wrappingConfig.forkliftLateralClearanceMm || wrappingConfig.forkliftClearanceMm) || 20;
+  const containerInnerWidth = Number(wrappingConfig.containerInnerWidthOption) || 2352;
+
   const calcPalletNeed = (perLayerCount, item) => {
     if (perLayerCount <= 0) {
       return { maxLayers: 0, boxesPerPallet: 0, totalPallets: 0 };
@@ -983,9 +1365,15 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
     const layerWeight = perLayerCount * Math.max(0, Number(item.weight) || 0);
     const maxLayersByW =
       layerWeight > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerWeight)) : maxLayersByH;
+
+    // 인터로킹/교차 적재 시 박스 압축강도 25% 저하 반영
+    const strengthFactor = (item.stackingStyle === 'INTERLOCK' || item.stackingStyle === 'CROSS_TIER' || options.interlockLayers !== false)
+      ? INTERLOCK_STRENGTH_FACTOR
+      : 1.0;
+    const effectiveTopLoad = Number(item.maxTopLoad) > 0 ? Number(item.maxTopLoad) * strengthFactor : 0;
     const maxLayersByStrength =
-      Number(item.maxTopLoad) > 0 && Number(item.weight) > 0
-        ? Math.max(1, Math.floor(1 + Number(item.maxTopLoad) / Number(item.weight)))
+      effectiveTopLoad > 0 && Number(item.weight) > 0
+        ? Math.max(1, Math.floor(1 + effectiveTopLoad / Number(item.weight)))
         : 999;
     const customMaxL = Number(item.maxLayers) > 0 ? Math.floor(Number(item.maxLayers)) : 999;
     const maxLayers = Math.max(1, Math.min(maxLayersByH, maxLayersByW, maxLayersByStrength, customMaxL));
@@ -1054,19 +1442,24 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
           const candStats = calcPalletNeed(candBounds.count, c);
           const savedPallets = Math.max(0, strictStats.totalPallets - candStats.totalPallets);
 
-          // 측면 및 길이 방향 3단계 판정 (가능 / 주의 / 불가): '불가' 판정인 돌출안은 추천에서 제외
+          // 측면 및 길이 방향 실무 공차(배부름 20mm, 어긋남 10mm, 지게차 여유) 반영 3단계 판정
           const candOuterW = Math.max(pW, candBounds.spanW);
           const candOuterL = Math.max(pL, candBounds.spanL);
           const candRowWidth = Math.min(candOuterW, candOuterL) * 2;
           const candRowLength = Math.max(candOuterW, candOuterL);
-          const lateralClearance = 2352 - (candRowWidth + 70);
+          const totalRequiredLateral = wrappingBulge * 2 + misalignment * 2 + forkliftClearance;
+          const lateralClearance = containerInnerWidth - (candRowWidth + totalRequiredLateral);
           const estCols = Math.ceil(candStats.totalPallets / 2);
           const totalLoadLength = estCols * candRowLength;
-          const netLengthClearance = 12032 - (totalLoadLength + estCols * 20); // 20mm 래핑 공차 차감 순수 여유
-          const isViable = lateralClearance >= 40 && netLengthClearance >= 50;
+          // 열당 래핑 및 어긋남 공차 반영
+          const netLengthClearance = 12032 - (totalLoadLength + estCols * (wrappingBulge + misalignment));
 
-          // 실제 파레트 절감 효과가 있고 현장 적입이 가능한 경우에만 돌출 제안
-          if (isViable && (savedPallets > 0 || strictBounds.count === 0)) {
+          // 폭 여유 및 길이 방향 여유 판정:
+          // 폭 잔여 여유가 30mm 미만이거나 길이 잔여 여유가 50mm 미만이거나 돌출이 40mm 초과면 현장 적입 불가
+          const isViable = lateralClearance >= 30 && netLengthClearance >= 50 && exactOvMm <= 40;
+
+          // 실제 파레트 절감 효과가 있는 경우 기회로 기록 (현장 불가 시 버튼 숨김용 isViable 플래그 포함)
+          if (savedPallets > 0 || strictBounds.count === 0) {
             const ovDirectionText =
               ovW > 0 && ovL === 0
                 ? `가로(W) 방향만 +${ovW}mm (외경 ${candOuterW}×${candOuterL}mm)`
@@ -1074,7 +1467,7 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
                 ? `길이(L) 방향만 +${ovL}mm (외경 ${candOuterW}×${candOuterL}mm)`
                 : `가로 +${ovW}mm / 길이 +${ovL}mm (외경 ${candOuterW}×${candOuterL}mm)`;
 
-            opportunity = {
+            const candOpp = {
               requiredOverhangMm: exactOvMm,
               ovDirectionText,
               overhangW: ovW,
@@ -1091,9 +1484,24 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
               totalPallets: candStats.totalPallets,
               savedPallets,
               needsOverhangToFitAtAll: strictBounds.count === 0,
-              isViable: true,
+              isViable,
+              lateralClearance,
+              netLengthClearance,
+              reason: !isViable
+                ? exactOvMm > 40
+                  ? `돌출 ${exactOvMm}mm 과다(한도 40mm 초과)로 현장 불가`
+                  : netLengthClearance < 50
+                  ? `컨테이너 길이 여유 부족(${netLengthClearance}mm)으로 현장 불가`
+                  : `컨테이너 측면 여유 부족(${lateralClearance}mm)으로 현장 불가`
+                : '적입 가능',
             };
-            break;
+
+            if (isViable) {
+              opportunity = candOpp;
+              break;
+            } else if (!opportunity) {
+              opportunity = candOpp;
+            }
           }
         }
       }
@@ -1104,16 +1512,15 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
       const canSolveWithT12NoOverhang =
         (pW !== 1200 || pL !== 1000) && t12Bounds.count > strictBounds.count;
 
-      // 컨테이너 폭(2,352mm) 2열 적재 시 래핑 공차 및 안전 돌출 한계치 계산
-      const containerInnerWidth = 2352;
+      // 컨테이너 폭 2열 적재 시 래핑 공차(배부름 + 어긋남 + 지게차 여유) 반영
       const baseRowWidth = Math.min(pW, pL) * 2;
-      const fieldToleranceMargin = 50; // 래핑 두께(+30mm) + 박스 배부름(+20mm)
-      const safeOverhangLimitMm = Math.max(0, containerInnerWidth - baseRowWidth - fieldToleranceMargin);
+      const totalToleranceMargin = wrappingBulge * 2 + misalignment * 2 + forkliftClearance;
+      const safeOverhangLimitMm = Math.max(0, containerInnerWidth - baseRowWidth - totalToleranceMargin);
       const safeOverhangPerPalletMm = Math.floor(safeOverhangLimitMm / 2);
 
       const activeOv = appliedOverhang;
-      const estimatedRowWidthWithWrap = baseRowWidth + activeOv + 40; // 래핑+배부름 감안
-      const remainingClearanceMm = containerInnerWidth - estimatedRowWidthWithWrap;
+      const estimatedRowWidthWithWrap = baseRowWidth + activeOv + (wrappingBulge * 2 + misalignment * 2);
+      const remainingClearanceMm = containerInnerWidth - estimatedRowWidthWithWrap - forkliftClearance;
       const isOverSafeLimit = activeOv > safeOverhangLimitMm;
 
       const containerFit = {
@@ -1124,11 +1531,11 @@ export function analyzeOverhangDiagnostics(cargos, palletConfig, options = {}) {
         estimatedRowWidthWithWrap,
         remainingClearanceMm,
         isOverSafeLimit,
-        riskLevel: remainingClearanceMm < 50 ? 'danger' : remainingClearanceMm < 90 ? 'warning' : 'safe',
+        riskLevel: remainingClearanceMm < 40 ? 'danger' : remainingClearanceMm < 80 ? 'warning' : 'safe',
         warningText:
-          remainingClearanceMm < 50
-            ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 잔여 여유 겨우 ${remainingClearanceMm}mm (지게차 진입 시 내벽 주름 간섭 위험!)`
-            : remainingClearanceMm < 90
+          remainingClearanceMm < 40
+            ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 잔여 여유 ${remainingClearanceMm}mm (지게차 진입 시 내벽 주름 간섭 위험!)`
+            : remainingClearanceMm < 80
             ? `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 여유 ${remainingClearanceMm}mm (정밀 진입 필요)`
             : `래핑 후 2열 폭 약 ${estimatedRowWidthWithWrap}mm — 내벽 여유 ${remainingClearanceMm}mm (진입 여유 충분)`,
       };
@@ -1240,9 +1647,16 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         const byH = Math.max(1, Math.floor(maxLoadH / Math.max(1, boxH)));
         const layerW = perLayerCnt * unitW;
         const byW = layerW > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerW)) : byH;
+        // 인터로킹/교차 적재 시 박스 압축강도 25% 저하 반영
+        const strengthFactor =
+          curStackStyle === 'INTERLOCK' || curStackStyle === 'CROSS_TIER'
+            ? INTERLOCK_STRENGTH_FACTOR
+            : 1.0;
+        const effectiveTopLoad =
+          Number(c.maxTopLoad) > 0 ? Number(c.maxTopLoad) * strengthFactor : 0;
         const maxLayersByStrength =
-          Number(c.maxTopLoad) > 0 && unitW > 0
-            ? Math.max(1, Math.floor(1 + Number(c.maxTopLoad) / unitW))
+          effectiveTopLoad > 0 && unitW > 0
+            ? Math.max(1, Math.floor(1 + effectiveTopLoad / unitW))
             : 999;
         const maxLayers = Math.max(1, Math.min(byH, byW, maxLayersByStrength, customMaxL));
         const boxesPerPallet = perLayerCnt * maxLayers;

@@ -67,9 +67,13 @@ export function ContainerDiagnosticsCard({ currentContainer }) {
             )}
           </div>
           <strong>
-            적재길이 {(diag.usedLengthMm / 1000).toFixed(2)}m / 잔여 {diag.rearClearanceMm}mm
+            {diag.blockingRequirementText
+              ? `${diag.lengthStatusText} / ${diag.blockingRequirementText}`
+              : `적재길이 ${(diag.usedLengthMm / 1000).toFixed(2)}m / 잔여 ${diag.rearClearanceMm}mm`}
           </strong>
-          <small>{diag.lengthStatusText || diag.shoringText}</small>
+          <small>
+            적재길이 {(diag.usedLengthMm / 1000).toFixed(2)}m (도어 잔여 {diag.rearClearanceMm}mm) — {diag.shoringText}
+          </small>
         </div>
 
         <div className="cbm-cog-metric">

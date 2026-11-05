@@ -72,8 +72,8 @@ export const PALLET_PRESETS = {
   },
   EXPORT_1200: {
     id: 'EXPORT_1200',
-    name: '수출 대형 (1200 × 1200)',
-    shortLabel: '1200×1200 (대형)',
+    name: '1200×1200 (1200 × 1200)',
+    shortLabel: '1200×1200',
     width: 1200,
     length: 1200,
     baseHeight: 150,
@@ -107,9 +107,16 @@ export const CARGO_COLORS = [
 export const DEFAULT_WRAPPING_CONFIG = {
   wrappingBulgeMm: 20, // 래핑 배부름 공차 (mm)
   stackingMisalignmentMm: 10, // 수작업 적재 어긋남 공차 (mm)
-  forkliftClearanceMm: 20, // 지게차 적입 여유 (mm)
+  forkliftLateralClearanceMm: 20, // 지게차 측면 진입 여유 (mm, 가정값)
+  forkliftLiftingClearanceMm: 100, // 지게차 도어/상부 인양 여유 (mm, 가정값)
+  forkliftClearanceMm: 20, // 하위 호환
   containerInnerWidthOption: 2352, // 표준 2352mm vs ISO 하한 2330mm
+  maxLateralGapAllowedMm: 150, // 유격 과다 기준 (CTU Code 권고 150mm)
+  airbagEffectiveLengthMm: 1800, // 에어백 유효 길이 (mm, 기본 1800mm, 가정값)
 };
+
+// 인터로킹(벽돌식 교차 적재) 시 모서리 어긋남으로 인한 박스 압축강도(BCT) 감소 계수 (표준 0.75: 약 25% 강도 저하)
+export const INTERLOCK_STRENGTH_FACTOR = 0.75;
 
 export const ISO_MIN_INNER_WIDTH = 2330;
 export const STANDARD_INNER_WIDTH = 2352;
@@ -128,6 +135,7 @@ export const DEFAULT_CARGOS = [
     palletSpecId: 'T11', // 1100 x 1100
     measuredWidth: 0,
     measuredLength: 0,
+    strengthReductionFactor: 1.0,
   },
   {
     id: 'cargo-2',
@@ -142,6 +150,7 @@ export const DEFAULT_CARGOS = [
     palletSpecId: 'T12', // 돌출 방지를 위해 1200 x 1000 파레트 지정
     measuredWidth: 0,
     measuredLength: 0,
+    strengthReductionFactor: 1.0,
   },
   {
     id: 'cargo-3',
@@ -156,6 +165,7 @@ export const DEFAULT_CARGOS = [
     palletSpecId: 'T11', // 1100 x 1100
     measuredWidth: 0,
     measuredLength: 0,
+    strengthReductionFactor: 1.0,
   },
 ];
 

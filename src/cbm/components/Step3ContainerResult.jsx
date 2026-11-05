@@ -3,6 +3,8 @@ import { ThreeViewport } from '../ThreeViewport';
 import { ContainerFloorPlanSvg } from './ContainerFloorPlanSvg';
 import { ContainerDiagnosticsCard } from './ContainerDiagnosticsCard';
 import { ContainerComparisonTable } from './ContainerComparisonTable';
+import { AllocationComparisonTable } from './AllocationComparisonTable';
+import { LoadingInstructionSheetModal, LoadingInstructionPrintRoot } from './LoadingInstructionSheet';
 
 export function Step3ContainerResult({
   theme = 'dark',
@@ -22,6 +24,8 @@ export function Step3ContainerResult({
   setFullFloorSpread,
   optimizeCoG,
   setOptimizeCoG,
+  maxWeightPerContainerLimit,
+  setMaxWeightPerContainerLimit,
   containerVisibleStep,
   setContainerVisibleStep,
   isContainerPlaying,
@@ -33,6 +37,22 @@ export function Step3ContainerResult({
   setSelectedPalletIdx,
 }) {
   const [showGuide, setShowGuide] = useState(false);
+  const [showLoadingSheetModal, setShowLoadingSheetModal] = useState(false);
+
+  const allocationPlans = simResult?.containerResult?.allocationPlans || [];
+  const [selectedPlanId, setSelectedPlanId] = useState(() => allocationPlans[0]?.id || 'plan-optimal');
+
+  // 활성 플랜 및 활성 컨테이너 목록 동기화
+  const activePlan = allocationPlans.find((p) => p.id === selectedPlanId) || allocationPlans[0];
+  const activeContainers = activePlan ? activePlan.containers : (simResult?.containerResult?.containers || []);
+  const effectiveCurrentContainer =
+    activeContainers[selectedContainerIdx] || activeContainers[0] || currentContainer;
+
+  const isCustomWeightLimit = Boolean(maxWeightPerContainerLimit && Number(maxWeightPerContainerLimit) > 0);
+  const hasWeightLimitWarning =
+    isCustomWeightLimit &&
+    (activeContainers.length > (simResult?.containerResult?.containers?.length || 1) ||
+      (activePlan?.incompleteColsCount || 0) > 0);
 
   return (
     <section ref={step3Ref} className="cbm-step-section">
@@ -57,7 +77,7 @@ export function Step3ContainerResult({
           <div className="cbm-mini-stat">
             <span>호기별 파레트 배분</span>
             <strong>
-              {simResult.containerResult.containers
+              {activeContainers
                 .map((c) => `${c.index}호기 ${c.placedPallets.length}PLT`)
                 .join(' / ')}
             </strong>
@@ -65,9 +85,18 @@ export function Step3ContainerResult({
           <div className="cbm-mini-stat">
             <span>무게중심(CoG) 상태</span>
             <strong style={{ color: '#6ee7b7' }}>
-              {currentContainer?.cog?.statusText || '정상 (균형)'}
+              {effectiveCurrentContainer?.cog?.statusText || '정상 (균형)'}
             </strong>
           </div>
+          <button
+            type="button"
+            className="cbm-loading-sheet-btn"
+            onClick={() => setShowLoadingSheetModal(true)}
+            title="창고 지게차 기사용 A4 가로 흑백 현장 로딩 지시서 출력"
+            style={{ alignSelf: 'center', height: '36px', fontSize: '12.5px', whiteSpace: 'nowrap' }}
+          >
+            현장 로딩 지시서 출력
+          </button>
         </div>
       </div>
 
@@ -147,7 +176,51 @@ export function Step3ContainerResult({
             </div>
           </div>
 
-          {/* 4) CoG 체크박스 & 실무 가이드 토글 */}
+          {/* 4) 호기당 화물 중량 상한(kg) 설정 */}
+          <div className="cbm-ribbon-group">
+            <span className="cbm-ribbon-label">중량 상한:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <input
+                type="number"
+                min={1000}
+                max={40000}
+                step={500}
+                placeholder="제한 없음"
+                value={maxWeightPerContainerLimit || ''}
+                onChange={(e) => setMaxWeightPerContainerLimit && setMaxWeightPerContainerLimit(e.target.value)}
+                style={{
+                  width: '90px',
+                  padding: '4px 8px',
+                  fontSize: '0.8rem',
+                  borderRadius: '6px',
+                  border: isCustomWeightLimit ? '1px solid #3b82f6' : '1px solid rgba(148, 163, 184, 0.3)',
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  color: '#fff',
+                  textAlign: 'right',
+                }}
+              />
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>kg</span>
+              {isCustomWeightLimit && (
+                <button
+                  type="button"
+                  onClick={() => setMaxWeightPerContainerLimit && setMaxWeightPerContainerLimit('')}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    padding: '2px 4px',
+                  }}
+                  title="제한 해제"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 5) CoG 체크박스 & 실무 가이드 토글 */}
           <div className="cbm-ribbon-group" style={{ marginLeft: 'auto' }}>
             <label className="cbm-mini-check" style={{ margin: 0 }}>
               <input
@@ -188,13 +261,44 @@ export function Step3ContainerResult({
             </div>
           </div>
         )}
+
+        {/* 도로 운송 중량 제한 안내 문구 */}
+        <div style={{ marginTop: '8px', fontSize: '0.76rem', color: '#94a3b8', padding: '0 4px' }}>
+          ※ 도로 운송 중량 제한(축중 제한 등)을 고려해 회사의 실제 선적 중량 상한을 설정할 수 있습니다. (기본값: 컨테이너 제원 최대적재중량)
+        </div>
+
+        {/* 상한으로 인한 대수 증가 또는 미완성 열 발생 경고 */}
+        {hasWeightLimitWarning && (
+          <div className="cbm-weight-limit-alert" style={{ marginTop: '8px' }}>
+            <span style={{ fontWeight: 700, color: '#f59e0b' }}>⚠️ 중량 상한 안내:</span>
+            <span>
+              호기당 중량 상한({Number(maxWeightPerContainerLimit).toLocaleString()}kg)을 맞추기 위해{' '}
+              {activeContainers.length > (simResult?.containerResult?.containers?.length || 1)
+                ? '컨테이너 소요 대수가 늘어났습니다.'
+                : '미완성 열이 발생했습니다.'}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* 3단계 상단: 호기별 배분 비교 표 (추천안 vs 대안) */}
+      {allocationPlans.length > 0 && (
+        <AllocationComparisonTable
+          plans={allocationPlans}
+          selectedPlanId={selectedPlanId}
+          onSelectPlan={(id) => {
+            setSelectedPlanId(id);
+            setSelectedContainerIdx(0);
+          }}
+          theme={theme}
+        />
+      )}
 
       {/* 3-A: 3D 컨테이너 적재 시각화 & 2D 평면도 (Visual-First! 최상단 배치) */}
       <div className="cbm-visualizer-card">
         <div className="cbm-vis-subheader">
           <div className="cbm-instance-pills">
-            {simResult.containerResult.containers.map((c, idx) => (
+            {activeContainers.map((c, idx) => (
               <button
                 key={c.id}
                 type="button"
@@ -257,14 +361,14 @@ export function Step3ContainerResult({
                 className={tierFilter === 'tier1' ? 'active' : ''}
                 onClick={() => setTierFilter('tier1')}
               >
-                1단적만 ({currentContainer?.tier1Count || 0})
+                1단적만 ({effectiveCurrentContainer?.tier1Count || 0})
               </button>
               <button
                 type="button"
                 className={tierFilter === 'tier2' ? 'active' : ''}
                 onClick={() => setTierFilter('tier2')}
               >
-                2단적만 ({currentContainer?.tier2Count || 0})
+                2단적만 ({effectiveCurrentContainer?.tier2Count || 0})
               </button>
             </div>
 
@@ -276,10 +380,20 @@ export function Step3ContainerResult({
               />
               <span>층간 분리뷰</span>
             </label>
+
+            <button
+              type="button"
+              className="cbm-loading-sheet-btn"
+              onClick={() => setShowLoadingSheetModal(true)}
+              style={{ padding: '4px 10px', fontSize: '11.5px', height: '28px' }}
+              title="A4 가로 흑백 현장 로딩 지시서 출력"
+            >
+              지시서 출력
+            </button>
           </div>
 
           {/* 도어(Door) 쪽 저단 파레트 낙하 방지 & 화물 밀림 방지 쇼링 알림 바 */}
-          {currentContainer?.fieldDiagnostics?.doorShoringGuide && (
+          {effectiveCurrentContainer?.fieldDiagnostics?.doorShoringGuide && (
             <div
               style={{
                 width: '100%',
@@ -311,22 +425,22 @@ export function Step3ContainerResult({
                   쇼링 안전
                 </span>
                 <strong>
-                  {currentContainer.fieldDiagnostics.doorShoringGuide.title}:
+                  {effectiveCurrentContainer.fieldDiagnostics.doorShoringGuide.title}:
                 </strong>
                 <span style={{ color: '#fde68a' }}>
-                  {currentContainer.fieldDiagnostics.doorShoringGuide.action1}
+                  {effectiveCurrentContainer.fieldDiagnostics.doorShoringGuide.action1}
                 </span>
               </div>
-              {currentContainer.fieldDiagnostics.doorShoringGuide.action2 && (
+              {effectiveCurrentContainer.fieldDiagnostics.doorShoringGuide.action2 && (
                 <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
-                  {currentContainer.fieldDiagnostics.doorShoringGuide.action2}
+                  {effectiveCurrentContainer.fieldDiagnostics.doorShoringGuide.action2}
                 </span>
               )}
             </div>
           )}
 
           {/* 길이 방향 래핑 공차 경고 바 */}
-          {currentContainer?.fieldDiagnostics?.lengthWrappingWarning && (
+          {effectiveCurrentContainer?.fieldDiagnostics?.lengthWrappingWarning && (
             <div
               style={{
                 width: '100%',
@@ -354,7 +468,7 @@ export function Step3ContainerResult({
               >
                 래핑 공차 주의
               </span>
-              <span>{currentContainer.fieldDiagnostics.lengthWrappingWarning.text}</span>
+              <span>{effectiveCurrentContainer.fieldDiagnostics.lengthWrappingWarning.text}</span>
             </div>
           )}
         </div>
@@ -363,7 +477,7 @@ export function Step3ContainerResult({
         <ThreeViewport
           theme={theme}
           mode="container"
-          containerInstance={currentContainer}
+          containerInstance={effectiveCurrentContainer}
           containerSpec={simResult.selectedSpec}
           visibleStep={containerVisibleStep}
           tierFilter={tierFilter}
@@ -403,12 +517,12 @@ export function Step3ContainerResult({
         </div>
 
         {/* 2D Container Floor Slot Map & Center of Gravity (CoG) Analysis */}
-        {currentContainer && currentContainer.cog && (
+        {effectiveCurrentContainer && effectiveCurrentContainer.cog && (
           <div className="cbm-container-detail-footer">
             {/* 2D Top-Down Container Floor Layout SVG (Subcomponent) */}
             <ContainerFloorPlanSvg
               theme={theme}
-              currentContainer={currentContainer}
+              currentContainer={effectiveCurrentContainer}
               setSelectedPalletIdx={setSelectedPalletIdx}
               step2Ref={step2Ref}
             />
@@ -417,53 +531,53 @@ export function Step3ContainerResult({
             <div className="cbm-cog-stats-col">
               <div
                 className={`cbm-cog-status-box ${
-                  currentContainer.cog.status === 'SAFE' ? 'status-safe' : 'status-warn'
+                  effectiveCurrentContainer.cog.status === 'SAFE' ? 'status-safe' : 'status-warn'
                 }`}
               >
                 <div className="cbm-cs-top">
                   <span>무게중심(CoG) 평가</span>
-                  <strong>{currentContainer.cog.statusText}</strong>
+                  <strong>{effectiveCurrentContainer.cog.statusText}</strong>
                 </div>
                 <p>
-                  {currentContainer.cog.offsetDirXText} · {currentContainer.cog.offsetDirZText}
+                  {effectiveCurrentContainer.cog.offsetDirXText} · {effectiveCurrentContainer.cog.offsetDirZText}
                   <br />
                   <span style={{ fontSize: '0.73rem', color: '#94a3b8' }}>
-                    {currentContainer.cog.axleLoadNote}
+                    {effectiveCurrentContainer.cog.axleLoadNote}
                   </span>
                 </p>
               </div>
 
               <div className="cbm-cog-metrics-grid">
                 <div className="cbm-cog-metric">
-                  <span>좌우 밸런스 & 중앙 편차</span>
+                  <span>좌우 밸런스 & 중앙 편차 (사내 기준)</span>
                   <strong>
-                    좌 {currentContainer.cog.leftRatio}% : 우 {currentContainer.cog.rightRatio}% ({currentContainer.cog.offsetDirZText})
+                    좌 {effectiveCurrentContainer.cog.leftRatio}% : 우 {effectiveCurrentContainer.cog.rightRatio}% ({effectiveCurrentContainer.cog.offsetDirZText})
                   </strong>
-                  <small>{currentContainer.cog.lateralCriteriaText}</small>
+                  <small>{effectiveCurrentContainer.cog.lateralCriteriaText}</small>
                 </div>
                 <div className="cbm-cog-metric">
-                  <span>전후 밸런스 & 중앙 편차 (IMO CTU)</span>
+                  <span>전후 밸런스 & 중앙 편차 (CTU Code 권고)</span>
                   <strong>
-                    전 {currentContainer.cog.frontRatio}% : 후 {currentContainer.cog.rearRatio}% ({currentContainer.cog.offsetDirXText})
+                    전 {effectiveCurrentContainer.cog.frontRatio}% : 후 {effectiveCurrentContainer.cog.rearRatio}% ({effectiveCurrentContainer.cog.offsetDirXText})
                   </strong>
                   <small>
-                    {currentContainer.cog.longitudinalCriteriaText}
+                    {effectiveCurrentContainer.cog.longitudinalCriteriaText}
                   </small>
                 </div>
                 <div className="cbm-cog-metric">
                   <span>단적(段積) 분석</span>
                   <strong>
-                    1단적 {currentContainer.tier1Count}PLT / 2단적 {currentContainer.tier2Count}PLT
+                    1단적 {effectiveCurrentContainer.tier1Count}PLT / 2단적 {effectiveCurrentContainer.tier2Count}PLT
                   </strong>
                   <small>
-                    총 {currentContainer.placedPallets.length}개 파레트 (
-                    {currentContainer.boxCount.toLocaleString()} 박스)
+                    총 {effectiveCurrentContainer.placedPallets.length}개 파레트 (
+                    {effectiveCurrentContainer.boxCount.toLocaleString()} 박스)
                   </small>
                 </div>
               </div>
 
               {/* Field Operations & Shoring Diagnostics (Subcomponent) */}
-              <ContainerDiagnosticsCard currentContainer={currentContainer} />
+              <ContainerDiagnosticsCard currentContainer={effectiveCurrentContainer} />
             </div>
           </div>
         )}
@@ -476,6 +590,16 @@ export function Step3ContainerResult({
         setSelectedContainerId={setSelectedContainerId}
         setSelectedContainerIdx={setSelectedContainerIdx}
       />
+
+      {/* 현장 로딩 지시서 출력 모달 & 인쇄 전용 DOM */}
+      {showLoadingSheetModal && (
+        <LoadingInstructionSheetModal
+          containers={activeContainers}
+          initialContainerIdx={selectedContainerIdx}
+          onClose={() => setShowLoadingSheetModal(false)}
+        />
+      )}
+      <LoadingInstructionPrintRoot containers={activeContainers} />
     </section>
   );
 }

@@ -20,6 +20,7 @@ import { Step1CargoInput } from './components/Step1CargoInput';
 import { Step2PalletResult } from './components/Step2PalletResult';
 import { Step3ContainerResult } from './components/Step3ContainerResult';
 import { PasteCargoModal } from './components/PasteCargoModal';
+import { ProjectManagerModal } from './components/ProjectManagerModal';
 import './cbm.css';
 
 const STORAGE_KEY = 'wac_cbm_sim_saved_state_v1';
@@ -94,7 +95,7 @@ export function CbmSimulator() {
   // palletSelectionMode: 'T11' | 'T12' | 'EUR' | 'EXPORT_1200' | 'CUSTOM_MIX'
   const [palletSelectionMode, setPalletSelectionMode] = useState(() => savedState?.palletSelectionMode || 'CUSTOM_MIX');
   
-  // 파레트 표준 운영 기준 (기본 유지 · 선별 대체)
+  // 품목별 파레트 선택 기준 (기본 유지 · 선별 대체)
   const [policyBasePallet, setPolicyBasePallet] = useState(() => savedState?.policyBasePallet || 'T11');
   const [policyAllowedAlternates, setPolicyAllowedAlternates] = useState(() => savedState?.policyAllowedAlternates || ['T12']);
   const [policyOverhang, setPolicyOverhang] = useState(() => savedState?.policyOverhang ?? 0);
@@ -118,6 +119,7 @@ export function CbmSimulator() {
   const [balanceContainers, setBalanceContainers] = useState(false);
   const [fullFloorSpread, setFullFloorSpread] = useState(() => savedState?.fullFloorSpread ?? true); // 기본값: 컨테이너 빈 바닥 100% 풀채움 (1단 바닥 전체 균등 배치)
   const [optimizeCoG, setOptimizeCoG] = useState(() => savedState?.optimizeCoG ?? true);
+  const [maxWeightPerContainerLimit, setMaxWeightPerContainerLimit] = useState(() => savedState?.maxWeightPerContainerLimit || '');
   const [selectedContainerIdx, setSelectedContainerIdx] = useState(0);
   const [containerVisibleStep, setContainerVisibleStep] = useState(100);
   const [isContainerPlaying, setIsContainerPlaying] = useState(false);
@@ -140,6 +142,86 @@ export function CbmSimulator() {
   const [uploadNotice, setUploadNotice] = useState(null);
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
+
+  // Project Manager State (저장 및 불러오기, JSON 파일 I/O)
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [currentProjectName, setCurrentProjectName] = useState(() => savedState?.projectName || '기본 프로젝트');
+
+  const currentProjectData = useMemo(() => ({
+    projectName: currentProjectName,
+    cargos,
+    palletConfig,
+    stackMode,
+    mixCargos,
+    interlockLayers,
+    overhang,
+    unitMode,
+    palletSelectionMode,
+    policyBasePallet,
+    policyAllowedAlternates,
+    policyOverhang,
+    policyMinEfficiency,
+    wrappingConfig,
+    selectedContainerId,
+    stuffingStrategy,
+    fullFloorSpread,
+    optimizeCoG,
+    maxWeightPerContainerLimit,
+    step2Unlocked,
+    step3Unlocked,
+  }), [
+    currentProjectName,
+    cargos,
+    palletConfig,
+    stackMode,
+    mixCargos,
+    interlockLayers,
+    overhang,
+    unitMode,
+    palletSelectionMode,
+    policyBasePallet,
+    policyAllowedAlternates,
+    policyOverhang,
+    policyMinEfficiency,
+    wrappingConfig,
+    selectedContainerId,
+    stuffingStrategy,
+    fullFloorSpread,
+    optimizeCoG,
+    maxWeightPerContainerLimit,
+    step2Unlocked,
+    step3Unlocked,
+  ]);
+
+  const handleLoadProjectData = (data, name) => {
+    if (name) setCurrentProjectName(name);
+    if (Array.isArray(data.cargos)) setCargos(data.cargos);
+    if (data.palletConfig) setPalletConfig(data.palletConfig);
+    if (data.stackMode) setStackMode(data.stackMode);
+    if (data.mixCargos !== undefined) setMixCargos(data.mixCargos);
+    if (data.interlockLayers !== undefined) setInterlockLayers(data.interlockLayers);
+    if (data.overhang !== undefined) setOverhang(data.overhang);
+    if (data.unitMode) setUnitMode(data.unitMode);
+    if (data.palletSelectionMode) setPalletSelectionMode(data.palletSelectionMode);
+    if (data.policyBasePallet) setPolicyBasePallet(data.policyBasePallet);
+    if (data.policyAllowedAlternates) setPolicyAllowedAlternates(data.policyAllowedAlternates);
+    if (data.policyOverhang !== undefined) setPolicyOverhang(data.policyOverhang);
+    if (data.policyMinEfficiency !== undefined) setPolicyMinEfficiency(data.policyMinEfficiency);
+    if (data.wrappingConfig) setWrappingConfig(data.wrappingConfig);
+    if (data.selectedContainerId) setSelectedContainerId(data.selectedContainerId);
+    if (data.stuffingStrategy) setStuffingStrategy(data.stuffingStrategy);
+    if (data.fullFloorSpread !== undefined) setFullFloorSpread(data.fullFloorSpread);
+    if (data.optimizeCoG !== undefined) setOptimizeCoG(data.optimizeCoG);
+    if (data.maxWeightPerContainerLimit !== undefined) setMaxWeightPerContainerLimit(data.maxWeightPerContainerLimit);
+
+    setStep2Unlocked(true);
+    setStep3Unlocked(true);
+
+    setUploadNotice({
+      type: 'success',
+      message: `"${name || '프로젝트'}"를 성공적으로 불러왔습니다. 시뮬레이션 결과가 갱신되었습니다.`,
+    });
+  };
 
   // Effective cargos based on palletSelectionMode (Uniform vs Custom Mix)
   const effectiveCargos = useMemo(() => {
@@ -209,6 +291,7 @@ export function CbmSimulator() {
       fullFloorSpread,
       optimizeCoG,
       wrappingConfig,
+      maxWeightPerContainer: maxWeightPerContainerLimit ? Number(maxWeightPerContainerLimit) : 0,
     });
   }, [
     step2Unlocked,
@@ -223,9 +306,10 @@ export function CbmSimulator() {
     fullFloorSpread,
     optimizeCoG,
     wrappingConfig,
+    maxWeightPerContainerLimit,
   ]);
 
-  // 표준 운영안(Standard Operational Policy) 자동 판정 결과
+  // 품목별 파레트 사용(Custom Mix Policy) 자동 판정 결과
   const companyPolicyResult = useMemo(() => {
     return evaluateCompanyPolicy({
       cargos,
@@ -327,6 +411,7 @@ export function CbmSimulator() {
         stuffingStrategy,
         fullFloorSpread,
         optimizeCoG,
+        maxWeightPerContainerLimit,
         step2Unlocked,
         step3Unlocked,
       };
@@ -353,6 +438,7 @@ export function CbmSimulator() {
     stuffingStrategy,
     fullFloorSpread,
     optimizeCoG,
+    maxWeightPerContainerLimit,
     step2Unlocked,
     step3Unlocked,
   ]);
@@ -503,7 +589,7 @@ export function CbmSimulator() {
     setPalletSelectionMode('CUSTOM_MIX');
     setUploadNotice({
       type: 'success',
-      message: `표준 운영안이 적용되었습니다. (기본 규격: ${policyBasePallet}, 전환 기준 효율: ${policyMinEfficiency}%)`,
+      message: `품목별 파레트 사용 기준이 적용되었습니다. (기본 규격: ${policyBasePallet}, 전환 기준 효율: ${policyMinEfficiency}%)`,
     });
   };
 
@@ -684,7 +770,6 @@ export function CbmSimulator() {
               onClick={() => setTheme('dark')}
               title="검은바탕 모드 (다크 테마)"
             >
-              <span className="cbm-theme-icon">🌙</span>
               <span className="cbm-theme-text">검은바탕</span>
             </button>
             <button
@@ -693,7 +778,6 @@ export function CbmSimulator() {
               onClick={() => setTheme('light')}
               title="흰바탕 모드 (라이트 테마)"
             >
-              <span className="cbm-theme-icon">☀️</span>
               <span className="cbm-theme-text">흰바탕</span>
             </button>
           </div>
@@ -706,6 +790,15 @@ export function CbmSimulator() {
           >
             <span className="cbm-btn-label-desktop">엑셀 양식 다운로드</span>
             <span className="cbm-btn-label-mobile">양식</span>
+          </button>
+          <button
+            type="button"
+            className="cbm-btn cbm-btn-outline cbm-project-mgr-btn"
+            onClick={() => setProjectModalOpen(true)}
+            title="프로젝트 전체 입력값 저장/불러오기 및 JSON 파일 내보내기/가져오기"
+          >
+            <span className="cbm-btn-label-desktop">프로젝트 저장/불러오기</span>
+            <span className="cbm-btn-label-mobile">프로젝트</span>
           </button>
           {simResult && (
             <>
@@ -852,6 +945,8 @@ export function CbmSimulator() {
           setFullFloorSpread={setFullFloorSpread}
           optimizeCoG={optimizeCoG}
           setOptimizeCoG={setOptimizeCoG}
+          maxWeightPerContainerLimit={maxWeightPerContainerLimit}
+          setMaxWeightPerContainerLimit={setMaxWeightPerContainerLimit}
           wrappingConfig={wrappingConfig}
           setWrappingConfig={setWrappingConfig}
           containerVisibleStep={containerVisibleStep}
@@ -873,6 +968,15 @@ export function CbmSimulator() {
         pasteText={pasteText}
         setPasteText={setPasteText}
         handleApplyPasteText={handleApplyPasteText}
+      />
+
+      {/* Project Manager Modal (저장, 불러오기, JSON 파일 I/O) */}
+      <ProjectManagerModal
+        isOpen={projectModalOpen}
+        onClose={() => setProjectModalOpen(false)}
+        theme={theme}
+        currentProjectData={currentProjectData}
+        onLoadProjectData={handleLoadProjectData}
       />
     </div>
   );

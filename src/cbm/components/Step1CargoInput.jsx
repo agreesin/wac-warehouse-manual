@@ -169,8 +169,8 @@ export function Step1CargoInput({
                   <th>수량 (박스)</th>
                   <th>박스단중 (kg)</th>
                   <th title="품목별 최대 적재 단수 제한 (0: 높이 기준 자동)">단수제한</th>
-                  <th title="박스 허용 상단 하중(kg) — 하단 박스가 상단에서 견딜 수 있는 최대 하중 (1 + 허용하중/단중으로 자동 계산)">허용상중(kg)</th>
-                  <th title="컨테이너 적재 시 이 화물이 실린 파레트의 2단(상단) 적재 및 상단에 다른 파레트 올리기 금지">2단적금지</th>
+                  <th title="박스 상단 허용하중(kg) — 하단 박스가 견딜 수 있는 최대 하중 (인터로킹 시 압축강도 약 25% 저하 반영)">상단 허용하중(kg)</th>
+                  <th title="이 품목이 실린 파레트는 2단 적재하지 않음 (위에 올리지도, 다른 파레트를 올리지도 않음)">2단적금지</th>
                   <th title="첫 완성 파레트 실측 외경(가로×세로 mm) — 입력 시 계산 규격 대신 실측 치수를 우선 적용하여 컨테이너 적재 유격을 정밀 계산합니다">실측외경(W×L)</th>
                   <th>회전허용</th>
                   <th>삭제</th>
@@ -288,7 +288,7 @@ export function Step1CargoInput({
                       <td>
                         <select
                           className="cbm-table-input"
-                          style={{ width: '78px', padding: '4px 4px', fontSize: '12px' }}
+                          style={{ width: '70px', padding: '4px 2px', fontSize: '11.5px' }}
                           value={cargo.maxLayers || 0}
                           onChange={(e) =>
                             handleCargoChange(cargo.id, 'maxLayers', Number(e.target.value) || 0)
@@ -304,23 +304,49 @@ export function Step1CargoInput({
                         </select>
                       </td>
                       <td>
-                        <input
-                          type="number"
-                          className="cbm-table-input"
-                          style={{ width: '68px', padding: '4px 4px', fontSize: '12px' }}
-                          placeholder="자동"
-                          value={cargo.maxTopLoad ?? ''}
-                          min={0}
-                          step={5}
-                          title="박스 허용 상단 하중(kg) — 미입력 시 높이 기준 자동 계산 (식: 1 + 허용하중 ÷ 박스단중)"
-                          onChange={(e) =>
-                            handleCargoChange(
-                              cargo.id,
-                              'maxTopLoad',
-                              e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0)
-                            )
-                          }
-                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <input
+                            type="number"
+                            className="cbm-table-input"
+                            style={{ width: '56px', padding: '3px 4px', fontSize: '12px' }}
+                            placeholder="자동"
+                            value={cargo.maxTopLoad ?? ''}
+                            min={0}
+                            step={5}
+                            title="박스 상단 허용하중(kg) — 미입력 시 높이 기준 자동 계산 (인터로킹 시 압축강도 25% 저하 반영)"
+                            onChange={(e) =>
+                              handleCargoChange(
+                                cargo.id,
+                                'maxTopLoad',
+                                e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0)
+                              )
+                            }
+                          />
+                          {interlockLayers && (
+                            <label
+                              title="인터로킹 시 박스 강도 계수 (기본 1.0, 권장 0.75)"
+                              style={{ fontSize: '10px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}
+                            >
+                              계수
+                              <input
+                                type="number"
+                                min={0.1}
+                                max={1.0}
+                                step={0.05}
+                                value={cargo.strengthReductionFactor ?? 1.0}
+                                onChange={(e) =>
+                                  handleCargoChange(
+                                    cargo.id,
+                                    'strengthReductionFactor',
+                                    Number(e.target.value) || 1.0
+                                  )
+                                }
+                                style={{ width: '38px', padding: '1px 2px', fontSize: '10px' }}
+                                className="cbm-table-input"
+                              />
+                            </label>
+                          )}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <input
@@ -329,15 +355,15 @@ export function Step1CargoInput({
                           onChange={(e) =>
                             handleCargoChange(cargo.id, 'noDoubleStack', e.target.checked)
                           }
-                          title="2단 적재 금지 (단단하고 무거운 다른 파레트 위 적재 불가 & 이 파레트 위에도 적재 불가)"
+                          title="이 품목이 실린 파레트는 2단 적재하지 않음 (위에 올리지도, 다른 파레트를 올리지도 않음)"
                         />
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
                           <input
                             type="number"
                             className="cbm-table-input"
-                            style={{ width: '48px', padding: '3px 4px', fontSize: '11px' }}
+                            style={{ width: '42px', padding: '3px 2px', fontSize: '11px' }}
                             placeholder="W"
                             value={cargo.measuredWidth || ''}
                             min={0}
@@ -351,11 +377,11 @@ export function Step1CargoInput({
                               )
                             }
                           />
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>×</span>
+                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>×</span>
                           <input
                             type="number"
                             className="cbm-table-input"
-                            style={{ width: '48px', padding: '3px 4px', fontSize: '11px' }}
+                            style={{ width: '42px', padding: '3px 2px', fontSize: '11px' }}
                             placeholder="L"
                             value={cargo.measuredLength || ''}
                             min={0}
@@ -400,7 +426,7 @@ export function Step1CargoInput({
         </div>
 
         {/* Right Column: Stacking Rules & Height Limits */}
-        <div className="cbm-card">
+        <div className="cbm-card cbm-rule-card">
           <div className="cbm-card-header">
             <h2>1-B. 어떻게 적재할지 조건(Rule) 선택</h2>
             <span className="cbm-badge">적재 기준</span>
@@ -472,6 +498,23 @@ export function Step1CargoInput({
               <span>홀·짝수단 교차 적재(인터로킹)</span>
             </label>
           </div>
+
+          {interlockLayers && (
+            <div
+              style={{
+                marginBottom: '10px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                color: '#fde68a',
+                fontSize: '11.5px',
+                lineHeight: 1.45,
+              }}
+            >
+              ⚠️ <strong>인터로킹 강도 저하 주의:</strong> 상자 모서리가 맞닿지 않아 박스 압축강도(BCT)가 약 25% 저하(강도 계수 0.75)될 수 있습니다. 화물 테이블에서 계수(기본 1.0) 또는 상단 허용하중을 확인하십시오.
+            </div>
+          )}
           <div className="cbm-radio-pair">
             <button
               type="button"

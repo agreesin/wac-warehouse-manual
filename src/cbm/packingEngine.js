@@ -17,6 +17,7 @@ import {
   PATTERN_DEFS,
   STACK_STYLE_DEFS,
   POSTURE_DEFS,
+  INTERLOCK_STRENGTH_FACTOR,
 } from './constants.js';
 
 import {
@@ -50,6 +51,7 @@ export {
   PATTERN_DEFS,
   STACK_STYLE_DEFS,
   POSTURE_DEFS,
+  INTERLOCK_STRENGTH_FACTOR,
   resolveCargoBoxDimsByPosture,
   resolvePalletDimsForCargo,
   computeBest2DLayer,
@@ -74,9 +76,9 @@ export function estimate40HcContainerNeeds(palletCount, palletSpecId = 'T11') {
   // 40HC 컨테이너 바닥 적재 용량 (실무 기준):
   // - EUR (1200×800): 2열 지그재그/회전 24~25개
   // - T11 (1100×1100), T12 (1200×1000), CUSTOM_MIX: 2열 20개
-  // - EXPORT_1200 (1200×1200): 컨테이너 내부 폭(2352mm) 미달로 1열 적재, 길이(12032mm) 기준 1열 9개 적재
+  // - EXPORT_1200 (1200×1200): 컨테이너 내부 폭(2352mm) 미달로 1열 적재, 길이(12032mm) 기준 1열 10개 적재
   const floorCapacity =
-    palletSpecId === 'EUR' ? 24 : palletSpecId === 'EXPORT_1200' ? 9 : 20;
+    palletSpecId === 'EUR' ? 25 : palletSpecId === 'EXPORT_1200' ? 10 : 20;
   if (!palletCount || palletCount <= 0) {
     return {
       containerCount: 0,
@@ -323,9 +325,9 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
 
     fleetRecommendations.push({
       id: 'SINGLE_40HC',
-      badge: hcOnlyEmpty <= 2 ? '[추천] 바닥 공간 최적 매칭' : '전 호기 균등 배분 배차',
+      badge: hcOnlyEmpty <= 2 ? '[추천] 바닥 공간 최적 매칭' : '호기별 최적 배분 배차',
       title: `40ft High Cube × ${hcOnlyCnt}대 (${perHcSplit})`,
-      detail: `총 ${totalPlt}파레트를 호기별로 균등 배분 (바닥 ${hcOnlySlots}슬롯 기준)`,
+      detail: `총 ${totalPlt}파레트를 호기별 최적 배분 (열 용량 단위 완적 및 미완성 열 최소화)`,
       note:
         options.fullFloorSpread !== false
           ? '1단 바닥 밀착 적재 (도어 쪽 잔여 공간 및 측면 유격 진단에 맞춰 목재 블로킹/래싱 벨트 고정)'
@@ -333,7 +335,7 @@ export function runFullSimulation(cargos, palletConfig, selectedContainerId, opt
       desc:
         hcOnlyEmpty <= 2
           ? `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트를 채워 바닥 공간 활용도가 매우 높습니다.`
-          : `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트 적재 (호차별 균등 배분 적용).`,
+          : `총 ${hcOnlySlots}슬롯 중 ${totalPlt}파레트 적재 (열 용량 단위 최적 배분 적용).`,
       totalSlots: hcOnlySlots,
       emptySlots: hcOnlyEmpty,
       isRecommended: fleetRecommendations.length === 0,

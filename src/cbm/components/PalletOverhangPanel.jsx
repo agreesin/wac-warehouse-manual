@@ -9,10 +9,18 @@ export function PalletOverhangPanel({
   setCargos,
   handleCargoChange,
   setPalletSelectionMode,
+  wrappingConfig,
 }) {
   if (!simResult?.overhangDiagnostics || simResult.overhangDiagnostics.length === 0) {
     return null;
   }
+
+  const bulge = wrappingConfig?.wrappingBulgeMm ?? 20;
+  const mis = wrappingConfig?.stackingMisalignmentMm ?? 10;
+  const fork = wrappingConfig?.forkliftLateralClearanceMm ?? wrappingConfig?.forkliftClearanceMm ?? 20;
+  const inW = wrappingConfig?.containerInnerWidthOption ?? 2352;
+  const t11RowW = 1100 * 2 + (bulge + mis) * 2;
+  const t11Margin = inW - t11RowW - fork;
 
   return (
     <div className="cbm-card cbm-overhang-compact-card">
@@ -99,9 +107,15 @@ export function PalletOverhangPanel({
                       [돌출 적용] {diag.current.ovDirectionText || `+${diag.current.maxOverhangMm}mm`} ({diag.current.totalPallets} PLT)
                     </span>
                   ) : opp && opp.savedPallets > 0 ? (
-                    <span style={{ color: '#fde68a' }}>
-                      {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 <strong>{opp.savedPallets} PLT 절감 가능</strong> ({diag.strict.totalPallets} → {opp.totalPallets} PLT)
-                    </span>
+                    opp.isViable ? (
+                      <span style={{ color: '#fde68a' }}>
+                        {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 <strong>{opp.savedPallets} PLT 절감 가능</strong> ({diag.strict.totalPallets} → {opp.totalPallets} PLT)
+                      </span>
+                    ) : (
+                      <span style={{ color: '#f87171' }}>
+                        {opp.ovDirectionText || `+${opp.requiredOverhangMm}mm`} 돌출 시 {opp.savedPallets} PLT 절감 가능하나 <strong>[{opp.reason || '컨테이너 허용한도 초과로 현장 불가'}]</strong>
+                      </span>
+                    )
                   ) : (
                     <span style={{ color: '#94a3b8' }}>
                       정사이즈(0mm) 유지 (돌출 절감 효과 없음)
@@ -126,7 +140,7 @@ export function PalletOverhangPanel({
                   0mm (정사이즈)
                 </button>
 
-                {opp && opp.savedPallets > 0 && (
+                {opp && opp.savedPallets > 0 && opp.isViable && (
                   <button
                     type="button"
                     className="cbm-btn-xs"
@@ -229,7 +243,7 @@ export function PalletOverhangPanel({
           lineHeight: 1.4,
         }}
       >
-        <strong>현장 래핑 공차 가이드:</strong> 스트레치 필름을 5~10회 래핑하고 상자 하중 배부름이 생기면 파레트당 외경이 약 +15~20mm 불어납니다. T11에서 +40mm 돌출 시 2열 실측 외경이 2,320mm가 되어 컨테이너 벽면 주름에 닿을 수 있으므로, 돌출을 줄이거나 <strong>1200×1000mm 규격으로 무돌출 전환</strong>하는 것이 현장 안전상 가장 추천됩니다.
+        <strong>현장 래핑 공차 가이드:</strong> 현재 설정 기준 배부름(+{bulge}mm/파레트), 적재 어긋남(+{mis}mm), 지게차 진입 여유({fork}mm), 내폭 {inW}mm 적용 시 T11 2열 유효 폭은 약 {t11RowW}mm(잔여 여유 {t11Margin}mm)입니다. 과도한 돌출은 내벽 간섭 위험을 초래하므로, 돌출을 지양하거나 <strong>1200×1000mm 규격으로 무돌출 전환</strong>하는 것이 현장 안전상 가장 추천됩니다.
       </div>
     </div>
   );

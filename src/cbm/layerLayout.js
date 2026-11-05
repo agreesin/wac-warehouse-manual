@@ -57,11 +57,15 @@ export function resolvePalletDimsForCargo(cargo, defaultPalletConfig) {
   return {
     specId: basePreset.id,
     specName: hasMeasured ? `${basePreset.shortLabel || basePreset.name} (실측적용)` : (basePreset.shortLabel || basePreset.name),
-    width: hasMeasured ? Number(cargo.measuredWidth) : basePreset.width,
-    length: hasMeasured ? Number(cargo.measuredLength) : basePreset.length,
+    // 파레트 위 박스 배열 계산은 항상 공칭 파레트 규격과 허용 돌출로만 계산 (실측 외경으로 박스 배열 대체 방지)
+    width: basePreset.width,
+    length: basePreset.length,
     nominalWidth: basePreset.width,
     nominalLength: basePreset.length,
+    measuredWidth: hasMeasured ? Number(cargo.measuredWidth) : null,
+    measuredLength: hasMeasured ? Number(cargo.measuredLength) : null,
     isMeasured: hasMeasured,
+    hasMeasured,
   };
 }
 

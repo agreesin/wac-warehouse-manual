@@ -132,7 +132,62 @@ export function ContainerFloorPlanSvg({
                 fill="#cbd5e1"
                 fontSize="155"
               >
-                {pp.pallet.width}×{pp.pallet.length}
+                {pp.pallet.width}×{pp.pallet.length}{pp.orientation && pp.orientation !== '정방향' ? ` (${pp.orientation})` : ''}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* 문쪽 미완성 열 측면 블로킹 표기 (파레트 양옆) */}
+        {currentContainer.placedPallets.map((pp) => {
+          if (pp.tier === 2 || !pp.isSingleIncompleteCol) return null;
+          const leftGap = pp.leftGapMm || Math.floor((currentContainer.spec.width - pp.width) / 2);
+          const rightGap = pp.rightGapMm || (currentContainer.spec.width - (pp.z + pp.width));
+          return (
+            <g key={`side-block-${pp.slotIndex}`}>
+              <rect
+                x={pp.x + 15}
+                y={15}
+                width={pp.length - 30}
+                height={Math.max(10, pp.z - 30)}
+                fill="rgba(245, 158, 11, 0.22)"
+                stroke="#f59e0b"
+                strokeWidth={18}
+                strokeDasharray="40,20"
+                rx={15}
+              />
+              <text
+                x={pp.x + pp.length / 2}
+                y={pp.z / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#fbbf24"
+                fontSize="140"
+                fontWeight="bold"
+              >
+                측면 블로킹 ({leftGap}mm)
+              </text>
+              <rect
+                x={pp.x + 15}
+                y={pp.z + pp.width + 15}
+                width={pp.length - 30}
+                height={Math.max(10, currentContainer.spec.width - (pp.z + pp.width) - 30)}
+                fill="rgba(245, 158, 11, 0.22)"
+                stroke="#f59e0b"
+                strokeWidth={18}
+                strokeDasharray="40,20"
+                rx={15}
+              />
+              <text
+                x={pp.x + pp.length / 2}
+                y={pp.z + pp.width + (currentContainer.spec.width - (pp.z + pp.width)) / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#fbbf24"
+                fontSize="140"
+                fontWeight="bold"
+              >
+                측면 블로킹 ({rightGap}mm)
               </text>
             </g>
           );
