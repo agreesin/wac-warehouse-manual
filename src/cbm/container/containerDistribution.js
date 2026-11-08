@@ -2,22 +2,88 @@
 
 /**
  * 파레트 총 수량 N을 K대 컨테이너에 배분 가능한 정수 파티션 생성
+ * - Branch-and-Bound 하한 가지치기(minCount) 및 상한 가드(MAX_PARTITIONS) 적용으로
+ *   다수 컨테이너(K >= 4, 대량 물량) 입력 시 지수적 폭발(Browser Freeze) 원천 차단
  */
 export function generatePartitions(N, K, cap, colCap) {
   const results = [];
+  const seenKeys = new Set();
+  const MAX_PARTITIONS = 1200;
+
+  const pushPartition = (full) => {
+    const key = full.join(',');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    const incompleteCount = full.reduce((sum, n) => sum + (n % colCap), 0);
+    results.push({ counts: full, incompleteCount });
+  };
+
+  // 1) 핵심 시드 파티션 우선 보장: (A) 앞 호기 완적 우선(Greedy Full), (B) 전 호기 균등 배분(Balanced), (C) 열 단위(colCap) 균등 배분
+  if (K >= 1 && N >= K && N <= K * cap) {
+    // (A) 완적 우선 시드
+    const greedyFull = [];
+    let rem = N;
+    for (let i = 0; i < K; i++) {
+      const leaveForRest = K - 1 - i;
+      const take = i === K - 1 ? rem : Math.min(cap, Math.max(1, rem - leaveForRest));
+      greedyFull.push(take);
+      rem -= take;
+    }
+    if (rem === 0 && greedyFull.every((c) => c >= 1 && c <= cap)) {
+      pushPartition(greedyFull);
+    }
+
+    // (B) 균등 배분 시드
+    const base = Math.floor(N / K);
+    let extra = N % K;
+    const balanced = [];
+    for (let i = 0; i < K; i++) {
+      balanced.push(base + (extra > 0 ? 1 : 0));
+      if (extra > 0) extra--;
+    }
+    if (balanced.every((c) => c >= 1 && c <= cap)) {
+      pushPartition(balanced);
+    }
+
+    // (C) 짝수 열(colCap) 단위 균등 시드
+    if (colCap > 1) {
+      const colUnits = Math.floor(N / colCap);
+      const remAfterUnits = N % colCap;
+      const baseUnits = Math.floor(colUnits / K);
+      let extraUnits = colUnits % K;
+      const evenBalanced = [];
+      for (let i = 0; i < K; i++) {
+        let cnt = (baseUnits + (extraUnits > 0 ? 1 : 0)) * colCap;
+        if (extraUnits > 0) extraUnits--;
+        if (i === K - 1) cnt += remAfterUnits;
+        evenBalanced.push(cnt);
+      }
+      if (
+        evenBalanced.reduce((s, c) => s + c, 0) === N &&
+        evenBalanced.every((c) => c >= 1 && c <= cap)
+      ) {
+        pushPartition(evenBalanced);
+      }
+    }
+  }
+
+  // 2) Branch-and-Bound 백트래킹 탐색 (불가능한 잔여 용량 가지치기 + 최대 개수 제한)
   function helper(remN, remK, current) {
+    if (results.length >= MAX_PARTITIONS) return;
     if (remK === 1) {
       if (remN <= cap && remN >= 1) {
-        const full = [...current, remN];
-        const incompleteCount = full.reduce((sum, n) => sum + (n % colCap), 0);
-        results.push({ counts: full, incompleteCount });
+        pushPartition([...current, remN]);
       }
       return;
     }
-    for (let count = Math.min(cap, remN - remK + 1); count >= 1; count--) {
+    const maxCount = Math.min(cap, remN - (remK - 1));
+    const minCount = Math.max(1, remN - (remK - 1) * cap);
+    for (let count = maxCount; count >= minCount; count--) {
+      if (results.length >= MAX_PARTITIONS) break;
       helper(remN - count, remK - 1, [...current, count]);
     }
   }
+
   helper(N, K, []);
   return results;
 }

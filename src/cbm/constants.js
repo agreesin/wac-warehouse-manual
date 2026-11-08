@@ -95,14 +95,14 @@ export const CARGO_COLORS = [
 ];
 
 /**
- * 기본 데모 데이터:
- * - 박스A (Item 1): 510×240×210, 1246박스, 개당 4.26kg, 1100×1100 파레트
- *   -> 56박스 완적 22PLT (파레트당 255.6kg, 합 5,623.2kg) + 14박스 부분 1PLT (76.6kg)
- * - 박스B (Item 2, 돌출건): 750×410×220, 294박스, 개당 9.60kg, 1200×1000 파레트 적용 (돌출 해결!)
- *   -> 21박스 완적 14PLT (파레트당 218.6kg, 합 3,060.4kg)
- * - 박스C (Item 3): 500×400×350, 8박스, 개당 11.00kg, 1100×1100 파레트
- *   -> 8박스 1PLT (파레트당 105.0kg, 합 105.0kg)
- * - 파레트 자중(tareWeight): 17.0kg 기준 총합 38개 파레트, 8,865.2kg
+ * 기본 데모 데이터 (11/2 최종 패킹 및 2x40HQ 수출건 완벽 동기화):
+ * - 박스A (Item 1, PM84E3D03D5E2C): 510×240×210, 1246박스, 개당 4.20kg, 1100×1100 파레트
+ *   -> 56박스 완적 22PLT (파레트당 252.0kg) + 14박스 부분 1PLT (69.0kg), 합 5,613.0kg
+ * - 박스B (Item 2, PM84-4SBCL): 750×410×220, 294박스, 개당 9.29kg, 1200×1000 파레트 적용 (돌출 해결!)
+ *   -> 21박스 완적 14PLT (파레트당 212.0kg), 합 2,968.0kg
+ * - 박스C (Item 3, G01-013055): 600×400×300, 8박스, 개당 9.13kg, 1200×1000 파레트 적용 (Plt#38)
+ *   -> 8박스 1PLT (4박스/단 × 2단, 파레트당 90.0kg), 합 90.0kg
+ * - 총합 38개 파레트, 8,671.0kg, 74.11CBM (11/2 최종 패킹 메일과 100% 일치)
  */
 export const DEFAULT_WRAPPING_CONFIG = {
   wrappingBulgeMm: 20, // 래핑 배부름 공차 (mm)
@@ -129,7 +129,7 @@ export const DEFAULT_CARGOS = [
     length: 240,
     height: 210,
     quantity: 1246,
-    weight: 4.26,
+    weight: 4.2,
     color: CARGO_COLORS[0],
     allowRotate: true,
     palletSpecId: 'T11', // 1100 x 1100
@@ -144,7 +144,7 @@ export const DEFAULT_CARGOS = [
     length: 410,
     height: 220,
     quantity: 294,
-    weight: 9.6,
+    weight: 9.29,
     color: CARGO_COLORS[1],
     allowRotate: true,
     palletSpecId: 'T12', // 돌출 방지를 위해 1200 x 1000 파레트 지정
@@ -155,14 +155,14 @@ export const DEFAULT_CARGOS = [
   {
     id: 'cargo-3',
     name: '박스C (Item3)',
-    width: 500,
+    width: 600,
     length: 400,
-    height: 350,
+    height: 300,
     quantity: 8,
-    weight: 11.0,
+    weight: 9.13,
     color: CARGO_COLORS[2],
     allowRotate: true,
-    palletSpecId: 'T11', // 1100 x 1100
+    palletSpecId: 'T12', // 1200 x 1000 파레트 지정 (11/2 최종 패킹 Plt#38 반영)
     measuredWidth: 0,
     measuredLength: 0,
     strengthReductionFactor: 1.0,

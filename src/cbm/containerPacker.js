@@ -1,6 +1,7 @@
 // Step 3: 컨테이너 내부 파레트 적재(바닥 전체 균등 배치 vs 2단/고단 밀착 배치) 및 오케스트레이션
 // 도메인별 세부 로직은 ./container/ 서브모듈로 분리 관리됩니다.
 
+import { CONTAINER_SPECS } from './constants.js';
 import { analyzeContainerCoG } from './container/containerCoG.js';
 import {
   orientPalletFor2Rows,
@@ -48,7 +49,11 @@ export function computeAllocationPlans(
 /**
  * 생성된 파레트들을 컨테이너에 적재 (다중 파레트 규격 혼합, 전 호기 균등 배분, 바닥 전체 배치 vs 2단/밀착 배치 지원)
  */
-export function packPalletsIntoContainers(pallets, containerSpec, options = {}) {
+export function packPalletsIntoContainers(pallets, containerSpecOrId, options = {}) {
+  const containerSpec =
+    typeof containerSpecOrId === 'string'
+      ? CONTAINER_SPECS[containerSpecOrId] || CONTAINER_SPECS['40FT_HC']
+      : containerSpecOrId || CONTAINER_SPECS['40FT_HC'];
   const cLength = Number(containerSpec.length) || 12032;
   const cInnerWidth =
     Number(options.wrappingConfig?.containerInnerWidthOption) ||
@@ -85,16 +90,20 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
 
   const unfitPallets = [];
   const validPallets = [];
+  const cDoorH = Number(containerSpec?.doorHeight) || cHeight - 110;
+  const maxPassableHeight = Math.min(cHeight, cDoorH);
 
   for (const p of pallets) {
     const minSide = Math.min(p.width, p.length);
-    if (p.totalHeight > cHeight || minSide > cWidth) {
+    if (p.totalHeight > maxPassableHeight || minSide > cWidth) {
       unfitPallets.push({
         palletId: p.id,
         index: p.index,
         reason:
           p.totalHeight > cHeight
-            ? `파레트 총 높이(${p.totalHeight}mm)가 컨테이너 내부 높이(${cHeight}mm)를 초과합니다.`
+            ? `파레트 총 높이(${p.totalHeight}mm)가 컨테이너 내부 천장 높이(${cHeight}mm)를 초과합니다.`
+            : p.totalHeight > cDoorH
+            ? `파레트 총 높이(${p.totalHeight}mm)가 컨테이너 도어 입구 높이(${cDoorH}mm)를 초과하여 문턱 통과가 불가합니다.`
             : `파레트 규격(${p.width}×${p.length}mm)이 컨테이너 내부 폭(${cWidth}mm)을 초과합니다.`,
       });
     } else {
@@ -144,7 +153,6 @@ export function packPalletsIntoContainers(pallets, containerSpec, options = {}) 
   // 2단 적재 최대 높이 한도: 컨테이너 도어 높이(doorHeight) - 지게차 인양 여유(기본 100mm, 설정값)
   const FORKLIFT_LIFT_MARGIN =
     Number(options.wrappingConfig?.forkliftLiftingClearanceMm) || 100;
-  const cDoorH = Number(containerSpec?.doorHeight) || cHeight - 110;
   const maxDoubleStackTotalHeight = Math.min(cHeight, cDoorH - FORKLIFT_LIFT_MARGIN);
 
   let orderedContainerBuckets = [];

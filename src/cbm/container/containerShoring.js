@@ -150,6 +150,12 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
   const innerWidthOption = Number(wrappingConfig.containerInnerWidthOption) || cWidth;
   const maxLateralGapAllowed = Number(wrappingConfig.maxLateralGapAllowedMm) || 150;
   const airbagEffLen = Number(wrappingConfig.airbagEffectiveLengthMm) || 1800;
+  const wrappingBulgeMm = Math.max(0, Number(wrappingConfig.wrappingBulgeMm ?? 20));
+  const stackingMisalignmentMm = Math.max(0, Number(wrappingConfig.stackingMisalignmentMm ?? 10));
+  const forkliftLateralClearanceMm = Math.max(
+    0,
+    Number(wrappingConfig.forkliftLateralClearanceMm ?? wrappingConfig.forkliftClearanceMm ?? 20)
+  );
 
   // 열(Column, X좌표 기준)별 파레트 그룹핑
   const colMap = new Map();
@@ -281,28 +287,52 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
   if (minColGapMm === Infinity) minColGapMm = 0;
   const lateralGapMm = maxColGapMm;
 
-  // 측면 유격 텍스트: 열별 실측 유격 및 CTU Code 15cm 권고 표기
-  let dunnageBagText = `열별 측면 유격 ${minColGapMm === maxColGapMm ? `${maxColGapMm}mm` : `${minColGapMm}~${maxColGapMm}mm`} (CTU Code 권고: 수평 빈 공간 15cm 이내)`;
+  // 래핑 배부름 및 적재 어긋남 공차를 차감한 열별 실효 여유폭(Effective Clearance) 산출
+  let minEffectiveClearanceMm = Infinity;
+  let maxRowBulgeAllowanceMm = 0;
+  for (const cg of colGapDetails) {
+    const unmeasuredCount = (cg.pallets || []).filter((p) => !p.pallet?.hasMeasured).length;
+    const rowBulge = unmeasuredCount * (wrappingBulgeMm + stackingMisalignmentMm);
+    const effClearance = cg.gap - rowBulge;
+    cg.rowBulgeAllowanceMm = rowBulge;
+    cg.effectiveClearanceMm = effClearance;
+    if (effClearance < minEffectiveClearanceMm) minEffectiveClearanceMm = effClearance;
+    if (rowBulge > maxRowBulgeAllowanceMm) maxRowBulgeAllowanceMm = rowBulge;
+  }
+  if (minEffectiveClearanceMm === Infinity) minEffectiveClearanceMm = 0;
+
+  // 측면 유격 텍스트: 열별 실측 유격 및 래핑 공차 차감 실효 여유 표기
+  const effClearanceNote =
+    maxRowBulgeAllowanceMm > 0
+      ? `, 래핑·어긋남 공차(-${maxRowBulgeAllowanceMm}mm) 감안 실효 여유 ${minEffectiveClearanceMm}mm`
+      : '';
+  let dunnageBagText = `열별 측면 유격 ${minColGapMm === maxColGapMm ? `${maxColGapMm}mm` : `${minColGapMm}~${maxColGapMm}mm`}${effClearanceNote} (CTU Code 권고: 수평 빈 공간 15cm 이내)`;
   if (hasDoorIncompleteCol && doorIncompleteColInfo) {
     dunnageBagText = `문쪽 미완성 열 폭 중앙 적재 (양옆 유격 약 ${doorIncompleteColInfo.leftGapMm}mm씩) — 측면 블로킹 필요 (에어백 미사용)`;
   } else if (hasSingleRowCol) {
     dunnageBagText = `폭 방향 1열 중앙 적재 (양옆 유격 약 ${Math.round(maxColGapMm / 2)}mm씩) — 양옆 블로킹 필요`;
   } else if (maxColGapMm > maxLateralGapAllowed) {
-    dunnageBagText = `최대 측면 유격 ${maxColGapMm}mm (CTU Code 권고 15cm 초과) — 열간 에어백 충진 권장`;
+    dunnageBagText = `최대 측면 유격 ${maxColGapMm}mm${effClearanceNote} (CTU Code 권고 15cm 초과) — 열간 에어백 충진 권장`;
   }
 
-  // 측면 여유 상태 판정 (CTU Code 권고 150mm 기준)
+  // 측면 여유 상태 판정 (래핑 공차 차감 실효 여유 + 지게차 진입 여유 + CTU Code 150mm 기준)
   let lateralStatus = 'SAFE';
-  let lateralStatusText = `가능 (내폭 ${innerWidthOption}mm 기준 적재 작업 여유 충족)`;
-  if (hasDoorIncompleteCol && doorIncompleteColInfo) {
+  let lateralStatusText = `가능 (내폭 ${innerWidthOption}mm 기준 · 공차 차감 후 실효 여유 최소 ${minEffectiveClearanceMm}mm 확보)`;
+  if (minEffectiveClearanceMm < 0) {
+    lateralStatus = 'DANGER';
+    lateralStatusText = `불가 (래핑 배부름·적재 공차(${maxRowBulgeAllowanceMm}mm) 감안 시 내폭을 ${Math.abs(minEffectiveClearanceMm)}mm 초과하여 적입 불가 위험)`;
+  } else if (maxColGapMm < 40 || minEffectiveClearanceMm < forkliftLateralClearanceMm) {
+    lateralStatus = maxColGapMm < 40 ? 'DANGER' : 'WARN';
+    lateralStatusText =
+      maxColGapMm < 40
+        ? `불가 (내폭 ${innerWidthOption}mm 대비 여유 ${maxColGapMm}mm로 협소하여 적입 불가 위험)`
+        : `주의 (래핑·어긋남 공차 차감 후 실효 여유 ${minEffectiveClearanceMm}mm — 지게차 진입 여유(${forkliftLateralClearanceMm}mm) 미달 주의)`;
+  } else if (hasDoorIncompleteCol && doorIncompleteColInfo) {
     lateralStatus = 'WARN';
     lateralStatusText = `주의 (문쪽 미완성 열 — 양옆 약 ${doorIncompleteColInfo.leftGapMm}mm씩 유격, 측면 블로킹(각재/세운 빈 파레트) 시공 필수)`;
   } else if (hasSingleRowCol) {
     lateralStatus = 'WARN';
     lateralStatusText = `주의 (폭 방향 1열 중앙 적재 — 양옆 약 ${Math.round(maxColGapMm / 2)}mm씩 유격, 양옆 블로킹 필요)`;
-  } else if (maxColGapMm < 40) {
-    lateralStatus = 'DANGER';
-    lateralStatusText = `불가 (내폭 ${innerWidthOption}mm 대비 여유 ${maxColGapMm}mm로 협소하여 적입 불가 위험)`;
   } else if (maxColGapMm > maxLateralGapAllowed) {
     lateralStatus = 'WARN';
     lateralStatusText = `주의 (측면 유격 최대 ${maxColGapMm}mm — CTU Code 권고 ${maxLateralGapAllowed}mm 초과로 완충 조치 필요)`;
@@ -323,6 +353,27 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
   let hasLowPalletAtDoor = false;
   const lowDoorPalletDetails = [];
   let minDoorPalletH = Infinity;
+
+  // 도어 최후미 열 파레트 목록 (Z좌표 기준 우측 -> 좌측 정렬, 단면도 동적 렌더링용)
+  const sortedDoorRowPallets = [...doorPallets]
+    .filter((dp) => dp.tier === 1)
+    .sort((a, b) => a.z - b.z)
+    .map((dp) => {
+      const h = dp.pallet.totalHeight;
+      const diff = Math.max(0, frontColMaxH - h);
+      const pLabel = `P#${dp.pallet.index || dp.palletIndex}`;
+      const isLow = h < 1150 || frontColMaxH - h >= 300;
+      return {
+        label: pLabel,
+        cargoName: dp.pallet.primaryCargoName?.split(' ')[0] || '화물',
+        height: h,
+        frontColMaxH,
+        diff,
+        isLow,
+        z: dp.z,
+        width: dp.width,
+      };
+    });
 
   for (const dp of doorPallets) {
     const h = dp.pallet.totalHeight;
@@ -646,9 +697,12 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       rearClearanceMm,
       lowPalletLabels: lowPalletLabelsOnly,
       lowPalletDetails: lowDoorPalletDetails,
+      doorRowPallets: sortedDoorRowPallets,
       lowPalletDesc,
       minHeightMm: minDoorPalletH,
       maxHeightMm: frontColMaxH,
+      lowerLashH,
+      upperLashH,
       title,
       summary,
       action1: actions[0],
@@ -668,9 +722,12 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
         rearClearanceMm,
         lowPalletLabels: [],
         lowPalletDetails: [],
+        doorRowPallets: sortedDoorRowPallets,
         lowPalletDesc: '',
         minHeightMm: 0,
         maxHeightMm: frontColMaxH,
+        lowerLashH,
+        upperLashH,
         title: '도어측 미완성 열 화물 전도 방지 측면 블로킹 안내',
         summary: `문쪽 마지막 열에 파레트 1개만 중앙 적재되어 양옆 유격(각 ${doorIncompleteColInfo.leftGapMm}mm)이 크므로 측면 블로킹 시공이 필수입니다.`,
         action1: `[측면 블로킹] 문쪽 미완성 열 폭 중앙 적재 (양옆 유격 각 ${doorIncompleteColInfo.leftGapMm}mm) — 각재 또는 세운 빈 파레트로 측면 블로킹 시공 (에어백 사용 금지)`,
@@ -701,6 +758,8 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
     doorIncompleteColInfo,
     shoringText,
     lateralGapMm,
+    minEffectiveClearanceMm,
+    maxRowBulgeAllowanceMm,
     dunnageBagText,
     floorUtilizationPct,
     doorShoringGuide,

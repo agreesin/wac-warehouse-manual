@@ -24,7 +24,7 @@ export function PasteCargoModal({
         <textarea
           className="cbm-paste-textarea"
           rows={8}
-          placeholder={`화물명,가로(mm),세로(mm),높이(mm),수량,중량(kg/박스)\n박스A (Item1),510,240,210,1246,4.26\n박스B (Item2),750,410,220,294,9.60\n박스C (Item3),500,400,350,8,11.00`}
+          placeholder={`화물명,가로(mm),세로(mm),높이(mm),수량,중량(kg/박스)\n박스A (Item1),510,240,210,1246,4.20\n박스B (Item2),750,410,220,294,9.29\n박스C (Item3),600,400,300,8,9.13`}
           value={pasteText}
           onChange={(e) => setPasteText(e.target.value)}
         />
@@ -34,7 +34,7 @@ export function PasteCargoModal({
             className="cbm-btn cbm-btn-outline"
             onClick={() =>
               setPasteText(
-                `화물명,가로(mm),세로(mm),높이(mm),수량,중량(kg/박스)\n박스A (Item1),510,240,210,1246,4.26\n박스B (Item2),750,410,220,294,9.60\n박스C (Item3),500,400,350,8,11.00`
+                `화물명,가로(mm),세로(mm),높이(mm),수량,중량(kg/박스)\n박스A (Item1),510,240,210,1246,4.20\n박스B (Item2),750,410,220,294,9.29\n박스C (Item3),600,400,300,8,9.13`
               )
             }
           >

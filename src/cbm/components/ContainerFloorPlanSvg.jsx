@@ -12,28 +12,114 @@ export function ContainerFloorPlanSvg({
   if (!currentContainer?.spec) return null;
 
   const isLight = theme === 'light';
+  const placedList = currentContainer.placedPallets || [];
+  const tier1Pallets = placedList.filter((pp) => pp.tier === 1);
+  const tier2Pallets = placedList.filter((pp) => pp.tier === 2);
+
+  // Build dynamic legend from actual placed pallet dimensions
+  const uniqueSpecs = Array.from(
+    new Set(placedList.map((pp) => `${pp.pallet.width}×${pp.pallet.length}`))
+  );
+
+  // Find Tier 2 pallet stacked above a given Tier 1 slot
+  const findTier2Above = (t1) =>
+    tier2Pallets.find(
+      (t2) => Math.abs(t2.x - t1.x) < 50 && Math.abs(t2.z - t1.z) < 50
+    );
 
   return (
     <div className="cbm-2d-floor-box">
       <div className="cbm-2d-floor-title">
         <span>
           {currentContainer.spec.name} #{currentContainer.index}호기 평면 배치도 (총{' '}
-          {currentContainer.placedPallets.length} PLT)
+          {placedList.length} PLT
+          {tier2Pallets.length > 0
+            ? ` / 1단 ${tier1Pallets.length} + 2단 ${tier2Pallets.length}`
+            : ''}
+          )
         </span>
         <span>
-          <strong style={{ color: isLight ? '#2563eb' : '#60a5fa' }}>■ 1100×1100</strong> |{' '}
-          <strong style={{ color: isLight ? '#d97706' : '#f59e0b' }}>■ 1200×1000</strong> |{' '}
+          {uniqueSpecs.map((specStr, idx) => {
+            const isT12Spec = specStr.includes('1200');
+            const col = isT12Spec
+              ? isLight
+                ? '#d97706'
+                : '#f59e0b'
+              : isLight
+              ? '#2563eb'
+              : '#60a5fa';
+            return (
+              <React.Fragment key={specStr}>
+                <strong style={{ color: col }}>■ {specStr}</strong>
+                {' | '}
+              </React.Fragment>
+            );
+          })}
+          {tier2Pallets.length > 0 && (
+            <>
+              <strong style={{ color: isLight ? '#7c3aed' : '#a78bfa' }}>
+                ■ 2단 적재 슬롯
+              </strong>{' '}
+              |{' '}
+            </>
+          )}
           <strong style={{ color: isLight ? '#059669' : '#10b981' }}>■ 잔여/부분</strong> |{' '}
           <strong style={{ color: isLight ? '#b45309' : '#facc15' }}>CoG (무게중심)</strong>
         </span>
       </div>
 
       <svg
-        viewBox={`-120 -120 ${currentContainer.spec.length + 240} ${
-          currentContainer.spec.width + 240
+        viewBox={`-160 -200 ${currentContainer.spec.length + 320} ${
+          currentContainer.spec.width + 400
         }`}
         className="cbm-container-floor-svg"
       >
+        {/* 컨테이너 벽면 방향 표기 (도어에서 바라본 기준 통일: 상단 z=0 우측, 하단 z=cW 좌측) */}
+        <text
+          x={currentContainer.spec.length / 2}
+          y={-75}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill={isLight ? '#475569' : '#94a3b8'}
+          fontSize="155"
+          fontWeight="bold"
+        >
+          ▲ 우측 벽면 (Right Side — 도어에서 바라본 기준)
+        </text>
+        <text
+          x={currentContainer.spec.length / 2}
+          y={currentContainer.spec.width + 95}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill={isLight ? '#475569' : '#94a3b8'}
+          fontSize="155"
+          fontWeight="bold"
+        >
+          ▼ 좌측 벽면 (Left Side)
+        </text>
+        <text
+          x={120}
+          y={-75}
+          textAnchor="start"
+          dominantBaseline="middle"
+          fill={isLight ? '#0284c7' : '#38bdf8'}
+          fontSize="150"
+          fontWeight="bold"
+        >
+          ◀ 안쪽 벽면 (Front Wall)
+        </text>
+        <text
+          x={currentContainer.spec.length - 120}
+          y={-75}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fill="#f59e0b"
+          fontSize="150"
+          fontWeight="bold"
+        >
+          문쪽 (Door Side) ▶
+        </text>
+
         <rect
           x={0}
           y={0}
@@ -71,14 +157,16 @@ export function ContainerFloorPlanSvg({
           strokeWidth={90}
         />
 
-        {currentContainer.placedPallets.map((pp) => {
-          if (pp.tier === 2) return null;
+        {tier1Pallets.map((pp) => {
+          const topPallet = findTier2Above(pp);
           const isT12 = pp.pallet.width === 1200 || pp.pallet.length === 1200;
           const fillCol = pp.pallet.isPartial
             ? '#10b981'
             : isT12
             ? '#d97706'
             : '#2563eb';
+          const combinedWeight =
+            pp.pallet.totalWeight + (topPallet ? topPallet.pallet.totalWeight : 0);
 
           return (
             <g
@@ -98,20 +186,35 @@ export function ContainerFloorPlanSvg({
                 height={pp.width - 30}
                 fill={fillCol}
                 fillOpacity={0.86}
-                stroke="#f8fafc"
-                strokeWidth={24}
+                stroke={topPallet ? '#a78bfa' : '#f8fafc'}
+                strokeWidth={topPallet ? 34 : 24}
                 rx={25}
               />
+              {topPallet && (
+                <rect
+                  x={pp.x + 42}
+                  y={pp.z + 42}
+                  width={pp.length - 84}
+                  height={pp.width - 84}
+                  fill="none"
+                  stroke="#ddd6fe"
+                  strokeWidth={14}
+                  strokeDasharray="45,25"
+                  rx={18}
+                />
+              )}
               <text
                 x={pp.x + pp.length / 2}
                 y={pp.z + pp.width / 2 - 190}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill="#ffffff"
-                fontSize="185"
+                fontSize={topPallet ? '160' : '185'}
                 fontWeight="bold"
               >
-                P#{pp.pallet.index} ({pp.pallet.primaryCargoName?.split(' ')[0]})
+                {topPallet
+                  ? `1단:P#${pp.pallet.index} / 2단:P#${topPallet.pallet.index}`
+                  : `P#${pp.pallet.index} (${pp.pallet.primaryCargoName?.split(' ')[0]})`}
               </text>
               <text
                 x={pp.x + pp.length / 2}
@@ -122,7 +225,9 @@ export function ContainerFloorPlanSvg({
                 fontSize="185"
                 fontWeight="bold"
               >
-                {pp.pallet.totalWeight}kg
+                {topPallet
+                  ? `합 ${combinedWeight}kg (${pp.pallet.totalWeight}+${topPallet.pallet.totalWeight})`
+                  : `${pp.pallet.totalWeight}kg`}
               </text>
               <text
                 x={pp.x + pp.length / 2}
@@ -132,7 +237,8 @@ export function ContainerFloorPlanSvg({
                 fill="#cbd5e1"
                 fontSize="155"
               >
-                {pp.pallet.width}×{pp.pallet.length}{pp.orientation && pp.orientation !== '정방향' ? ` (${pp.orientation})` : ''}
+                {pp.pallet.width}×{pp.pallet.length}
+                {pp.orientation && pp.orientation !== '정방향' ? ` (${pp.orientation})` : ''}
               </text>
             </g>
           );

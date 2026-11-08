@@ -23,21 +23,32 @@ import { PasteCargoModal } from './components/PasteCargoModal';
 import { ProjectManagerModal } from './components/ProjectManagerModal';
 import './cbm.css';
 
-const STORAGE_KEY = 'wac_cbm_sim_saved_state_v1';
+const STORAGE_KEY = 'wac_cbm_sim_saved_state_v2';
 
 function loadSavedState() {
   if (typeof window === 'undefined') return null;
   try {
+    // 구버전 캐시(v1: Item3 500x400x350) 제거
+    localStorage.removeItem('wac_cbm_sim_saved_state_v1');
+
     // 사용자가 브라우저를 처음 열거나 새로 방문했을 때는 항상 기본값 초기화 상태로 시작
-    const isExistingSession = sessionStorage.getItem('wac_cbm_active_session');
+    const isExistingSession = sessionStorage.getItem('wac_cbm_active_session_v2');
     if (!isExistingSession) {
-      sessionStorage.setItem('wac_cbm_active_session', 'true');
+      sessionStorage.setItem('wac_cbm_active_session_v2', 'true');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // 만약 캐시된 화물 중 구버전 Item3(500x400x350)가 남아있다면 최신 DEFAULT_CARGOS로 자동 교체
+    if (
+      Array.isArray(parsed?.cargos) &&
+      parsed.cargos.some((c) => c.id === 'cargo-3' && Number(c.width) === 500 && Number(c.height) === 350)
+    ) {
+      parsed.cargos = DEFAULT_CARGOS;
+    }
+    return parsed;
   } catch (e) {
     console.error('Failed to parse saved state from localStorage:', e);
     return null;
@@ -596,7 +607,7 @@ export function CbmSimulator() {
   const processUploadedFile = async (file) => {
     if (!file) return;
     try {
-      const parsed = await parseCargoExcelFile(file);
+      const parsed = await parseCargoExcelFile(file, { unitMode });
       if (parsed.length === 0) {
         setUploadNotice({
           type: 'error',
@@ -634,7 +645,7 @@ export function CbmSimulator() {
   };
 
   const handleApplyPasteText = () => {
-    const parsed = parseCargoFromText(pasteText);
+    const parsed = parseCargoFromText(pasteText, { unitMode });
     if (parsed.length === 0) {
       setUploadNotice({
         type: 'error',

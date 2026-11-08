@@ -26,13 +26,27 @@ export function SingleLoadingSheetPage({ container, totalContainers }) {
       ? `2단 적재 (1단 ${container.tier1Count}PLT + 2단 ${container.tier2Count}PLT)`
       : '1단 평적 (바닥 전방 밀착)';
 
-  // 포크 진입면 안내
-  const is1200T12 = placedPallets.some(
-    (p) => p.pallet.width === 1200 || p.pallet.length === 1200
-  );
-  const forkEntryGuide = is1200T12
-    ? '박스B(T12 1200×1000): 문 쪽을 향하는 폭 1,000mm 면으로 포크 진입 / 박스A(T11): 1,100mm 면 진입'
-    : '공칭 파레트 폭에 맞춰 포크 진입';
+  // 포크 진입면 안내 (실제 적재된 품목명 및 파레트 진입 방향 동적 반영)
+  const forkEntryMap = new Map();
+  for (const pp of placedPallets) {
+    const specStr = `${pp.pallet.width}×${pp.pallet.length}`;
+    const entryW = pp.width;
+    const key = `${specStr}|${entryW}`;
+    const cName = pp.pallet.primaryCargoName?.split(' (')[0] || '화물';
+    if (!forkEntryMap.has(key)) {
+      forkEntryMap.set(key, { specStr, entryW, names: new Set() });
+    }
+    forkEntryMap.get(key).names.add(cName);
+  }
+  const forkEntryGuide =
+    forkEntryMap.size > 0
+      ? Array.from(forkEntryMap.values())
+          .map(
+            (g) =>
+              `${Array.from(g.names).join('·')}(${g.specStr}): 문 쪽을 향하는 폭 ${g.entryW.toLocaleString()}mm 면으로 포크 진입`
+          )
+          .join(' / ')
+      : '공칭 파레트 폭에 맞춰 포크 진입';
 
   // 쇼링 액션 단계 5개
   const rearClr = fieldDiag.rearClearanceMm ?? 0;
@@ -231,12 +245,17 @@ export function SingleLoadingSheetPage({ container, totalContainers }) {
                 </tr>
               </thead>
               <tbody>
-                {bomList.slice(0, 5).map((b, i) => (
-                  <tr key={i}>
+                {bomList.map((b, i) => (
+                  <tr
+                    key={i}
+                    style={bomList.length > 5 ? { lineHeight: '1.15', fontSize: '11px' } : undefined}
+                  >
                     <td style={{ fontWeight: 'bold' }}>{b.name.split(' (')[0]}</td>
                     <td>{b.spec}</td>
                     <td style={{ fontWeight: 'bold' }}>{b.quantity}</td>
-                    <td style={{ fontSize: '12px' }}>{b.purpose.split('(')[0]}</td>
+                    <td style={{ fontSize: bomList.length > 5 ? '11px' : '12px' }}>
+                      {b.purpose.split('(')[0]}
+                    </td>
                     <td style={{ textAlign: 'center', fontSize: '13px' }}>□</td>
                   </tr>
                 ))}

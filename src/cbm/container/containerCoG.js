@@ -10,7 +10,7 @@ export function analyzeContainerCoG(container) {
 
   let momentX = 0; // Length direction (0 = Front/Inner wall, cL = Door)
   let momentY = 0; // Height direction (0 = Floor, cH = Ceiling)
-  let momentZ = 0; // Width direction (0 = Left wall, cW = Right wall)
+  let momentZ = 0; // Width direction (문에서 안쪽을 바라볼 때: 0 = 우측 벽면(Right), cW = 좌측 벽면(Left))
   let totalMass = 0;
 
   let frontHalfWeight = 0;
@@ -33,20 +33,21 @@ export function analyzeContainerCoG(container) {
     if (pCenterX <= cL / 2) frontHalfWeight += pMass;
     else rearHalfWeight += pMass;
 
-    // 좌우 중량 분배 (폭 W/2 기준, 중앙을 걸치는 1열 적재 파레트는 비례 분배하여 좌 100% 왜곡 방지)
+    // 좌우 중량 분배 (문 앞에서 안쪽을 바라볼 때 기준: z < W/2 = 우측(Right), z > W/2 = 좌측(Left))
+    // 중앙을 걸치는 1열 적재 파레트는 비례 분배하여 100% 쏠림 왜곡 방지
     const pZ1 = pp.z;
     const pZ2 = pp.z + pp.width;
     const midZ = cW / 2;
 
     if (pZ2 <= midZ) {
-      leftRowWeight += pMass;
-    } else if (pZ1 >= midZ) {
       rightRowWeight += pMass;
+    } else if (pZ1 >= midZ) {
+      leftRowWeight += pMass;
     } else {
       // 파레트가 중앙선을 걸치는 경우 (예: 1200x1200mm 중앙 1열 배치)
-      const leftFrac = (midZ - pZ1) / pp.width;
-      leftRowWeight += pMass * leftFrac;
-      rightRowWeight += pMass * (1 - leftFrac);
+      const rightFrac = (midZ - pZ1) / pp.width;
+      rightRowWeight += pMass * rightFrac;
+      leftRowWeight += pMass * (1 - rightFrac);
     }
   }
 
@@ -125,8 +126,8 @@ export function analyzeContainerCoG(container) {
     offsetZFromCenter === 0
       ? '좌우 중심 일치 (0mm)'
       : offsetZFromCenter < 0
-      ? `좌측 ${Math.abs(offsetZFromCenter)}mm 편차`
-      : `우측 ${Math.abs(offsetZFromCenter)}mm 편차`;
+      ? `우측 ${Math.abs(offsetZFromCenter)}mm 편차`
+      : `좌측 ${Math.abs(offsetZFromCenter)}mm 편차`;
 
   let status = 'SAFE';
   let statusText = '안전 (CTU Code 권고 ±5% 및 좌우 균형 양호)';

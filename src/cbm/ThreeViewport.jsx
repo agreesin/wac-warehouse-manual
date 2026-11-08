@@ -260,14 +260,23 @@ export function ThreeViewport({
     if (!contentGroup) return;
 
     // Clear previous meshes & dispose WebGL geometries/materials to prevent GPU memory leaks
+    const disposedGeos = new Set();
+    const disposedMats = new Set();
     const disposeObject3D = (obj) => {
-      if (obj.geometry) {
+      if (obj.geometry && !disposedGeos.has(obj.geometry)) {
+        disposedGeos.add(obj.geometry);
         obj.geometry.dispose();
       }
       if (obj.material) {
         if (Array.isArray(obj.material)) {
-          obj.material.forEach((m) => m?.dispose && m.dispose());
-        } else if (obj.material.dispose) {
+          obj.material.forEach((m) => {
+            if (m?.dispose && !disposedMats.has(m)) {
+              disposedMats.add(m);
+              m.dispose();
+            }
+          });
+        } else if (obj.material.dispose && !disposedMats.has(obj.material)) {
+          disposedMats.add(obj.material);
           obj.material.dispose();
         }
       }
@@ -284,6 +293,44 @@ export function ThreeViewport({
       disposeObject3D(child);
     }
     pickableMeshesRef.current = [];
+
+    // Shared geometry & material caches to avoid allocating thousands of duplicate WebGL buffers
+    const boxGeoCache = new Map();
+    const edgeGeoCache = new Map();
+    const boxMatCache = new Map();
+
+    const getCachedBoxGeometry = (w, h, l) => {
+      const key = `${w.toFixed(4)}_${h.toFixed(4)}_${l.toFixed(4)}`;
+      if (!boxGeoCache.has(key)) {
+        boxGeoCache.set(key, new THREE.BoxGeometry(w, h, l));
+      }
+      return boxGeoCache.get(key);
+    };
+
+    const getCachedEdgeGeometry = (w, h, l, boxGeo) => {
+      const key = `${w.toFixed(4)}_${h.toFixed(4)}_${l.toFixed(4)}`;
+      if (!edgeGeoCache.has(key)) {
+        edgeGeoCache.set(key, new THREE.EdgesGeometry(boxGeo));
+      }
+      return edgeGeoCache.get(key);
+    };
+
+    const getCachedBoxMaterial = (color, isDimmed, roughness = 0.45, metalness = 0.08) => {
+      const key = `${color}_${isDimmed ? 'dim' : 'full'}_${roughness}_${metalness}`;
+      if (!boxMatCache.has(key)) {
+        boxMatCache.set(
+          key,
+          new THREE.MeshStandardMaterial({
+            color,
+            roughness,
+            metalness,
+            transparent: Boolean(isDimmed),
+            opacity: isDimmed ? 0.18 : 1,
+          })
+        );
+      }
+      return boxMatCache.get(key);
+    };
 
     // Helper: create wooden pallet mesh at local origin (0..pLen along X, 0..baseH along Y, 0..pWid along Z)
     const createPalletBaseGroup = (pLenMm, baseHMm, pWidMm, tier = 1) => {
@@ -422,7 +469,11 @@ export function ThreeViewport({
         // Render boxes on this pallet
         // box.x is along pallet.width, box.z is along pallet.length.
         // In container space, placed.length is along X and placed.width is along Z.
-        const swapXZ = placed.length !== pallet.width;
+        // Compare aspect orientation rather than exact nominal vs measured dimensions so measuredWidth/measuredLength do not twist boxes 90°.
+        const isPalletWideInX = pallet.width > pallet.length;
+        const isPlacedLongInX = placed.length > placed.width;
+        const swapXZ =
+          pallet.width !== pallet.length && isPalletWideInX !== isPlacedLongInX;
         for (const box of pallet.boxes) {
           const bx = swapXZ ? box.z : box.x;
           const bz = swapXZ ? box.x : box.z;
@@ -430,15 +481,14 @@ export function ThreeViewport({
           const bl = swapXZ ? box.w : box.l;
           const bh = box.h;
 
-          const boxGeo = new THREE.BoxGeometry(bw * SCALE, bh * SCALE, bl * SCALE);
+          const boxGeo = getCachedBoxGeometry(bw * SCALE, bh * SCALE, bl * SCALE);
           const isDimmed = selectedCargoId && box.cargoId !== selectedCargoId;
-          const boxMat = new THREE.MeshStandardMaterial({
-            color: box.color || '#3b82f6',
-            roughness: 0.45,
-            metalness: 0.08,
-            transparent: Boolean(isDimmed),
-            opacity: isDimmed ? 0.18 : 1,
-          });
+          const boxMat = getCachedBoxMaterial(
+            box.color || '#3b82f6',
+            isDimmed,
+            0.45,
+            0.08
+          );
 
           const boxMesh = new THREE.Mesh(boxGeo, boxMat);
           const layerGap = explodeLayers ? (box.layerIndex || 0) * 0.04 : 0;
@@ -465,7 +515,7 @@ export function ThreeViewport({
           pickableMeshesRef.current.push(boxMesh);
           pGroup.add(boxMesh);
 
-          const edges = new THREE.EdgesGeometry(boxGeo);
+          const edges = getCachedEdgeGeometry(bw * SCALE, bh * SCALE, bl * SCALE, boxGeo);
           const line = new THREE.LineSegments(edges, boxEdgeMat);
           line.position.copy(boxMesh.position);
           pGroup.add(line);
@@ -552,15 +602,14 @@ export function ThreeViewport({
         const bh = box.h * SCALE;
         const bl = box.l * SCALE;
 
-        const boxGeo = new THREE.BoxGeometry(bw, bh, bl);
+        const boxGeo = getCachedBoxGeometry(bw, bh, bl);
         const isDimmed = selectedCargoId && box.cargoId !== selectedCargoId;
-        const boxMat = new THREE.MeshStandardMaterial({
-          color: box.color || '#3b82f6',
-          roughness: 0.4,
-          metalness: 0.1,
-          transparent: Boolean(isDimmed),
-          opacity: isDimmed ? 0.18 : 1,
-        });
+        const boxMat = getCachedBoxMaterial(
+          box.color || '#3b82f6',
+          isDimmed,
+          0.4,
+          0.1
+        );
 
         const boxMesh = new THREE.Mesh(boxGeo, boxMat);
         const layerGap = explodeLayers ? (box.layerIndex || 0) * 0.06 : 0;
@@ -587,7 +636,7 @@ export function ThreeViewport({
         pickableMeshesRef.current.push(boxMesh);
         pGroup.add(boxMesh);
 
-        const edges = new THREE.EdgesGeometry(boxGeo);
+        const edges = getCachedEdgeGeometry(bw, bh, bl, boxGeo);
         const line = new THREE.LineSegments(edges, boxEdgeMat);
         line.position.copy(boxMesh.position);
         pGroup.add(line);
