@@ -157,8 +157,13 @@ export function tryBalanceAlloc(pallets, counts, maxWeight, colCap) {
       singles.push(...list.splice(0, list.length));
     }
   }
-  while (singles.length >= colCap) {
+  const neededSingles = counts.reduce((sum, c) => sum + (c % colCap), 0);
+  while (singles.length - colCap >= neededSingles) {
     units.push(singles.splice(0, colCap));
+  }
+  while (singles.length < neededSingles && units.length > 0) {
+    const popped = units.pop();
+    singles.push(...popped);
   }
 
   units.sort((u1, u2) => {
@@ -172,10 +177,22 @@ export function tryBalanceAlloc(pallets, counts, maxWeight, colCap) {
     let bestIdx = -1;
     let minW = Infinity;
     for (let i = 0; i < K; i++) {
-      if (buckets[i].length + colCap <= counts[i] && bucketWeights[i] + uW <= maxWeight) {
+      const remCap = counts[i] - buckets[i].length;
+      const reserveSingle = counts[i] % colCap;
+      if (remCap - reserveSingle >= colCap && bucketWeights[i] + uW <= maxWeight) {
         if (bucketWeights[i] < minW) {
           minW = bucketWeights[i];
           bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx === -1) {
+      for (let i = 0; i < K; i++) {
+        if (buckets[i].length + colCap <= counts[i] && bucketWeights[i] + uW <= maxWeight) {
+          if (bucketWeights[i] < minW) {
+            minW = bucketWeights[i];
+            bestIdx = i;
+          }
         }
       }
     }
@@ -198,6 +215,27 @@ export function tryBalanceAlloc(pallets, counts, maxWeight, colCap) {
     if (bestIdx === -1) return null;
     buckets[bestIdx].push(s);
     bucketWeights[bestIdx] += s.totalWeight;
+  }
+
+  // 동일 품목·동일 사양(완적 여부·중량·규격) 내에서는 파레트 번호(index)가 호기별로 연속되도록 재매핑
+  // (예: 1호기 P#1~P#12, 2호기 P#13~P#22 — 중량 밸런스는 100% 동일하게 유지하면서 지게차 피킹 순서 연속성 보장)
+  const poolByGroupKey = new Map();
+  for (const b of buckets) {
+    for (const p of b) {
+      const gKey = `${p.primaryCargoId || 'other'}|${Boolean(p.isPartial)}|${p.totalWeight}|${p.width}x${p.length}x${p.totalHeight}`;
+      if (!poolByGroupKey.has(gKey)) poolByGroupKey.set(gKey, []);
+      poolByGroupKey.get(gKey).push(p);
+    }
+  }
+  for (const [, list] of poolByGroupKey.entries()) {
+    list.sort((a, b) => (a.index || 0) - (b.index || 0));
+  }
+  for (let i = 0; i < K; i++) {
+    buckets[i] = buckets[i].map((p) => {
+      const gKey = `${p.primaryCargoId || 'other'}|${Boolean(p.isPartial)}|${p.totalWeight}|${p.width}x${p.length}x${p.totalHeight}`;
+      const list = poolByGroupKey.get(gKey);
+      return list && list.length > 0 ? list.shift() : p;
+    });
   }
 
   return { buckets, bucketWeights };

@@ -23,19 +23,20 @@ import { PasteCargoModal } from './components/PasteCargoModal';
 import { ProjectManagerModal } from './components/ProjectManagerModal';
 import './cbm.css';
 
-const STORAGE_KEY = 'wac_cbm_sim_saved_state_v3';
+const STORAGE_KEY = 'wac_cbm_sim_saved_state_v4';
 
 function loadSavedState() {
   if (typeof window === 'undefined') return null;
   try {
-    // 구버전 캐시(v1, v2) 제거하여 최신 적재 표준(비대칭 배열 일자 정렬) 반영
+    // 구버전 캐시(v1, v2, v3) 제거하여 최신 적재 표준 반영
     localStorage.removeItem('wac_cbm_sim_saved_state_v1');
     localStorage.removeItem('wac_cbm_sim_saved_state_v2');
+    localStorage.removeItem('wac_cbm_sim_saved_state_v3');
 
     // 사용자가 브라우저를 처음 열거나 새로 방문했을 때는 항상 기본값 초기화 상태로 시작
-    const isExistingSession = sessionStorage.getItem('wac_cbm_active_session_v3');
+    const isExistingSession = sessionStorage.getItem('wac_cbm_active_session_v4');
     if (!isExistingSession) {
-      sessionStorage.setItem('wac_cbm_active_session_v3', 'true');
+      sessionStorage.setItem('wac_cbm_active_session_v4', 'true');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }
@@ -890,7 +891,16 @@ export function CbmSimulator() {
         palletConfig={palletConfig}
         setPalletConfig={setPalletConfig}
         interlockLayers={interlockLayers}
-        setInterlockLayers={setInterlockLayers}
+        setInterlockLayers={(nextVal) => {
+          setInterlockLayers(nextVal);
+          // 1단계 전역 교차 적재 체크박스 변경 시, 품목별 개별 적재방식 오버라이드를 초기화하여 즉시 반영
+          setCargos((prev) =>
+            prev.map((c) => {
+              const { stackingStyle, ...rest } = c;
+              return rest;
+            })
+          );
+        }}
         mixCargos={mixCargos}
         setMixCargos={setMixCargos}
         handleRunStep1ToStep2={handleRunStep1ToStep2}

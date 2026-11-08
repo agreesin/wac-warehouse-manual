@@ -14,7 +14,47 @@ import {
   measureLayerBounds,
   describeLayerOrientation,
   isLayerSymmetricForInterlock,
+  doesMirrorChangeSeams,
 } from './layerLayout.js';
+
+/**
+ * AUTO_MAX 모드에서 단일 파레트 소량 화물(예: 8박스) 적재 시,
+ * 혼합 배열(예: 5+3=8, 상부 계단 단차 발생)과 정방향/회전 균일 바둑판(예: 4+4=8, 100% 평탄 완적)의
+ * 소요 파레트 수(1PLT)와 소요 단수(2단)가 완전히 동일하다면, 상부 단차 없이 100% 평탄하게 떨어지는 균일 격자를 우선 선택합니다.
+ */
+function resolveFlatTopLayerIfSameHeight(effW, effL, boxW, boxL, allowRotate, patternMode, quantity, maxLayersByH) {
+  const baseTpl = computeBest2DLayer(effW, effL, boxW, boxL, allowRotate, patternMode);
+  if (
+    patternMode !== 'AUTO_MAX' ||
+    !baseTpl ||
+    baseTpl.length === 0 ||
+    quantity <= 0 ||
+    quantity % baseTpl.length === 0
+  ) {
+    return baseTpl;
+  }
+
+  const neededLayers = Math.ceil(quantity / baseTpl.length);
+  if (neededLayers < 2 || neededLayers > maxLayersByH) {
+    return baseTpl;
+  }
+
+  const candidates = ['GRID_NORMAL'];
+  if (allowRotate) candidates.push('GRID_ROTATED');
+
+  for (const candPattern of candidates) {
+    const gridTpl = computeBest2DLayer(effW, effL, boxW, boxL, allowRotate, candPattern);
+    if (
+      gridTpl.length > 0 &&
+      Math.ceil(quantity / gridTpl.length) === neededLayers &&
+      quantity % gridTpl.length === 0
+    ) {
+      return gridTpl;
+    }
+  }
+
+  return baseTpl;
+}
 
 /**
  * 파레트 내부 3D 무게중심(Local CoG) 계산
@@ -482,33 +522,57 @@ export function checkLayerCantileverRisk(template, bounds, palletW, palletL) {
 
   let minSupportRatio = 1.0;
   let unsupportedCount = 0;
+  let maxOverhangMm = 0;
 
   for (const b2 of tier2Boxes) {
     let supportedArea = 0;
+    let supMinX = Infinity,
+      supMaxX = -Infinity,
+      supMinZ = Infinity,
+      supMaxZ = -Infinity;
+
     for (const b1 of tier1Boxes) {
       const ox = Math.max(0, Math.min(b2.x2, b1.x2) - Math.max(b2.x1, b1.x1));
       const oz = Math.max(0, Math.min(b2.z2, b1.z2) - Math.max(b2.z1, b1.z1));
-      supportedArea += ox * oz;
+      if (ox > 0 && oz > 0) {
+        supportedArea += ox * oz;
+        supMinX = Math.min(supMinX, Math.max(b2.x1, b1.x1));
+        supMaxX = Math.max(supMaxX, Math.min(b2.x2, b1.x2));
+        supMinZ = Math.min(supMinZ, Math.max(b2.z1, b1.z1));
+        supMaxZ = Math.max(supMaxZ, Math.min(b2.z2, b1.z2));
+      }
     }
     const ratio = b2.area > 0 ? supportedArea / b2.area : 0;
     if (ratio < minSupportRatio) {
       minSupportRatio = ratio;
     }
-    // 바닥 지지 면적이 82% 미만이거나 한쪽이 허공에 삐져나오면 위험으로 판정
-    if (ratio < 0.82) {
+    if (supportedArea > 0) {
+      let boxOverhang = Math.max(0, supMinX - b2.x1, b2.x2 - supMaxX, supMinZ - b2.z1, b2.z2 - supMaxZ);
+      // L자형 부분 결손(예: 절반은 820mm까지 지지되고 절반은 750mm까지만 지지되어 모서리 70mm가 허공에 뜨는 경우) 정밀 산출
+      if (ratio < 0.99 && boxOverhang <= 0) {
+        const unsupportedArea = Math.max(0, b2.area - supportedArea);
+        boxOverhang = Math.round(unsupportedArea / Math.max(1, Math.min(b2.w, b2.l)));
+      }
+      maxOverhangMm = Math.max(maxOverhangMm, boxOverhang);
+    } else {
+      maxOverhangMm = Math.max(maxOverhangMm, b2.w, b2.l);
+    }
+    // 바닥 지지 면적이 99% 미만이거나 상자 모서리가 5mm 초과 허공에 돌출되면 단차/캔틸레버 위험으로 판정
+    if (ratio < 0.99 || maxOverhangMm > 5) {
       unsupportedCount++;
     }
   }
 
-  // 지지율이 85% 미만인 박스가 1개라도 있으면 허공 걸침 위험!
-  const hasRisk = unsupportedCount > 0 || minSupportRatio < 0.85;
+  // 지지율이 99% 미만이거나 허공 돌출이 발생하면 층간 교차 시 요철 계단 단차 위험!
+  const hasRisk = unsupportedCount > 0 || minSupportRatio < 0.99 || maxOverhangMm > 5;
 
   return {
     hasRisk,
     minSupportRatio: Number(minSupportRatio.toFixed(2)),
     unsupportedCount,
+    maxOverhangMm: Math.round(maxOverhangMm),
     reason: hasRisk
-      ? `1단 배열이 비대칭이어서 층간 교차 시 박스가 허공(최소 지지율 ${(minSupportRatio * 100).toFixed(0)}%)에 걸침`
+      ? `1단 배열이 비대칭이어서 짝수단 교차 시 상자 모서리가 약 ${Math.round(maxOverhangMm)}mm 허공에 돌출됨 (지지율 ${(minSupportRatio * 100).toFixed(0)}% — 수직 일자 정렬 권장)`
       : '대칭 배열로 층간 100% 완벽 지지됨',
   };
 }
@@ -539,13 +603,16 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
 
       // 1단 평면 배열 템플릿 생성 및 캔틸레버 위험 사전 진단
       const curPattern = c.layerPattern || options.layerPattern || 'AUTO_MAX';
-      const sampleTpl = computeBest2DLayer(
+      const maxLayersEst = Math.max(1, Math.floor(maxLoadH / Math.max(1, resolvedPosture.height)));
+      const sampleTpl = resolveFlatTopLayerIfSameHeight(
         effW,
         effL,
         resolvedPosture.width,
         resolvedPosture.length,
         c.allowRotate !== false,
-        curPattern
+        curPattern,
+        Math.max(0, Math.floor(Number(c.quantity) || 0)),
+        maxLayersEst
       );
       const sampleBounds = measureLayerBounds(sampleTpl);
       const cantileverCheck = checkLayerCantileverRisk(
@@ -559,10 +626,12 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       // 층간 요철 단차 및 붕괴를 원천 방지하기 위해 무조건 안전한 [수직 기둥 일자 정렬(COLUMN)]을 강제 적용합니다.
       const isSymmetric = isLayerSymmetricForInterlock(sampleTpl);
       const isInterlockSafe = !cantileverCheck.hasRisk && isSymmetric;
-      const finalStackStyle =
+      const requestedStyle =
         c.stackingStyle ||
         options.stackingStyle ||
         (interlockLayers && isInterlockSafe ? 'INTERLOCK' : 'COLUMN');
+      const finalStackStyle =
+        requestedStyle === 'INTERLOCK' && !isInterlockSafe ? 'COLUMN' : requestedStyle;
 
       return {
         id: c.id || `cargo-${idx + 1}`,
@@ -609,13 +678,16 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
     const itemOv = item.allowedOverhang;
     const effW = item.palletW + itemOv;
     const effL = item.palletL + itemOv;
-    const template = computeBest2DLayer(
+    const maxLayersByH = Math.max(1, Math.floor(maxLoadH / item.height));
+    const template = resolveFlatTopLayerIfSameHeight(
       effW,
       effL,
       item.width,
       item.length,
       item.allowRotate,
-      item.layerPattern
+      item.layerPattern,
+      item.quantity,
+      maxLayersByH
     );
     if (template.length === 0 || item.height > maxLoadH) {
       unpackedErrors.push({
@@ -634,20 +706,20 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       const fullOffsetX = Math.floor((item.palletW - bounds.spanW) / 2) - bounds.minX;
       const fullOffsetZ = Math.floor((item.palletL - bounds.spanL) / 2) - bounds.minZ;
 
-      const maxLayersByH = Math.max(1, Math.floor(maxLoadH / item.height));
       const fullLayerWeight = template.length * item.weight;
       const maxLayersByW =
         fullLayerWeight > 0
           ? Math.max(1, Math.floor(maxCargoWeight / fullLayerWeight))
           : maxLayersByH;
-      // 인터로킹/교차 적재 시 박스 압축강도 저하(FBA 기준) 반영 및 품목별 강도 감소 계수 곱연산
+      // 인터로킹/교차 적재 시 실제로 상자 모서리 이음매가 엇갈리는 경우에만 압축강도 저하(FBA 기준 0.65) 반영
       const isSymmetricTpl = isLayerSymmetricForInterlock(template);
+      const hasSeamShift = doesMirrorChangeSeams(template);
       const effectiveStackStyle =
         item.stackingStyle || (interlockLayers && isSymmetricTpl ? 'INTERLOCK' : 'COLUMN');
-      const baseStrengthFactor =
-        effectiveStackStyle === 'INTERLOCK' || effectiveStackStyle === 'CROSS_TIER'
-          ? INTERLOCK_STRENGTH_FACTOR
-          : 1.0;
+      const isTrueSeamInterlock =
+        effectiveStackStyle === 'CROSS_TIER' ||
+        (effectiveStackStyle === 'INTERLOCK' && isSymmetricTpl && hasSeamShift);
+      const baseStrengthFactor = isTrueSeamInterlock ? INTERLOCK_STRENGTH_FACTOR : 1.0;
       const strengthFactor = baseStrengthFactor * (Number(item.strengthReductionFactor) > 0 ? Number(item.strengthReductionFactor) : 1.0);
       const effectiveTopLoad =
         item.maxTopLoad > 0 ? item.maxTopLoad * strengthFactor : 0;
@@ -1636,15 +1708,21 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
 
       const curPosture = resolveCargoBoxDimsByPosture(c);
       const curPattern = c.layerPattern || options.layerPattern || 'AUTO_MAX';
+      const qty = Math.max(0, Math.floor(Number(c.quantity) || 0));
+      const unitW = Math.max(0, Number(c.weight) || 0);
+      const customMaxL = Number(c.maxLayers) > 0 ? Math.floor(Number(c.maxLayers)) : 999;
+      const maxLayersEst = Math.max(1, Math.floor(maxLoadH / Math.max(1, curPosture.height)));
 
       // 1단 평면 배열 템플릿 생성 및 캔틸레버 위험 사전 진단
-      const curTpl = computeBest2DLayer(
+      const curTpl = resolveFlatTopLayerIfSameHeight(
         effPalletW,
         effPalletL,
         curPosture.width,
         curPosture.length,
         c.allowRotate !== false,
-        curPattern
+        curPattern,
+        qty,
+        maxLayersEst
       );
       const curBounds = measureLayerBounds(curTpl);
       const cantileverCheck = checkLayerCantileverRisk(
@@ -1657,26 +1735,25 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
       // 적재 방식 기본값: 옵션의 교차 적재(인터로킹) 설정 연동 (비대칭 배열은 안전을 위해 기둥식 정렬)
       const isSymmetricCur = isLayerSymmetricForInterlock(curTpl);
       const isCurSafe = !cantileverCheck.hasRisk && isSymmetricCur;
-      const curStackStyle =
+      const reqStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
         (defaultInterlock && isCurSafe ? 'INTERLOCK' : 'COLUMN');
-      const qty = Math.max(0, Math.floor(Number(c.quantity) || 0));
-      const unitW = Math.max(0, Number(c.weight) || 0);
-      const customMaxL = Number(c.maxLayers) > 0 ? Math.floor(Number(c.maxLayers)) : 999;
+      const curStackStyle =
+        reqStackStyle === 'INTERLOCK' && !isCurSafe ? 'COLUMN' : reqStackStyle;
 
-      const calcStats = (perLayerCnt, boxH) => {
+      const calcStats = (perLayerCnt, boxH, tplRef = curTpl) => {
         if (perLayerCnt <= 0 || boxH > maxLoadH) {
           return { maxLayers: 0, boxesPerPallet: 0, totalPallets: 0 };
         }
         const byH = Math.max(1, Math.floor(maxLoadH / Math.max(1, boxH)));
         const layerW = perLayerCnt * unitW;
         const byW = layerW > 0 ? Math.max(1, Math.floor(maxCargoWeight / layerW)) : byH;
-        // 인터로킹/교차 적재 시 박스 압축강도 25% 저하 반영
-        const strengthFactor =
-          curStackStyle === 'INTERLOCK' || curStackStyle === 'CROSS_TIER'
-            ? INTERLOCK_STRENGTH_FACTOR
-            : 1.0;
+        // 인터로킹/교차 적재 시 실제로 이음매가 엇갈리는 경우에만 압축강도 저하 반영
+        const isTrueSeamShift =
+          curStackStyle === 'CROSS_TIER' ||
+          (curStackStyle === 'INTERLOCK' && isCurSafe && doesMirrorChangeSeams(tplRef));
+        const strengthFactor = isTrueSeamShift ? INTERLOCK_STRENGTH_FACTOR : 1.0;
         const effectiveTopLoad =
           Number(c.maxTopLoad) > 0 ? Number(c.maxTopLoad) * strengthFactor : 0;
         const maxLayersByStrength =
@@ -1693,17 +1770,19 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
       };
 
       const patternOptions = PATTERN_DEFS.map((pDef) => {
-        const tpl = computeBest2DLayer(
+        const tpl = resolveFlatTopLayerIfSameHeight(
           effPalletW,
           effPalletL,
           curPosture.width,
           curPosture.length,
           c.allowRotate !== false,
-          pDef.id
+          pDef.id,
+          qty,
+          maxLayersEst
         );
         const normalCnt = tpl.filter((b) => !b.rotated).length;
         const rotCnt = tpl.filter((b) => b.rotated).length;
-        const stats = calcStats(tpl.length, curPosture.height);
+        const stats = calcStats(tpl.length, curPosture.height, tpl);
         return {
           ...pDef,
           layerBoxCount: tpl.length,

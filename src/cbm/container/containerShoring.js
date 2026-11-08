@@ -375,7 +375,9 @@ export function computeFieldDiagnostics(container, containerSpec, cLength, cWidt
       };
     });
 
-  for (const dp of doorPallets) {
+  // 도어 최후미 열 및 직전 열(미완성 단열 시 노출되거나 저상 자투리 파레트가 배치된 경우) 단차 검사
+  const rearCheckPallets = [...doorPallets, ...prevColPallets.filter((pp) => pp.pallet.totalHeight < 1150)];
+  for (const dp of rearCheckPallets) {
     const h = dp.pallet.totalHeight;
     const diff = frontColMaxH - h;
     if (h < minDoorPalletH) minDoorPalletH = h;

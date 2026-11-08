@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import {
   computeBest2DLayer,
   resolvePalletDimsForCargo,
+  resolveCargoBoxDimsByPosture,
   estimate40HcContainerNeeds,
 } from '../packingEngine';
 import { ThreeViewport } from '../ThreeViewport';
@@ -544,6 +545,7 @@ export function Step2PalletResult({
             <div className="cbm-mix-items-grid">
               {cargos.map((cargo) => {
                 const resolved = resolvePalletDimsForCargo(cargo, effectivePalletConfig);
+                const resolvedPosture = resolveCargoBoxDimsByPosture(cargo);
                 const itemOv =
                   typeof cargo.allowedOverhang === 'number'
                     ? cargo.allowedOverhang
@@ -551,9 +553,10 @@ export function Step2PalletResult({
                 const layerCnt = computeBest2DLayer(
                   resolved.width + itemOv,
                   resolved.length + itemOv,
-                  cargo.width,
-                  cargo.length,
-                  cargo.allowRotate
+                  resolvedPosture.width,
+                  resolvedPosture.length,
+                  cargo.allowRotate !== false,
+                  cargo.layerPattern || 'AUTO_MAX'
                 ).length;
                 return (
                   <div key={cargo.id} className="cbm-mix-assign-item">

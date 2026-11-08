@@ -187,28 +187,44 @@ export function packPalletsIntoContainers(pallets, containerSpecOrId, options = 
         }
         workingList = [...rebuilt, ...trailingPartials];
       } else {
-        // 균등 밸런스 모드: 전 파레트 중량 기반 전후/좌우 밸런싱 재배치
-        workingList.sort((a, b) => {
-          if (a.isPartial !== b.isPartial) return a.isPartial ? 1 : -1;
-          return b.totalWeight - a.totalWeight;
-        });
-
-        const fullHeavy = workingList.filter((p) => !p.isPartial);
-        const partials = workingList.filter((p) => p.isPartial);
-        if (fullHeavy.length >= 6) {
-          const reordered = new Array(fullHeavy.length);
-          let leftPtr = 0;
-          let rightPtr = fullHeavy.length - 1;
-          const asc = [...fullHeavy].sort((a, b) => a.totalWeight - b.totalWeight);
-          asc.forEach((item, idx) => {
-            if (idx % 2 === 0) {
-              reordered[leftPtr++] = item;
-            } else {
-              reordered[rightPtr--] = item;
-            }
-          });
-          workingList = [...reordered, ...partials];
+        // 균등 밸런스 모드: 품목/규격별 2열(짝수) 블록을 유지하면서
+        // 상대적으로 가벼운 완적 품목 블록을 앞쪽에, 무거운 완적 품목 블록을 중앙(뒤쪽 빈 공간의 반대편 균형추)에 배치하고
+        // 파레트 번호(index) 오름차순을 유지하여 열 내 이종 규격 혼입 방지 및 전후 CoG 50% 수렴 달성
+        const byCargoInCont = new Map();
+        for (const p of workingList) {
+          const k = p.primaryCargoId || 'other';
+          if (!byCargoInCont.has(k)) byCargoInCont.set(k, []);
+          byCargoInCont.get(k).push(p);
         }
+
+        const fullSkuGroups = [];
+        const trailingSingles = [];
+        const partials = [];
+
+        for (const [, list] of byCargoInCont.entries()) {
+          const fulls = list
+            .filter((p) => !p.isPartial)
+            .sort((a, b) => (a.index || 0) - (b.index || 0));
+          const parts = list
+            .filter((p) => p.isPartial)
+            .sort((a, b) => b.totalWeight - a.totalWeight || (a.index || 0) - (b.index || 0));
+
+          if (colCapacity === 2 && fulls.length % 2 === 1) {
+            trailingSingles.push(fulls.pop());
+          }
+          if (fulls.length > 0) {
+            const avgW = fulls.reduce((s, p) => s + p.totalWeight, 0) / fulls.length;
+            fullSkuGroups.push({ fulls, avgW });
+          }
+          partials.push(...parts);
+        }
+
+        // 가벼운 완적 SKU 블록을 앞벽에, 무거운 완적 SKU 블록을 컨테이너 중앙부에 배치하여 도어측 빈 공간과 전후 무게중심 균형 달성
+        fullSkuGroups.sort((a, b) => a.avgW - b.avgW);
+        const orderedFulls = fullSkuGroups.flatMap((g) => g.fulls);
+        partials.sort((a, b) => b.totalWeight - a.totalWeight || (a.index || 0) - (b.index || 0));
+
+        workingList = [...orderedFulls, ...trailingSingles, ...partials];
       }
     }
 

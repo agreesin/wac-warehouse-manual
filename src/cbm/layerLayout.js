@@ -278,19 +278,54 @@ export function describeLayerOrientation(layer0Boxes) {
 }
 
 /**
- * 2D 레이어 배치가 180도 회전(인터로킹 미러링) 시 외곽 단차 없이 안전하게 대칭을 이루는지 검사
- * - 3개 L자형(예: 750×410 3개)처럼 회전 시 외곽 요철/계단 단차가 생기는 비대칭 패턴은 false를 반환하여
+ * 2D 레이어 배치가 180도 회전(인터로킹 미러링) 시 외곽 단차 없이 하부 단에 100% 지지되는지 검사
+ * - 3개 L자형(예: 750×410 3개)처럼 회전 시 상자 모서리가 허공에 돌출되어 계단 단차가 생기는 비대칭 패턴은 false를 반환하여
  *   층마다 엇갈려 쌓이지 않고 '수직 기둥 일자 정렬(COLUMN / 그냥 쌓기)'로 안전하게 적재되도록 처리합니다.
+ * - 반면 외곽 직사각형이 빈틈없이 일치하여 180° 회전 시 모든 상자가 하부 단 위에 99% 이상 지지되는 혼합 배열(예: 1200×1000 위 600×400 5박스)은 true를 반환합니다.
  */
-export function isLayerSymmetricForInterlock(placements, tol = 8) {
+export function isLayerSymmetricForInterlock(placements) {
   if (!placements || placements.length <= 1) return true;
-  if (placements.length < 4) {
-    const isGrid2 =
-      placements.length === 2 &&
-      Math.abs(placements[0].w - placements[1].w) <= tol &&
-      Math.abs(placements[0].l - placements[1].l) <= tol;
-    if (!isGrid2) return false;
+
+  let minX = Infinity,
+    maxX = -Infinity,
+    minZ = Infinity,
+    maxZ = -Infinity;
+  for (const p of placements) {
+    if (p.x < minX) minX = p.x;
+    if (p.x + p.w > maxX) maxX = p.x + p.w;
+    if (p.z < minZ) minZ = p.z;
+    if (p.z + p.l > maxZ) maxZ = p.z + p.l;
   }
+
+  // 180도 대칭 반전된 짝수단 상자들 각각이 1단 상자들에 의해 면적의 99% 이상 지지되는지 검사 (허공 돌출 0mm 보장)
+  for (const p of placements) {
+    const mx = minX + maxX - (p.x + p.w);
+    const mz = minZ + maxZ - (p.z + p.l);
+    const boxArea = p.w * p.l;
+    if (boxArea <= 0) continue;
+
+    let supportedArea = 0;
+    for (const b1 of placements) {
+      const ox = Math.max(0, Math.min(mx + p.w, b1.x + b1.w) - Math.max(mx, b1.x));
+      const oz = Math.max(0, Math.min(mz + p.l, b1.z + b1.l) - Math.max(mz, b1.z));
+      supportedArea += ox * oz;
+    }
+
+    if (supportedArea / boxArea < 0.99) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * 180도 대칭 반전 시 실제로 상자 이음매(Seam) 위치가 달라져 벽돌식 맞물림 효과가 발생하는지 검사
+ * - 단일 방향 바둑판(GRID_NORMAL / GRID_ROTATED)은 180도 반전해도 모든 상자의 (x, z, w, l) 좌표가 100% 동일하므로
+ *   기하학적으로 기둥식 정렬(COLUMN)과 완전히 같으며, 불필요한 압축강도 저하 페널티(0.65)를 적용하지 않아야 합니다.
+ */
+export function doesMirrorChangeSeams(placements, tol = 5) {
+  if (!placements || placements.length <= 1) return false;
 
   let minX = Infinity,
     maxX = -Infinity,
@@ -327,5 +362,5 @@ export function isLayerSymmetricForInterlock(placements, tol = 8) {
     }
   }
 
-  return matchedCount === placements.length;
+  return matchedCount < placements.length;
 }
