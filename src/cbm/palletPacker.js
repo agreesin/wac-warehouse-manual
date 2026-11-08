@@ -13,6 +13,7 @@ import {
   computeBest2DLayer,
   measureLayerBounds,
   describeLayerOrientation,
+  isLayerSymmetricForInterlock,
 } from './layerLayout.js';
 
 /**
@@ -554,11 +555,14 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
         resolvedPallet.length
       );
 
-      // 적재 방식 기본값: 교차 적재(인터로킹) 옵션 연동
+      // 적재 방식 기본값: 캔틸레버(허공 걸침) 위험이 있거나 비대칭 배열인 경우
+      // 층간 요철 단차 및 붕괴를 원천 방지하기 위해 무조건 안전한 [수직 기둥 일자 정렬(COLUMN)]을 강제 적용합니다.
+      const isSymmetric = isLayerSymmetricForInterlock(sampleTpl);
+      const isInterlockSafe = !cantileverCheck.hasRisk && isSymmetric;
       const finalStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
-        (interlockLayers ? 'INTERLOCK' : 'COLUMN');
+        (interlockLayers && isInterlockSafe ? 'INTERLOCK' : 'COLUMN');
 
       return {
         id: c.id || `cargo-${idx + 1}`,
@@ -637,8 +641,9 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
           ? Math.max(1, Math.floor(maxCargoWeight / fullLayerWeight))
           : maxLayersByH;
       // 인터로킹/교차 적재 시 박스 압축강도 저하(FBA 기준) 반영 및 품목별 강도 감소 계수 곱연산
+      const isSymmetricTpl = isLayerSymmetricForInterlock(template);
       const effectiveStackStyle =
-        item.stackingStyle || (interlockLayers ? 'INTERLOCK' : 'COLUMN');
+        item.stackingStyle || (interlockLayers && isSymmetricTpl ? 'INTERLOCK' : 'COLUMN');
       const baseStrengthFactor =
         effectiveStackStyle === 'INTERLOCK' || effectiveStackStyle === 'CROSS_TIER'
           ? INTERLOCK_STRENGTH_FACTOR
@@ -808,7 +813,12 @@ export function packCargosIntoPallets(cargos, palletConfig, options = {}) {
       };
     }
 
-    const shouldMirror = itemStackStyle === 'INTERLOCK' && isFull && isEvenLayer;
+    // 비대칭 배열이거나 캔틸레버 위험이 있는 경우 층마다 다르게 쌓으면 박스 외곽에 요철 계단 단차가 발생하고
+    // 상부 하중이 아래 박스 상판에 집중되어 박스가 찌그러지므로, 180도 미러링을 원천 차단하고 '그냥 일자 적재'로 처리합니다.
+    const isSymmetricPlaced = isLayerSymmetricForInterlock(placedTemplate);
+    const isCantileverSafe = !cargoItem.cantileverCheck?.hasRisk;
+    const shouldMirror =
+      itemStackStyle === 'INTERLOCK' && isFull && isEvenLayer && isSymmetricPlaced && isCantileverSafe;
     const coords = placedTemplate.map((p) => {
       const rawX = p.x + offsetX;
       const rawZ = p.z + offsetZ;
@@ -1644,11 +1654,13 @@ export function analyzeCargoStackingOptions(cargos, palletConfig, options = {}) 
         resolvedPallet.length
       );
 
-      // 적재 방식 기본값: 옵션의 교차 적재(인터로킹) 설정 연동
+      // 적재 방식 기본값: 옵션의 교차 적재(인터로킹) 설정 연동 (비대칭 배열은 안전을 위해 기둥식 정렬)
+      const isSymmetricCur = isLayerSymmetricForInterlock(curTpl);
+      const isCurSafe = !cantileverCheck.hasRisk && isSymmetricCur;
       const curStackStyle =
         c.stackingStyle ||
         options.stackingStyle ||
-        (defaultInterlock ? 'INTERLOCK' : 'COLUMN');
+        (defaultInterlock && isCurSafe ? 'INTERLOCK' : 'COLUMN');
       const qty = Math.max(0, Math.floor(Number(c.quantity) || 0));
       const unitW = Math.max(0, Number(c.weight) || 0);
       const customMaxL = Number(c.maxLayers) > 0 ? Math.floor(Number(c.maxLayers)) : 999;

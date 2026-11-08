@@ -133,6 +133,7 @@ export const DEFAULT_CARGOS = [
     color: CARGO_COLORS[0],
     allowRotate: true,
     palletSpecId: 'T11', // 1100 x 1100
+    stackingStyle: 'INTERLOCK',
     measuredWidth: 0,
     measuredLength: 0,
     strengthReductionFactor: 1.0,
@@ -148,6 +149,7 @@ export const DEFAULT_CARGOS = [
     color: CARGO_COLORS[1],
     allowRotate: true,
     palletSpecId: 'T12', // 돌출 방지를 위해 1200 x 1000 파레트 지정
+    stackingStyle: 'COLUMN', // 3개/단 비대칭 배열은 층간 단차 방지를 위해 수직 기둥 일자 정렬 (그냥 쌓기)
     measuredWidth: 0,
     measuredLength: 0,
     strengthReductionFactor: 1.0,
@@ -163,6 +165,7 @@ export const DEFAULT_CARGOS = [
     color: CARGO_COLORS[2],
     allowRotate: true,
     palletSpecId: 'T12', // 1200 x 1000 파레트 지정 (11/2 최종 패킹 Plt#38 반영)
+    stackingStyle: 'COLUMN', // 수직 기둥 일자 정렬 (그냥 쌓기)
     measuredWidth: 0,
     measuredLength: 0,
     strengthReductionFactor: 1.0,

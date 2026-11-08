@@ -276,3 +276,56 @@ export function describeLayerOrientation(layer0Boxes) {
   }
   return `정방향 ${normalCnt}개 (1단 ${layer0Boxes.length}박스)`;
 }
+
+/**
+ * 2D 레이어 배치가 180도 회전(인터로킹 미러링) 시 외곽 단차 없이 안전하게 대칭을 이루는지 검사
+ * - 3개 L자형(예: 750×410 3개)처럼 회전 시 외곽 요철/계단 단차가 생기는 비대칭 패턴은 false를 반환하여
+ *   층마다 엇갈려 쌓이지 않고 '수직 기둥 일자 정렬(COLUMN / 그냥 쌓기)'로 안전하게 적재되도록 처리합니다.
+ */
+export function isLayerSymmetricForInterlock(placements, tol = 8) {
+  if (!placements || placements.length <= 1) return true;
+  if (placements.length < 4) {
+    const isGrid2 =
+      placements.length === 2 &&
+      Math.abs(placements[0].w - placements[1].w) <= tol &&
+      Math.abs(placements[0].l - placements[1].l) <= tol;
+    if (!isGrid2) return false;
+  }
+
+  let minX = Infinity,
+    maxX = -Infinity,
+    minZ = Infinity,
+    maxZ = -Infinity;
+  for (const p of placements) {
+    if (p.x < minX) minX = p.x;
+    if (p.x + p.w > maxX) maxX = p.x + p.w;
+    if (p.z < minZ) minZ = p.z;
+    if (p.z + p.l > maxZ) maxZ = p.z + p.l;
+  }
+
+  const mirrored = placements.map((p) => ({
+    x: minX + maxX - (p.x + p.w),
+    z: minZ + maxZ - (p.z + p.l),
+    w: p.w,
+    l: p.l,
+  }));
+
+  let matchedCount = 0;
+  const used = new Set();
+  for (const m of mirrored) {
+    const idx = placements.findIndex(
+      (p, i) =>
+        !used.has(i) &&
+        Math.abs(p.x - m.x) <= tol &&
+        Math.abs(p.z - m.z) <= tol &&
+        Math.abs(p.w - m.w) <= tol &&
+        Math.abs(p.l - m.l) <= tol
+    );
+    if (idx !== -1) {
+      used.add(idx);
+      matchedCount++;
+    }
+  }
+
+  return matchedCount === placements.length;
+}

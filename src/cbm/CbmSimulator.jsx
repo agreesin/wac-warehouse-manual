@@ -23,18 +23,19 @@ import { PasteCargoModal } from './components/PasteCargoModal';
 import { ProjectManagerModal } from './components/ProjectManagerModal';
 import './cbm.css';
 
-const STORAGE_KEY = 'wac_cbm_sim_saved_state_v2';
+const STORAGE_KEY = 'wac_cbm_sim_saved_state_v3';
 
 function loadSavedState() {
   if (typeof window === 'undefined') return null;
   try {
-    // 구버전 캐시(v1: Item3 500x400x350) 제거
+    // 구버전 캐시(v1, v2) 제거하여 최신 적재 표준(비대칭 배열 일자 정렬) 반영
     localStorage.removeItem('wac_cbm_sim_saved_state_v1');
+    localStorage.removeItem('wac_cbm_sim_saved_state_v2');
 
     // 사용자가 브라우저를 처음 열거나 새로 방문했을 때는 항상 기본값 초기화 상태로 시작
-    const isExistingSession = sessionStorage.getItem('wac_cbm_active_session_v2');
+    const isExistingSession = sessionStorage.getItem('wac_cbm_active_session_v3');
     if (!isExistingSession) {
-      sessionStorage.setItem('wac_cbm_active_session_v2', 'true');
+      sessionStorage.setItem('wac_cbm_active_session_v3', 'true');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }
@@ -96,7 +97,7 @@ export function CbmSimulator() {
   // stackMode: 'single' (1단 적재) | 'double_auto' (2단 적재 - 높이 자동 맞춤) | 'double_manual' (2단 적재 - 지정 높이 유지)
   const [stackMode, setStackMode] = useState(() => savedState?.stackMode || 'single');
   const [mixCargos, setMixCargos] = useState(() => savedState?.mixCargos ?? false); // 기본: 품목별 단독 적재
-  const [interlockLayers, setInterlockLayers] = useState(() => savedState?.interlockLayers ?? true); // 기본: 홀·짝수단 벽돌식 교차 적재(인터로킹)
+  const [interlockLayers, setInterlockLayers] = useState(() => savedState?.interlockLayers ?? false); // 기본: 수직 기둥 일자 정렬 (비대칭 단차 및 캔틸레버 위험 원천 방지)
   const [overhang, setOverhang] = useState(() => savedState?.overhang ?? 0);
   const [unitMode, setUnitMode] = useState(() => savedState?.unitMode || 'mm'); // 'mm' | 'cm' 치수 입력/표시 단위 전환
 
@@ -566,7 +567,7 @@ export function CbmSimulator() {
     });
     setStackMode('single');
     setMixCargos(false);
-    setInterlockLayers(true);
+    setInterlockLayers(false);
     setOverhang(0);
     setUnitMode('mm');
     setFullFloorSpread(true);

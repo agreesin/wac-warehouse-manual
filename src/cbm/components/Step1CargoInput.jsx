@@ -484,14 +484,14 @@ export function Step1CargoInput({
             <label
               className="cbm-mini-check"
               style={{ fontSize: '12px', color: '#93c5fd' }}
-              title="짝수 단(2·4·6단)을 180° 대칭 교차시켜 박스 이음선이 엇갈리게 쌓음으로써 파레트 붕괴를 방지합니다."
+              title="대칭형 배열에 한해 짝수단을 180° 대칭 교차시켜 파레트 붕괴를 방지합니다. (비대칭 배열은 단차/전도 방지를 위해 안전한 수직 일자 정렬로 자동 유지)"
             >
               <input
                 type="checkbox"
                 checked={interlockLayers}
                 onChange={(e) => setInterlockLayers(e.target.checked)}
               />
-              <span>교차 적재 (인터로킹)</span>
+              <span>교차 적재 (대칭 배열 인터로킹)</span>
             </label>
           </div>
 
